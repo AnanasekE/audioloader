@@ -1,9 +1,11 @@
 package tmp
 
+import "time"
+
 type Track struct {
-	Title         string
-	LengthSeconds int
-	Artists       []*Artist
+	Title    string
+	Duration time.Duration
+	Artists  []*Artist
 }
 
 type Artist struct {
@@ -15,8 +17,13 @@ type Album struct {
 }
 
 type Release struct {
-	Track *Track // non-nil for singles
-	Album *Album // non-nil for albums
+	Date  time.Time // Should a release contain the date or the album + track independently?
+	Track *Track    // non-nil for singles
+	Album *Album    // non-nil for albums
 }
 
 func (r Release) IsSingle() bool { return r.Track != nil }
+
+type Playlist struct {
+	Tracks []*Track
+}
