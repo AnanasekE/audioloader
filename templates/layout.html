@@ -1,0 +1,26 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Go App</title>
+
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/bamboo.min.css">
+    <script src="/assets/js/htmx.min.js" defer></script>
+</head>
+<body>
+    <main>
+        <h1>My Go App</h1>
+        <p>A simple Go + HTMX project.</p>
+
+        <button hx-get="/api/hello" hx-target="#result">
+            Say hello
+        </button>
+
+        <div id="result"></div>
+    </main>
+</body>
+</html>
+
