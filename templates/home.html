@@ -1,7 +1,12 @@
-{{define "home.html"}}
+{{define "home"}}
 <section>
-    <h2>Home</h2>
-    <p>Welcome to the app.</p>
+    <form hx-post="/api/track/new" hx-encoding="multipart/form-data" hx-target="#result">
+        <h1>Add song</h1>
+        <input type="text" name="title">
+        <input type="file" name="track">
+        <button type="submit">Submit</button>
+    </form>
+    <span id="result"></span>
 </section>
 {{end}}
 

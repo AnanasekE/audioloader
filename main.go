@@ -6,9 +6,13 @@ import (
 	"text/template"
 
 	"audioloader/internal/api"
+	"audioloader/internal/db"
 )
 
 func main() {
+	db.Init()
+	defer db.DB.Close()
+
 	mux := http.NewServeMux()
 
 	// Static assets
