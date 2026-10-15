@@ -1,12 +1,20 @@
 {{define "home"}}
 <section>
-    <form hx-post="/api/track/new" hx-encoding="multipart/form-data" hx-target="#result">
+    <form hx-post="/api/track" hx-encoding="multipart/form-data" hx-target="#result-tracks">
         <h1>Add song</h1>
-        <input type="text" name="title">
+        <input type="text" name="title" placeholder="Track name">
         <input type="file" name="track">
         <button type="submit">Submit</button>
     </form>
-    <span id="result"></span>
+    <span id="result-tracks"></span>
+</section>
+<section>
+    <form hx-post="/api/artists" hx-encoding="multipart/form-data" hx-target="#result-artists">
+        <h1>Add artist</h1>
+        <input type="text" name="name" placeholder="Artist name">
+        <button type="submit">Submit</button>
+    </form>
+    <span id="result-artists"></span>
 </section>
 {{end}}
 
