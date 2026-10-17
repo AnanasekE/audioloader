@@ -1,75 +1,87 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"uuid"
 
+	"audioloader/internal/audio"
+	"audioloader/internal/components"
 	"audioloader/internal/db"
 )
 
 func Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/hello", hello)
-	mux.HandleFunc("POST /api/hello", hello)
-	// mux.HandleFunc("POST /api/track/new", addTrack)
+	mux.Handle("GET /assets/", http.StripPrefix(
+		"/assets/",
+		http.FileServer(http.Dir("assets")),
+	))
+
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		c := components.Home()
+		err := c.Render(context.Background(), w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
 	mux.HandleFunc("POST /api/artists", createArtist)
 	mux.HandleFunc("GET /api/artists", getArtists)
-}
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, `<p>Hello from the API! <strong>HTMX works.</strong></p>`)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprint(w, `{"message":"Hello from the API!"}`)
 }
 
 func createArtist(w http.ResponseWriter, r *http.Request) {
 	artist_name := r.FormValue("name")
 	id := uuid.New().String()
 
-	query1 := `
-	INSERT INTO ARTISTS VALUES(%s, %s, null)
+	query := `
+	INSERT INTO ARTISTS VALUES(?, ?, null);
 	`
-	query2 := fmt.Sprintf(query1, id, artist_name)
 
 	tx, _ := db.DB.Begin()
-	_, err := tx.Exec(query2)
+	_, err := tx.Exec(query, id, artist_name)
 	if err != nil {
 		tx.Rollback()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	tx.Commit()
+	err2 := tx.Commit()
+	if err2 != nil {
+		http.Error(w, err2.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<p>Success!</p>")
 }
 
 func getArtists(w http.ResponseWriter, r *http.Request) {
-}
+	query1 := `SELECT uuid, name, img_url FROM artists;`
+	rows, err := db.DB.Query(query1)
+	defer rows.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	artists := make([]*audio.Artist, 0)
 
-// func addTrack(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprint(w, "AYY WORKS")
-// 	f, fh, _ := r.FormFile("track")
-// 	fmt.Println(f)
-// 	fmt.Println(fh.Filename)
-// 	fo, err := os.Create(fmt.Sprintf("./data/%s", fh.Filename))
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	io.Copy(fo, f)
-// }
-//
-// func SaveTrackFile(f multipart.File) (*uuid.UUID, error) {
-// 	dir := filepath.Dir("./data/")
-// 	id := uuid.New()
-// 	created_file, err := os.Create(dir + "/" + id.String())
-// 	if err != nil {
-// 		return nil, errors.New("Unable to save file")
-// 	}
-// 	io.Copy(created_file, f)
-// 	return &id, nil
-// }
+	for rows.Next() {
+		var artist audio.Artist
+		if err := rows.Scan(&artist.ID, &artist.Name, &artist.ImgURL); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		artists = append(artists, &artist)
+	}
+
+	c := components.ArtistList(artists)
+	err = c.Render(context.Background(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

@@ -1,0 +1,74 @@
+package components
+
+import "audioloader/internal/audio"
+
+templ layout() {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<link rel="stylesheet" href="/assets/css/bamboo.min.css"/>
+			<link rel="stylesheet" href="/assets/css/style.css"/>
+			<script src="/assets/js/htmx.min.js" defer></script>
+		</head>
+		<body>
+			<main>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ Home() {
+	@layout() {
+		<nav>
+			<h1>HOME</h1>
+		</nav>
+		<main>
+			@AddTrack()
+			@AddArtist()
+			@GetArtists()
+		</main>
+	}
+}
+
+templ AddTrack() {
+	<section>
+		<form hx-post="/api/track" hx-encoding="multipart/form-data" hx-target="#result-tracks">
+			<h1>Add song</h1>
+			<input type="text" name="title" placeholder="Track name"/>
+			<input type="file" name="track"/>
+			<button type="submit">Submit</button>
+		</form>
+		<span id="result-tracks"></span>
+	</section>
+}
+
+templ AddArtist() {
+	<section>
+		<form hx-post="/api/artists" hx-encoding="multipart/form-data" hx-target="#result-artist">
+			<h1>Add artist</h1>
+			<input type="text" name="name" placeholder="Artist name"/>
+			<button type="submit">Submit</button>
+		</form>
+		<span id="result-artist"></span>
+	</section>
+}
+
+templ GetArtists() {
+	<section>
+		<button hx-get="/api/artists" hx-target="#result-artists">Get Artists</button>
+		<span id="result-artists"></span>
+	</section>
+}
+
+templ Artist(a *audio.Artist) {
+	<div><p>{ a.Name }</p></div>
+}
+
+templ ArtistList(artists []*audio.Artist) {
+	<div>
+		for _, artist := range artists {
+			@Artist(artist)
+		}
+	</div>
+}
