@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS tracks (
     uuid TEXT UNIQUE NOT NULL PRIMARY KEY,
     title TEXT NOT NULL,
     duration_seconds INTEGER NOT NULL,
-    img_url TEXT
+    img_url TEXT DEFAULT "/assets/img/default_pfp.png"
     );
 
 CREATE TABLE IF NOT EXISTS artists (
     uuid TEXT UNIQUE NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    img_url TEXT
+    img_url TEXT DEFAULT "/assets/img/default_pfp.png"
     );
 
 CREATE TABLE IF NOT EXISTS track_artist_map (
@@ -48,7 +48,9 @@ func connect() *sql.DB {
 	return db
 }
 
-func Migrate(db *sql.DB) error {
+func Migrate(db *sql.DB) {
 	_, err := db.Exec(schema)
-	return err
+	if err != nil {
+		panic(err)
+	}
 }

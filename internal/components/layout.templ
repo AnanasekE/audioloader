@@ -62,7 +62,10 @@ templ GetArtists() {
 }
 
 templ Artist(a *audio.Artist) {
-	<div><p>{ a.Name }</p></div>
+	<div>
+		<img src={ a.ImgURL } alt="Artist Profile Picutre"/>
+		<p>{ a.Name }</p>
+	</div>
 }
 
 templ ArtistList(artists []*audio.Artist) {
@@ -71,4 +74,21 @@ templ ArtistList(artists []*audio.Artist) {
 			@Artist(artist)
 		}
 	</div>
+}
+
+templ Track(t *audio.Track) {
+	<div>
+		<img src={ t.ImgURL } alt="Track Image"/>
+		<p>{ t.Title }</p>
+	</div>
+}
+
+templ TrackList(tracks []*audio.Track) {
+	<ul>
+		for _, track := range tracks {
+			<li>
+				@Track(track)
+			</li>
+		}
+	</ul>
 }

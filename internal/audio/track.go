@@ -1,7 +1,6 @@
 package audio
 
 import (
-	"net/url"
 	"time"
 	"uuid"
 )
@@ -13,20 +12,20 @@ type Track struct {
 	Title    string
 	Duration time.Duration
 	Artists  []*Artist
-	ImgURL   *url.URL
+	ImgURL   string
 }
 
 type Artist struct {
 	ID     uuid.UUID
 	Name   string
-	ImgURL *url.URL
+	ImgURL string
 }
 
 type Album struct {
 	ID     uuid.UUID
 	Name   string
 	Songs  []*Track
-	ImgURL *url.URL
+	ImgURL string
 }
 
 type Release struct {
@@ -42,5 +41,5 @@ type Playlist struct {
 	ID     uuid.UUID
 	Name   string
 	Tracks []*Track
-	ImgURL *url.URL
+	ImgURL string
 }
