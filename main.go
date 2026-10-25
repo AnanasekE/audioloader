@@ -14,6 +14,7 @@ import (
 	"audioloader/internal/db"
 	"audioloader/internal/jobs"
 	"audioloader/internal/tagging"
+	"audioloader/internal/tracking"
 )
 
 func main() {
@@ -28,6 +29,8 @@ func main() {
 	api.Register(mux)
 
 	tagging.Register()
+	tracking.Register()
+	go tracking.Schedule(ctx)
 	workerDone := make(chan struct{})
 	go func() {
 		jobs.Run(ctx)
