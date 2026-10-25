@@ -85,7 +85,7 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 			</div>
 			<div>
 				<span class="mb-1 block text-sm font-medium">Artists</span>
-				@artistPicker(artists, "")
+				@artistPicker(artists, nil)
 			</div>
 			<div>
 				<button class="btn" type="submit">
@@ -152,7 +152,7 @@ templ ReleasePage(r *audio.Release) {
 templ releaseActions(r *audio.Release) {
 	<div class="mt-4 flex flex-wrap gap-2">
 		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
-		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit tracklist</a>
+		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
 	</div>
 }
 
@@ -247,11 +247,13 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 	</div>
 }
 
-templ ReleaseEditPage(r *audio.Release, library []*audio.Track) {
+templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.Artist) {
 	@layout("Edit "+r.Title, PageReleases) {
-		@pageHeader("Edit tracklist", r.Type.Label()+": "+r.Title) {
+		@pageHeader("Edit release", r.Type.Label()+": "+r.Title) {
 			<a class="btn" href={ releaseURL(r) }>Cancel</a>
 		}
+		@releaseDetailsForm(r, artists)
+		<h2 class="mt-8 mb-3 text-lg font-semibold">Tracklist</h2>
 		<form
 			id="release-edit"
 			class="card"
@@ -285,8 +287,72 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track) {
 		<template id="release-edit-row">
 			@editRow("", "", "", 1)
 		</template>
+		<section class="card mt-8">
+			<h2 class="mb-2 text-lg font-semibold">Delete release</h2>
+			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">The tracks stay in your library.</p>
+			<button
+				type="button"
+				class="btn"
+				hx-post={ "/ui/releases/" + r.ID.String() + "/delete" }
+				hx-confirm={ "Delete " + r.Title + "? Its tracks stay in your library." }
+			>Delete release</button>
+		</section>
 		<script src="/assets/js/release-edit.js" defer></script>
+		<script src="/assets/js/artist-picker.js" defer></script>
 	}
+}
+
+templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
+	<form
+		class="card grid max-w-lg gap-4"
+		hx-post={ "/ui/releases/" + r.ID.String() }
+		hx-target="#release-details-result"
+		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-details-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+	>
+		<div>
+			<label for="release-title" class="mb-1 block text-sm font-medium">Title</label>
+			<input id="release-title" class="input" type="text" name="title" value={ r.Title } required/>
+		</div>
+		<div class="grid grid-cols-2 gap-4">
+			<div>
+				<label for="release-type" class="mb-1 block text-sm font-medium">Type</label>
+				<select id="release-type" class="input" name="type">
+					for _, typ := range audio.ReleaseTypes {
+						<option value={ string(typ) } selected?={ typ == r.Type }>{ typ.Label() }</option>
+					}
+				</select>
+			</div>
+			<div>
+				<label for="release-date" class="mb-1 block text-sm font-medium">Release date</label>
+				<input
+					id="release-date"
+					class="input"
+					type="text"
+					name="date"
+					value={ r.Date }
+					placeholder="YYYY or YYYY-MM-DD"
+					pattern="\d{4}(-\d{2}(-\d{2})?)?"
+					title="YYYY, YYYY-MM or YYYY-MM-DD"
+				/>
+			</div>
+		</div>
+		<div>
+			<span class="mb-1 block text-sm font-medium">Artists</span>
+			@artistPicker(artists, artistIDs(r.Artists))
+		</div>
+		<div class="flex items-center gap-4">
+			<button class="btn" type="submit">Save details</button>
+			<span id="release-details-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+		</div>
+	</form>
+}
+
+func artistIDs(artists []*audio.Artist) []string {
+	ids := make([]string, len(artists))
+	for i, a := range artists {
+		ids[i] = a.ID.String()
+	}
+	return ids
 }
 
 // editRow is one tracklist entry. Positions aren't stored in the form: they

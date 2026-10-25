@@ -155,10 +155,14 @@ func insertRelease(tx *sql.Tx, r *audio.Release, artistIDs []string) error {
 	if err != nil {
 		return err
 	}
+	return insertReleaseArtists(tx, r.ID.String(), artistIDs)
+}
+
+func insertReleaseArtists(tx *sql.Tx, releaseID string, artistIDs []string) error {
 	for i, artistID := range artistIDs {
 		_, err := tx.Exec(
 			`INSERT INTO release_artist_map(release_id, artist_id, position) VALUES(?, ?, ?);`,
-			r.ID.String(), artistID, i+1,
+			releaseID, artistID, i+1,
 		)
 		if isForeignKeyViolation(err) {
 			return ErrBadReference
@@ -166,6 +170,53 @@ func insertRelease(tx *sql.Tx, r *audio.Release, artistIDs []string) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// UpdateRelease changes a release's title, type, date and artists.
+func UpdateRelease(id, title string, typ audio.ReleaseType, date string, artistIDs []string) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var dateArg any
+	if date != "" {
+		dateArg = date
+	}
+	res, err := tx.Exec(
+		`UPDATE releases SET title = ?, type = ?, release_date = ? WHERE uuid = ?;`,
+		title, string(typ), dateArg, id,
+	)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return ErrNotFound
+	}
+	if _, err := tx.Exec(`DELETE FROM release_artist_map WHERE release_id = ?;`, id); err != nil {
+		return err
+	}
+	if err := insertReleaseArtists(tx, id, artistIDs); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// DeleteRelease removes a release. Its tracks stay in the library.
+func DeleteRelease(id string) error {
+	res, err := DB.Exec(`DELETE FROM releases WHERE uuid = ?;`, id)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return ErrNotFound
 	}
 	return nil
 }

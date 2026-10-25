@@ -70,7 +70,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 			</div>
 			<div>
 				<span class="mb-1 block text-sm font-medium">Artists</span>
-				@artistPicker(artists, "")
+				@artistPicker(artists, nil)
 				if len(artists) == 0 {
 					<small class="mt-1 block text-zinc-500">No artists yet. <a href="/artists">Add one first</a>.</small>
 				}

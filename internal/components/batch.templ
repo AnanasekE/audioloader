@@ -94,7 +94,7 @@ templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.
 		hx-swap="innerHTML"
 	>
 		<input class="input" type="text" name="title" aria-label="Title" placeholder="Title" required/>
-		@artistPicker(artists, defaultArtist)
+		@artistPicker(artists, []string{defaultArtist})
 		<div class="flex min-h-9 min-w-0 items-center text-sm">
 			<input class="hidden" type="file" name="track" accept={ audioAccept }/>
 			<span class="truncate" data-file-name></span>

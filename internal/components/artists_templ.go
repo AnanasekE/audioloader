@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
+	"slices"
 
 	"audioloader/internal/audio"
 )
@@ -122,7 +123,7 @@ func AddArtistForm() templ.Component {
 
 // artistPicker is a dropdown of artist checkboxes, submitted as repeated
 // artist_id values. The summary text is kept up to date by artist-picker.js.
-func artistPicker(artists []*audio.Artist, selected string) templ.Component {
+func artistPicker(artists []*audio.Artist, selected []string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -155,7 +156,7 @@ func artistPicker(artists []*audio.Artist, selected string) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(a.ID.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 54, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 55, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -168,7 +169,7 @@ func artistPicker(artists []*audio.Artist, selected string) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(a.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 54, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 55, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -178,7 +179,7 @@ func artistPicker(artists []*audio.Artist, selected string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if a.ID.String() == selected {
+			if slices.Contains(selected, a.ID.String()) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -191,7 +192,7 @@ func artistPicker(artists []*audio.Artist, selected string) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(a.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 55, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 56, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -238,7 +239,7 @@ func Artist(a *audio.Artist) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue(a.ImgURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 66, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 67, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 		if templ_7745c5c3_Err != nil {
@@ -251,7 +252,7 @@ func Artist(a *audio.Artist) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(a.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 67, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 68, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -264,7 +265,7 @@ func Artist(a *audio.Artist) templ.Component {
 		var templ_7745c5c3_Var12 templ.SafeURL
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/upload/batch?artist=" + a.ID.String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 68, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 69, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {

@@ -49,7 +49,12 @@ func getReleaseEditPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.ReleaseEditPage(release, tracks))
+	artists, err := db.ListArtists()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.ReleaseEditPage(release, tracks, artists))
 }
 
 func createRelease(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +136,52 @@ func validateRelease(title string, typ audio.ReleaseType, date string, artistIDs
 		}
 	}
 	return ""
+}
+
+func updateRelease(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "release_id")
+	if !ok {
+		return
+	}
+	title := strings.TrimSpace(r.FormValue("title"))
+	typ := audio.ReleaseType(r.FormValue("type"))
+	date := strings.TrimSpace(r.FormValue("date"))
+	artistIDs := r.Form["artist_id"]
+	if msg := validateRelease(title, typ, date, artistIDs); msg != "" {
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	err := db.UpdateRelease(id.String(), title, typ, date, artistIDs)
+	switch {
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case errors.Is(err, db.ErrBadReference):
+		http.Error(w, "unknown artist", http.StatusBadRequest)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/releases/"+id.String())
+}
+
+func deleteRelease(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "release_id")
+	if !ok {
+		return
+	}
+	err := db.DeleteRelease(id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/releases")
 }
 
 func saveReleaseTracks(w http.ResponseWriter, r *http.Request) {

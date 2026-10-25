@@ -26,6 +26,8 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /ui/tracks/{track_id}", getTrack)
 	mux.HandleFunc("POST /ui/tracks", addTrack)
 	mux.HandleFunc("POST /ui/releases", createRelease)
+	mux.HandleFunc("POST /ui/releases/{release_id}", updateRelease)
+	mux.HandleFunc("POST /ui/releases/{release_id}/delete", deleteRelease)
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 
 	mux.HandleFunc("GET /api/tracks/{track_id}/stream", streamTrack)
