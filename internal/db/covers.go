@@ -1,8 +1,11 @@
 package db
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -78,3 +81,34 @@ func removeCover(id uuid.UUID) {
 // coverPriority orders release types for picking a track's cover: a song
 // on an album shows the album's cover rather than its single's.
 var coverPriority = map[string]int{"album": 0, "ep": 1, "single": 2, "compilation": 3}
+
+// MaxCoverSize caps stored cover images.
+const MaxCoverSize = 10 << 20
+
+// ErrBadImage is returned for a cover that isn't a JPEG, PNG or WebP image,
+// or is larger than MaxCoverSize.
+var ErrBadImage = errors.New("cover must be a JPEG, PNG or WebP image of at most 10 MiB")
+
+// coverTypes maps the sniffed content types we accept to their extension.
+var coverTypes = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+}
+
+// SaveCoverImage checks that r is an accepted image, by its bytes rather
+// than any name or claimed type, and stores it as the release's cover.
+func SaveCoverImage(id uuid.UUID, r io.Reader) error {
+	data, err := io.ReadAll(io.LimitReader(r, MaxCoverSize+1))
+	if err != nil {
+		return err
+	}
+	if len(data) > MaxCoverSize {
+		return ErrBadImage
+	}
+	ext, ok := coverTypes[http.DetectContentType(data)]
+	if !ok {
+		return ErrBadImage
+	}
+	return SetReleaseCover(id, bytes.NewReader(data), ext)
+}

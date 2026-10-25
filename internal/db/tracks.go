@@ -14,7 +14,7 @@ import (
 // ErrNotFound is returned when a looked-up row or file doesn't exist.
 var ErrNotFound = errors.New("not found")
 
-const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file FROM tracks t`
+const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, '') FROM tracks t`
 
 // libraryTracks is the condition every library listing of tracks uses, on
 // a tracks table aliased t. Placeholders have no file to play, so they only
@@ -29,7 +29,7 @@ type scanner interface {
 func scanTrack(s scanner) (*audio.Track, error) {
 	var t audio.Track
 	var seconds int
-	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile); err != nil {
+	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC); err != nil {
 		return nil, err
 	}
 	t.Duration = time.Duration(seconds) * time.Second
@@ -97,7 +97,7 @@ func attachArtists(tracks []*audio.Track) error {
 	}
 	// ordered by rowid so artists show in the order they were picked
 	rows, err := DB.Query(`
-		SELECT m.track_id, a.uuid, a.name, a.img_url
+		SELECT m.track_id, a.uuid, a.name, a.img_url, COALESCE(a.mbid, '')
 		FROM track_artist_map m
 		JOIN artists a ON a.uuid = m.artist_id
 		WHERE m.track_id IN (`+placeholders(len(tracks))+`)
@@ -110,7 +110,7 @@ func attachArtists(tracks []*audio.Track) error {
 	for rows.Next() {
 		var trackID string
 		var a audio.Artist
-		if err := rows.Scan(&trackID, &a.ID, &a.Name, &a.ImgURL); err != nil {
+		if err := rows.Scan(&trackID, &a.ID, &a.Name, &a.ImgURL, &a.MBID); err != nil {
 			return err
 		}
 		if t := byID[trackID]; t != nil {

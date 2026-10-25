@@ -35,11 +35,11 @@ type ReleaseTrackInput struct {
 	Disc    int
 }
 
-const selectRelease = `SELECT uuid, title, type, COALESCE(release_date, ''), img_url FROM releases`
+const selectRelease = `SELECT uuid, title, type, COALESCE(release_date, ''), img_url, COALESCE(mbid, ''), COALESCE(release_group_mbid, '') FROM releases`
 
 func scanRelease(s scanner) (*audio.Release, error) {
 	var r audio.Release
-	if err := s.Scan(&r.ID, &r.Title, &r.Type, &r.Date, &r.ImgURL); err != nil {
+	if err := s.Scan(&r.ID, &r.Title, &r.Type, &r.Date, &r.ImgURL, &r.MBID, &r.ReleaseGroupMBID); err != nil {
 		return nil, err
 	}
 	return &r, nil
@@ -93,7 +93,7 @@ func GetRelease(id string) (*audio.Release, error) {
 	}
 
 	rows, err := DB.Query(`
-		SELECT rt.disc, rt.position, t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file
+		SELECT rt.disc, rt.position, t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, '')
 		FROM release_tracks rt
 		JOIN tracks t ON t.uuid = rt.track_id
 		WHERE rt.release_id = ?
@@ -106,7 +106,7 @@ func GetRelease(id string) (*audio.Release, error) {
 		var rt audio.ReleaseTrack
 		var t audio.Track
 		var seconds int
-		if err := rows.Scan(&rt.Disc, &rt.Position, &t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile); err != nil {
+		if err := rows.Scan(&rt.Disc, &rt.Position, &t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func attachReleaseArtists(releases []*audio.Release) error {
 	}
 
 	rows, err := DB.Query(`
-		SELECT m.release_id, a.uuid, a.name, a.img_url
+		SELECT m.release_id, a.uuid, a.name, a.img_url, COALESCE(a.mbid, '')
 		FROM release_artist_map m
 		JOIN artists a ON a.uuid = m.artist_id
 		WHERE m.release_id IN (`+placeholders(len(releases))+`)
@@ -337,7 +337,7 @@ func attachReleaseArtists(releases []*audio.Release) error {
 	for rows.Next() {
 		var releaseID string
 		var a audio.Artist
-		if err := rows.Scan(&releaseID, &a.ID, &a.Name, &a.ImgURL); err != nil {
+		if err := rows.Scan(&releaseID, &a.ID, &a.Name, &a.ImgURL, &a.MBID); err != nil {
 			return err
 		}
 		if r := byID[releaseID]; r != nil {
@@ -360,7 +360,7 @@ func attachReleases(tracks []*audio.Track) error {
 	}
 
 	rows, err := DB.Query(`
-		SELECT rt.track_id, r.uuid, r.title, r.type, COALESCE(r.release_date, ''), r.img_url
+		SELECT rt.track_id, r.uuid, r.title, r.type, COALESCE(r.release_date, ''), r.img_url, COALESCE(r.mbid, ''), COALESCE(r.release_group_mbid, '')
 		FROM release_tracks rt
 		JOIN releases r ON r.uuid = rt.release_id
 		WHERE rt.track_id IN (`+placeholders(len(tracks))+`)
@@ -373,7 +373,7 @@ func attachReleases(tracks []*audio.Track) error {
 	for rows.Next() {
 		var trackID string
 		var r audio.Release
-		if err := rows.Scan(&trackID, &r.ID, &r.Title, &r.Type, &r.Date, &r.ImgURL); err != nil {
+		if err := rows.Scan(&trackID, &r.ID, &r.Title, &r.Type, &r.Date, &r.ImgURL, &r.MBID, &r.ReleaseGroupMBID); err != nil {
 			return err
 		}
 		if t := byID[trackID]; t != nil {

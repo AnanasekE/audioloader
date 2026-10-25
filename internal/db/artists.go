@@ -13,7 +13,7 @@ import (
 var ErrArtistExists = errors.New("an artist with that name already exists")
 
 func ListArtists() ([]*audio.Artist, error) {
-	rows, err := DB.Query(`SELECT uuid, name, img_url FROM artists;`)
+	rows, err := DB.Query(`SELECT uuid, name, img_url, COALESCE(mbid, '') FROM artists ORDER BY name COLLATE NOCASE;`)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func ListArtists() ([]*audio.Artist, error) {
 	artists := make([]*audio.Artist, 0)
 	for rows.Next() {
 		var a audio.Artist
-		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID); err != nil {
 			return nil, err
 		}
 		artists = append(artists, &a)

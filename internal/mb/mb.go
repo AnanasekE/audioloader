@@ -51,7 +51,7 @@ var intervals = map[string]time.Duration{
 func New() *Client {
 	contact := os.Getenv("AUDIOLOADER_CONTACT")
 	if contact == "" {
-		contact = "no contact set"
+		contact = "https://github.com/AnanasekE/audioloader"
 	}
 	return &Client{
 		HTTP:           &http.Client{Timeout: 10 * time.Second},

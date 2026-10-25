@@ -79,6 +79,11 @@ var migrations = []func(tx *sql.Tx) error{
 			);`)
 		return err
 	},
+	// 6: outcome of the last auto-tagging run per track
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN tag_status TEXT CHECK (tag_status IN ('matched', 'review', 'none'));`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

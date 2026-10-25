@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/tagging"
 )
 
 func getTracks(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +120,10 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 	if res.Linked {
 		render(w, r, components.Notice("Already in the library, added to the release."))
 		return
+	}
+	// a failed enqueue only means the track isn't auto-tagged; the upload worked
+	if err := tagging.Enqueue(res.TrackID); err != nil {
+		log.Println("enqueue tagging:", err)
 	}
 	if link == nil {
 		render(w, r, components.Notice("Uploaded "+track.Title+" as a single."))

@@ -13,6 +13,7 @@ import (
 	"audioloader/internal/api"
 	"audioloader/internal/db"
 	"audioloader/internal/jobs"
+	"audioloader/internal/tagging"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 
 	api.Register(mux)
 
+	tagging.Register()
 	workerDone := make(chan struct{})
 	go func() {
 		jobs.Run(ctx)
