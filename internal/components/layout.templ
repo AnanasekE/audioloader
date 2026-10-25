@@ -1,3 +1,4 @@
+
 package components
 
 import "audioloader/internal/audio"
@@ -6,48 +7,85 @@ templ layout() {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>audioloader</title>
+			<link rel="icon" type="image/png" href="/assets/img/favicon.png"/>
 			<link rel="stylesheet" href="/assets/css/bamboo.min.css"/>
 			<link rel="stylesheet" href="/assets/css/style.css"/>
 			<script src="/assets/js/htmx.min.js" defer></script>
 		</head>
 		<body>
-			<main>
-				{ children... }
-			</main>
+			{ children... }
 		</body>
 	</html>
 }
 
-templ Home() {
+templ Home(artists []*audio.Artist, tracks []*audio.Track) {
 	@layout() {
 		<nav>
 			<h1>HOME</h1>
 		</nav>
 		<main>
-			@AddTrack()
+			@AddTrack(artists)
 			@AddArtist()
 			@GetArtists()
+			@GetTracks(tracks)
 		</main>
 	}
 }
 
-templ AddTrack() {
+templ AddTrack(artists []*audio.Artist) {
 	<section>
-		<form hx-post="/api/track" hx-encoding="multipart/form-data" hx-target="#result-tracks">
-			<h1>Add song</h1>
-			<input type="text" name="title" placeholder="Track name"/>
-			<input type="file" name="track"/>
+		<h2>Add track</h2>
+		<form
+			hx-post="/ui/tracks"
+			hx-encoding="multipart/form-data"
+			hx-target="#result-tracks"
+		>
+			<label for="track-title">Title</label>
+			<input id="track-title" type="text" name="title" placeholder="Track name"/>
+			<label for="track-artist">Artist</label>
+			<select
+				id="track-artist"
+				name="artist_id"
+				hx-get="/ui/artists/options"
+				hx-trigger="artistsChanged from:body"
+				hx-target="this"
+				hx-swap="innerHTML"
+			>
+				@ArtistOptions(artists)
+			</select>
+			<label for="track-file">File</label>
+			<input
+				id="track-file"
+				type="file"
+				name="track"
+				accept="audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac"
+			/>
 			<button type="submit">Submit</button>
 		</form>
 		<span id="result-tracks"></span>
 	</section>
 }
 
+templ ArtistOptions(artists []*audio.Artist) {
+	<option value="" disabled selected>Select artist</option>
+	for _, artist := range artists {
+		<option value={ artist.ID.String() }>{ artist.Name }</option>
+	}
+}
+
 templ AddArtist() {
 	<section>
-		<form hx-post="/api/artists" hx-encoding="multipart/form-data" hx-target="#result-artist">
-			<h1>Add artist</h1>
-			<input type="text" name="name" placeholder="Artist name"/>
+		<h2>Add artist</h2>
+		<form
+			hx-post="/ui/artists"
+			hx-encoding="multipart/form-data"
+			hx-target="#result-artist"
+		>
+			<label for="artist-name">Name</label>
+			<input id="artist-name" type="text" name="name" placeholder="Artist name"/>
 			<button type="submit">Submit</button>
 		</form>
 		<span id="result-artist"></span>
@@ -56,14 +94,25 @@ templ AddArtist() {
 
 templ GetArtists() {
 	<section>
-		<button hx-get="/api/artists" hx-target="#result-artists">Get Artists</button>
-		<span id="result-artists"></span>
+		<h2>Artists</h2>
+		<button hx-get="/ui/artists" hx-target="#result-artists">Get artists</button>
+		<div id="result-artists"></div>
+	</section>
+}
+
+templ GetTracks(tracks []*audio.Track) {
+	<section>
+		<h2>Tracks</h2>
+		<button hx-get="/ui/tracks" hx-target="#result-track-list">Refresh tracks</button>
+		<div id="result-track-list">
+			@TrackList(tracks)
+		</div>
 	</section>
 }
 
 templ Artist(a *audio.Artist) {
 	<div>
-		<img src={ a.ImgURL } alt="Artist Profile Picutre"/>
+		<img src={ a.ImgURL } alt="Artist profile picture"/>
 		<p>{ a.Name }</p>
 	</div>
 }
@@ -78,17 +127,33 @@ templ ArtistList(artists []*audio.Artist) {
 
 templ Track(t *audio.Track) {
 	<div>
-		<img src={ t.ImgURL } alt="Track Image"/>
+		<img src={ t.ImgURL } alt="Track image"/>
 		<p>{ t.Title }</p>
+		<small>
+			for i, artist := range t.Artists {
+				if i > 0 {
+					{ ", " }
+				}
+				{ artist.Name }
+			}
+		</small>
+		<small>{ t.Duration.String() }</small>
+		<audio controls preload="none" src={ "/api/tracks/" + t.ID.String() + "/stream" }>
+			Your browser does not support the audio element.
+		</audio>
 	</div>
 }
 
 templ TrackList(tracks []*audio.Track) {
-	<ul>
-		for _, track := range tracks {
-			<li>
-				@Track(track)
-			</li>
-		}
-	</ul>
+	if len(tracks) == 0 {
+		<p>No tracks yet.</p>
+	} else {
+		<ul>
+			for _, track := range tracks {
+				<li>
+					@Track(track)
+				</li>
+			}
+		</ul>
+	}
 }

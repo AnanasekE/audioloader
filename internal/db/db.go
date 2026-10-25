@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     uuid TEXT UNIQUE NOT NULL PRIMARY KEY,
     title TEXT NOT NULL,
     duration_seconds INTEGER NOT NULL,
-    img_url TEXT DEFAULT "/assets/img/default_pfp.png"
+    img_url TEXT DEFAULT "/assets/img/default_track.png"
     );
 
 CREATE TABLE IF NOT EXISTS artists (

@@ -1,10 +1,7 @@
 package api
 
 import (
-	"context"
 	"net/http"
-
-	"audioloader/internal/components"
 )
 
 func Register(mux *http.ServeMux) {
@@ -13,20 +10,14 @@ func Register(mux *http.ServeMux) {
 		http.FileServer(http.Dir("assets")),
 	))
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		c := components.Home()
-		err := c.Render(context.Background(), w)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
+	mux.HandleFunc("GET /", getHome)
 
-	mux.HandleFunc("POST /api/artists", createArtist)
-	mux.HandleFunc("GET /api/artists", getArtists)
-	mux.HandleFunc("GET /api/tracks", getTracks)
+	mux.HandleFunc("POST /ui/artists", createArtist)
+	mux.HandleFunc("GET /ui/artists", getArtists)
+	mux.HandleFunc("GET /ui/artists/options", getArtistsOptions)
+	mux.HandleFunc("GET /ui/tracks", getTracks)
+	mux.HandleFunc("GET /ui/tracks/{track_id}", getTrack)
+	mux.HandleFunc("POST /ui/tracks", addTrack)
+
+	mux.HandleFunc("GET /api/tracks/{track_id}/stream", streamTrack)
 }
