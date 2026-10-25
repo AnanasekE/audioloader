@@ -29,6 +29,7 @@ All optional; set as environment variables.
 
 | Variable | What it does |
 |---|---|
+| `AUDIOLOADER_ADDR` | Address to listen on, default `:8080`. |
 | `AUDIOLOADER_CONTACT` | Contact (email or URL) for the User-Agent MusicBrainz asks for. Defaults to the repository URL. |
 | `ACOUSTID_KEY` | AcoustID API key, for identifying tracks by their audio. Also needs `fpcalc` (Chromaprint). |
 | `FPCALC` | Path to `fpcalc`, if it isn't on `PATH`. |
