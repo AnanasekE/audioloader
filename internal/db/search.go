@@ -12,10 +12,11 @@ type SearchResults struct {
 	Tracks   []*audio.Track
 	Releases []*audio.Release
 	Artists  []*audio.Artist
+	Shows    []*audio.Show
 }
 
 func (r *SearchResults) Empty() bool {
-	return len(r.Tracks)+len(r.Releases)+len(r.Artists) == 0
+	return len(r.Tracks)+len(r.Releases)+len(r.Artists)+len(r.Shows) == 0
 }
 
 // Search finds tracks, releases and artists matching every word of q, the
@@ -32,7 +33,7 @@ func Search(q string, limit int) (*SearchResults, error) {
 	}
 
 	ids := map[string][]string{}
-	for _, kind := range []string{"track", "release", "artist"} {
+	for _, kind := range []string{"track", "release", "artist", "show"} {
 		rows, err := DB.Query(`
 			SELECT ref FROM search WHERE search MATCH ? AND kind = ?
 			ORDER BY bm25(search, 0, 0, 10, 3) LIMIT ?;`, match, kind, limit)
@@ -76,6 +77,14 @@ func Search(q string, limit int) (*SearchResults, error) {
 			return nil, err
 		}
 		res.Artists = append(res.Artists, a)
+	}
+	for _, id := range ids["show"] {
+		s, err := GetShow(id)
+		if err != nil {
+			return nil, err
+		}
+		s.Episodes = nil
+		res.Shows = append(res.Shows, s)
 	}
 	return res, nil
 }
@@ -127,6 +136,8 @@ func refreshSearch() error {
 			GROUP BY r.uuid;`,
 		`INSERT INTO search(kind, ref, title, artists)
 			SELECT 'artist', uuid, name, '' FROM artists;`,
+		`INSERT INTO search(kind, ref, title, artists)
+			SELECT 'show', uuid, title, COALESCE(author, '') FROM shows;`,
 		// the rebuild itself doesn't touch the watched tables, so this sticks
 		`UPDATE search_state SET dirty = 0;`,
 	}

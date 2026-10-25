@@ -93,7 +93,7 @@ func GetRelease(id string) (*audio.Release, error) {
 	}
 
 	rows, err := DB.Query(`
-		SELECT rt.disc, rt.position, t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, '')
+		SELECT rt.disc, rt.position, t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''), t.kind
 		FROM release_tracks rt
 		JOIN tracks t ON t.uuid = rt.track_id
 		WHERE rt.release_id = ?
@@ -106,7 +106,7 @@ func GetRelease(id string) (*audio.Release, error) {
 		var rt audio.ReleaseTrack
 		var t audio.Track
 		var seconds int
-		if err := rows.Scan(&rt.Disc, &rt.Position, &t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC); err != nil {
+		if err := rows.Scan(&rt.Disc, &rt.Position, &t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind); err != nil {
 			rows.Close()
 			return nil, err
 		}

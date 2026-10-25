@@ -14,12 +14,13 @@ import (
 // ErrNotFound is returned when a looked-up row or file doesn't exist.
 var ErrNotFound = errors.New("not found")
 
-const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, '') FROM tracks t`
+const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''),
+	t.kind, COALESCE(t.show_id, ''), COALESCE(t.published, '') FROM tracks t`
 
-// libraryTracks is the condition every library listing of tracks uses, on
-// a tracks table aliased t. Placeholders have no file to play, so they only
-// show up on their releases.
-const libraryTracks = `t.has_file = 1`
+// libraryTracks is the condition every listing of the music library uses,
+// on a tracks table aliased t. Placeholders have no file to play, so they
+// only show up on their releases; podcast episodes are listed by show.
+const libraryTracks = `t.has_file = 1 AND t.kind = 'music'`
 
 // scanner is implemented by both *sql.Row and *sql.Rows.
 type scanner interface {
@@ -29,7 +30,7 @@ type scanner interface {
 func scanTrack(s scanner) (*audio.Track, error) {
 	var t audio.Track
 	var seconds int
-	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC); err != nil {
+	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind, &t.ShowID, &t.Published); err != nil {
 		return nil, err
 	}
 	t.Duration = time.Duration(seconds) * time.Second

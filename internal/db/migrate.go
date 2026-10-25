@@ -164,6 +164,40 @@ var migrations = []func(tx *sql.Tx) error{
 			);`)
 		return err
 	},
+	// 10: podcasts: episodes are tracks of kind "episode" grouped into
+	// shows, with a saved position and chapters
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE shows (
+				uuid TEXT PRIMARY KEY,
+				title TEXT NOT NULL,
+				author TEXT,
+				img_url TEXT NOT NULL DEFAULT "/assets/img/default_track.png"
+			);
+			CREATE UNIQUE INDEX shows_title ON shows(lower(title));
+			ALTER TABLE tracks ADD COLUMN kind TEXT NOT NULL DEFAULT 'music' CHECK (kind IN ('music', 'episode'));
+			ALTER TABLE tracks ADD COLUMN show_id TEXT REFERENCES shows(uuid) ON DELETE SET NULL;
+			ALTER TABLE tracks ADD COLUMN published TEXT; -- an episode's date
+
+			CREATE TABLE playback_positions (
+				track_id TEXT PRIMARY KEY REFERENCES tracks(uuid) ON DELETE CASCADE,
+				seconds REAL NOT NULL,
+				finished INTEGER NOT NULL DEFAULT 0,
+				updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+
+			CREATE TABLE chapters (
+				track_id TEXT NOT NULL REFERENCES tracks(uuid) ON DELETE CASCADE,
+				start_ms INTEGER NOT NULL,
+				title TEXT NOT NULL,
+				PRIMARY KEY (track_id, start_ms)
+			);
+
+			CREATE TRIGGER search_dirty_shows_insert AFTER INSERT ON shows BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_shows_update AFTER UPDATE ON shows BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_shows_delete AFTER DELETE ON shows BEGIN UPDATE search_state SET dirty = 1; END;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

@@ -38,10 +38,11 @@ const (
 	Review    = 0.5
 )
 
-// Skip lists checks for tracks that are never auto-tagged. Placeholders
-// have no file to identify; later features (podcasts, secret tracks) add theirs.
+// Skip lists checks for tracks that are never auto-tagged: placeholders
+// have no file to identify, and podcast episodes aren't on MusicBrainz.
 var Skip = []func(t *audio.Track) bool{
 	func(t *audio.Track) bool { return !t.HasFile },
+	func(t *audio.Track) bool { return t.IsEpisode() },
 }
 
 // Tagger holds the services the pipeline uses; tests swap them.

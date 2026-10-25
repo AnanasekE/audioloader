@@ -16,9 +16,37 @@ type Track struct {
 	Releases []*Release // without their Tracks
 	MBID     string     // MusicBrainz recording ID, "" if unknown
 	ISRC     string
+	// Kind is KindMusic or KindEpisode. An episode belongs to a show
+	// (ShowID) instead of releases, and was published on Published.
+	Kind      string
+	ShowID    string
+	Published string
+	// Position is where playback of an episode stopped; Finished marks it played
+	Position time.Duration
+	Finished bool
 	// false for a placeholder: the track is known (e.g. from a release's
 	// tracklist) but its file hasn't been added yet
 	HasFile bool
+}
+
+// Track kinds.
+const (
+	KindMusic   = "music"
+	KindEpisode = "episode"
+)
+
+func (t *Track) IsEpisode() bool { return t.Kind == KindEpisode }
+
+// Show is a podcast; its episodes are tracks of kind KindEpisode.
+type Show struct {
+	ID       uuid.UUID
+	Title    string
+	Author   string
+	ImgURL   string
+	Episodes []*Track // newest first
+	// set by listings, which leave Episodes empty
+	Count    int
+	Unplayed int
 }
 
 type Artist struct {
