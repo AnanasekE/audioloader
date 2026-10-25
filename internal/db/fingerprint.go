@@ -2,7 +2,6 @@ package db
 
 import (
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -65,7 +64,7 @@ func isUniqueViolation(err error) bool {
 
 // migrateFingerprints adds the fingerprint columns to older databases,
 // fills them in for existing tracks, and then enforces uniqueness.
-func migrateFingerprints(db *sql.DB) error {
+func migrateFingerprints(db querier) error {
 	for _, col := range []string{"file_size INTEGER", "head_hash TEXT"} {
 		_, err := db.Exec(`ALTER TABLE tracks ADD COLUMN ` + col + `;`)
 		if err != nil && !isDuplicateColumn(err) {
@@ -85,7 +84,7 @@ func isDuplicateColumn(err error) bool {
 	return errors.As(err, &e) && e.Code() == 1
 }
 
-func backfillFingerprints(db *sql.DB) error {
+func backfillFingerprints(db querier) error {
 	rows, err := db.Query(`SELECT uuid FROM tracks WHERE head_hash IS NULL;`)
 	if err != nil {
 		return err

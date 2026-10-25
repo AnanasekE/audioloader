@@ -58,30 +58,22 @@ CREATE TABLE IF NOT EXISTS release_tracks (
 
 var DB *sql.DB
 
+// Init opens ./database.db and migrates it.
 func Init() {
-	DB = connect()
-	Migrate(DB)
+	db, err := Open("./database.db")
+	if err != nil {
+		panic(err)
+	}
+	if err := Migrate(db); err != nil {
+		panic(err)
+	}
+	DB = db
+	fmt.Println("Connected to the SQLite database successfully.")
 }
 
-func connect() *sql.DB {
+// Open opens the SQLite database at path with foreign keys enforced.
+func Open(path string) (*sql.DB, error) {
 	// SQLite leaves foreign keys off unless enabled per connection; the DSN
 	// pragma applies it to every connection in the pool
-	db, err := sql.Open("sqlite", "./database.db?_pragma=foreign_keys(1)")
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	fmt.Println("Connected to the SQLite database successfully.")
-	return db
-}
-
-func Migrate(db *sql.DB) {
-	_, err := db.Exec(schema)
-	if err != nil {
-		panic(err)
-	}
-	if err := migrateFingerprints(db); err != nil {
-		panic(err)
-	}
+	return sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
 }
