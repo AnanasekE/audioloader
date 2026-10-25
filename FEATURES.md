@@ -73,6 +73,15 @@
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
 - Play next / Add to queue from a track's menu; "Up next" list with remove and clear; queue survives a reload
 
+### Podcasts and long audio
+
+- Podcast episodes are tracks of their own kind, grouped into shows; kept out of the music library, tagging and track search (shows are searchable)
+- Upload an episode into a new or existing show; files over 30 minutes switch to the episode form; the library import detects podcast tags (genre, ID3 PCST/TGID, MP4 pcst)
+- Position per episode saved on the server (every 10 s, on pause, on leaving the page); resumes there; played/unplayed, mark by hand
+- "Continue listening" on the Tracks and Podcasts pages
+- Player for episodes: −15 s / +30 s, speed 0.8–2× remembered per show, pitch kept
+- Chapters from ID3 CHAP frames and MP4 Nero chapters: list to jump to, current chapter under the title
+
 ### Discovery
 
 - Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing
@@ -97,12 +106,6 @@
 ### Playback
 
 - Maybe a Preact island for the player if it grows complex
-
-### Podcasts and long audio (over 30 min)
-
-- `kind` on tracks (music or episode) and shows grouping episodes
-- Resume position per episode, played/unplayed, "continue listening"
-- Playback speed, skip ±15/30 s, chapters (ID3 CHAP, MP4 chapters)
 
 ### Secret tracks
 
