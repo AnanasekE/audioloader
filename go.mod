@@ -3,9 +3,12 @@ module audioloader
 go 1.27.1
 
 require (
-	github.com/a-h/templ v0.3.1070 // indirect
+	github.com/a-h/templ v0.3.1070
+	github.com/glebarez/go-sqlite v1.23.0
+)
+
+require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/glebarez/go-sqlite v1.23.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect

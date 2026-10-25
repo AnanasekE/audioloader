@@ -16,7 +16,8 @@ import (
 var ErrUnknownFormat = errors.New("audio: unknown format")
 
 // ProbeDuration reads the file's headers and returns the playback duration.
-// Supports WAV (RIFF/WAVE), MP3 (MPEG-1/2/2.5 Layer III), FLAC and Ogg Opus.
+// Supports WAV (RIFF/WAVE), MP3 (MPEG-1/2/2.5 Layer III), FLAC, Ogg Opus
+// and MP4/M4A.
 //
 // The format is detected from the leading magic bytes. r is rewound to the
 // start before probing; its final position is unspecified. If the format is
@@ -54,6 +55,8 @@ func ProbeDuration(r io.ReadSeeker) (time.Duration, error) {
 		return probeFLAC(r, 0)
 	case n >= 4 && string(magic[0:4]) == "OggS":
 		return probeOpus(r)
+	case n >= 8 && string(magic[4:8]) == "ftyp":
+		return probeMP4(r)
 	case n >= 3 && string(magic[0:3]) == "ID3",
 		n >= 2 && magic[0] == 0xFF && magic[1]&0xE0 == 0xE0:
 		return probeMP3(r)
@@ -66,7 +69,7 @@ func ProbeDuration(r io.ReadSeeker) (time.Duration, error) {
 // 28-bit synchsafe integer (7 bits per byte); a footer adds another 10 bytes.
 func id3Size(head []byte) int {
 	size := int(head[6]&0x7F)<<21 | int(head[7]&0x7F)<<14 | int(head[8]&0x7F)<<7 | int(head[9]&0x7F)
-	if head[5]&0x10 != 0 { // footer present
+	if head[5]&0x10 != 0 {
 		size += 10
 	}
 	return size
@@ -100,7 +103,6 @@ func probeWAV(r io.ReadSeeker) (time.Duration, error) {
 				return 0, err
 			}
 			byteRate = binary.LittleEndian.Uint32(f[8:12])
-			// skip rest of fmt chunk (+ pad byte)
 			if _, err := r.Seek(int64(size-16)+int64(size&1), io.SeekCurrent); err != nil {
 				return 0, err
 			}
@@ -182,7 +184,7 @@ func probeOpus(r io.ReadSeeker) (time.Duration, error) {
 		return 0, fmt.Errorf("ogg: short OpusHead: %w", err)
 	}
 	if string(head[0:8]) != "OpusHead" {
-		return 0, ErrUnknownFormat // Vorbis, FLAC-in-Ogg, etc.
+		return 0, ErrUnknownFormat
 	}
 	preSkip := int64(binary.LittleEndian.Uint16(head[10:12]))
 
@@ -247,7 +249,6 @@ func probeMP3(r io.ReadSeeker) (time.Duration, error) {
 	}
 	br := bufio.NewReader(r)
 
-	// skip ID3v2 tag
 	if head, err := br.Peek(10); err == nil && bytes.Equal(head[0:3], []byte("ID3")) {
 		if _, err := br.Discard(10 + id3Size(head)); err != nil {
 			return 0, err
@@ -259,7 +260,7 @@ func probeMP3(r io.ReadSeeker) (time.Duration, error) {
 	for {
 		h, err := br.Peek(4)
 		if err != nil {
-			break // EOF
+			break
 		}
 		if h[0] != 0xFF || h[1]&0xE0 != 0xE0 {
 			// not a frame sync; resync byte by byte (handles junk / ID3v1 "TAG")
@@ -304,4 +305,96 @@ func probeMP3(r io.ReadSeeker) (time.Duration, error) {
 		return 0, errors.New("mp3: no frames found")
 	}
 	return time.Duration(totalSamples * int64(time.Second) / int64(sampleRate)), nil
+}
+
+// probeMP4 walks the top-level ISO BMFF boxes (MP4/M4A) to "moov", then
+// reads its "mvhd" box. The duration is the movie duration divided by its
+// timescale. "moov" may sit before or after the media data, so boxes are
+// skipped by seeking rather than read.
+func probeMP4(r io.ReadSeeker) (time.Duration, error) {
+	end, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, err
+	}
+
+	moov, moovSize, err := findBox(r, 0, end, "moov")
+	if err != nil {
+		return 0, fmt.Errorf("mp4: %w", err)
+	}
+	mvhd, _, err := findBox(r, moov, moov+moovSize, "mvhd")
+	if err != nil {
+		return 0, fmt.Errorf("mp4: %w", err)
+	}
+
+	if _, err := r.Seek(mvhd, io.SeekStart); err != nil {
+		return 0, err
+	}
+	// version (1) + flags (3), then version-dependent field sizes
+	var vf [4]byte
+	if _, err := io.ReadFull(r, vf[:]); err != nil {
+		return 0, err
+	}
+	var timescale, duration uint64
+	switch vf[0] {
+	case 0:
+		// creation (4), modification (4), timescale (4), duration (4)
+		var b [16]byte
+		if _, err := io.ReadFull(r, b[:]); err != nil {
+			return 0, err
+		}
+		timescale = uint64(binary.BigEndian.Uint32(b[8:12]))
+		duration = uint64(binary.BigEndian.Uint32(b[12:16]))
+	case 1:
+		// creation (8), modification (8), timescale (4), duration (8)
+		var b [28]byte
+		if _, err := io.ReadFull(r, b[:]); err != nil {
+			return 0, err
+		}
+		timescale = uint64(binary.BigEndian.Uint32(b[16:20]))
+		duration = binary.BigEndian.Uint64(b[20:28])
+	default:
+		return 0, fmt.Errorf("mp4: unsupported mvhd version %d", vf[0])
+	}
+
+	if timescale == 0 {
+		return 0, errors.New("mp4: zero timescale")
+	}
+	// split into whole seconds and remainder so duration*time.Second can't overflow
+	secs, rem := duration/timescale, duration%timescale
+	return time.Duration(secs)*time.Second + time.Duration(rem*uint64(time.Second)/timescale), nil
+}
+
+// findBox scans the boxes between start and end for one of type typ and
+// returns the offset of its payload (just past the header) and the payload size.
+func findBox(r io.ReadSeeker, start, end int64, typ string) (int64, int64, error) {
+	for off := start; off+8 <= end; {
+		if _, err := r.Seek(off, io.SeekStart); err != nil {
+			return 0, 0, err
+		}
+		var hdr [8]byte
+		if _, err := io.ReadFull(r, hdr[:]); err != nil {
+			return 0, 0, err
+		}
+		size := int64(binary.BigEndian.Uint32(hdr[0:4]))
+		headerLen := int64(8)
+		switch size {
+		case 0: // box extends to the end of its parent
+			size = end - off
+		case 1: // 64-bit size follows the type
+			var ext [8]byte
+			if _, err := io.ReadFull(r, ext[:]); err != nil {
+				return 0, 0, err
+			}
+			size = int64(binary.BigEndian.Uint64(ext[:]))
+			headerLen = 16
+		}
+		if size < headerLen || off+size > end {
+			return 0, 0, fmt.Errorf("corrupt %q box at %d", hdr[4:8], off)
+		}
+		if string(hdr[4:8]) == typ {
+			return off + headerLen, size - headerLen, nil
+		}
+		off += size
+	}
+	return 0, 0, fmt.Errorf("no %q box", typ)
 }

@@ -14,7 +14,6 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// API routes
 	api.Register(mux)
 
 	log.Println("Server running at http://localhost:8080")
