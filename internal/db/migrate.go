@@ -26,6 +26,15 @@ var migrations = []func(tx *sql.Tx) error{
 	},
 	// 2: fingerprint columns, backfill and unique index
 	func(tx *sql.Tx) error { return migrateFingerprints(tx) },
+	// 3: merge artists that differ only in case or surrounding spaces, then
+	// keep names unique
+	func(tx *sql.Tx) error {
+		if err := mergeDuplicateArtists(tx); err != nil {
+			return err
+		}
+		_, err := tx.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS artists_name ON artists(lower(name));`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -16,6 +17,10 @@ func createArtist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	artist, err := db.AddArtist(name)
+	if errors.Is(err, db.ErrArtistExists) {
+		renderStatus(w, r, http.StatusConflict, components.Notice(name+" is already in the library."))
+		return
+	}
 	if err != nil {
 		serverError(w, err)
 		return
