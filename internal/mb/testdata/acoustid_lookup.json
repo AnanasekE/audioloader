@@ -1,0 +1,8 @@
+{"status": "ok", "results": [
+  {"id": "9ff43b6a-4f16-427c-93c2-92307ca505e0", "score": 0.962, "recordings": [
+    {"id": "f3bba4cd-8018-468b-902e-bc8f029593e5", "title": "Teardrop", "duration": 330,
+     "artists": [{"id": "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", "name": "Massive Attack"}],
+     "releasegroups": [{"id": "6f9f6899-c0d3-311d-ae87-a10ae6bc53a9", "title": "Mezzanine", "type": "Album"}]}
+  ]},
+  {"id": "1b0b9fde-0000-4000-8000-000000000000", "score": 0.41}
+]}
