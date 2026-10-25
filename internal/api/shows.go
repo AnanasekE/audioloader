@@ -80,6 +80,9 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 	} else if validMBID(showID) == "" { // checks for a UUID
 		http.Error(w, "invalid show id", http.StatusBadRequest)
 		return
+	} else if _, err := db.GetShow(viewer(r), showID); err != nil {
+		http.Error(w, "unknown show", http.StatusBadRequest)
+		return
 	}
 
 	t := &audio.Track{Title: title, Duration: duration.Round(time.Second), Published: published}
@@ -94,6 +97,12 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		serverError(w, err)
 		return
+	}
+	if r.FormValue("secret") == "1" && viewer(r).Secret {
+		if err := db.SetSecret(id, true); err != nil {
+			serverError(w, err)
+			return
+		}
 	}
 	// chapters are a bonus: a file we can't read them from still uploads
 	if chapters, err := audio.ReadChapters(file); err != nil {
@@ -111,7 +120,7 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 // type, so the body is parsed whatever its type.
 func savePosition(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
-	if !ok {
+	if !ok || !visibleTrack(w, r, id.String()) {
 		return
 	}
 	var req struct {
@@ -134,7 +143,7 @@ func savePosition(w http.ResponseWriter, r *http.Request) {
 
 func markPlayed(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
-	if !ok {
+	if !ok || !visibleTrack(w, r, id.String()) {
 		return
 	}
 	var err error
@@ -164,7 +173,7 @@ func backTo(r *http.Request, fallback string) string {
 
 func getChapters(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
-	if !ok {
+	if !ok || !visibleTrack(w, r, id.String()) {
 		return
 	}
 	chapters, err := db.GetChapters(id.String())

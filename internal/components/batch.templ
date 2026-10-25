@@ -56,6 +56,12 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 						<label for="batch-default-release" class="text-sm font-medium">Release for all tracks</label>
 						@releaseSelect("batch-default-release", releases, release, "input w-auto min-w-48")
 					</div>
+					if vaultOpen(ctx) {
+						<label class="flex items-center gap-2 text-sm">
+							<input id="batch-secret" type="checkbox" name="secret" value="1"/>
+							All secret
+						</label>
+					}
 				</div>
 				<div class={ "hidden gap-2 pb-2 text-sm font-medium text-zinc-500 md:grid dark:text-zinc-400", batchCols }>
 					<span>Title</span>
@@ -90,6 +96,7 @@ templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.
 		hx-post="/ui/tracks"
 		hx-encoding="multipart/form-data"
 		hx-trigger="batch-submit"
+		hx-include="#batch-secret"
 		hx-target="find .row-status"
 		hx-swap="innerHTML"
 	>

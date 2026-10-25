@@ -112,9 +112,18 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, db.ErrBadReference):
 		http.Error(w, "unknown artist or release", http.StatusBadRequest)
 		return
+	case errors.Is(err, db.ErrHidden):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	case err != nil:
 		serverError(w, err)
 		return
+	}
+	if r.FormValue("secret") == "1" && viewer(r).Secret && !res.Linked {
+		if err := db.SetSecret(res.TrackID, true); err != nil {
+			serverError(w, err)
+			return
+		}
 	}
 
 	if res.Linked {
@@ -177,7 +186,7 @@ func checkTracksExist(w http.ResponseWriter, r *http.Request) {
 
 func streamTrack(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
-	if !ok {
+	if !ok || !visibleTrack(w, r, id.String()) {
 		return
 	}
 

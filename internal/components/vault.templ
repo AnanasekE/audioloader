@@ -1,0 +1,30 @@
+package components
+
+import (
+	"context"
+
+	"audioloader/internal/db"
+)
+
+templ VaultPage(wrong bool) {
+	@layout("Vault", "") {
+		@pageHeader("Vault", "") {
+		}
+		// a plain form: the unlock reloads the whole page
+		<form method="post" action="/vault" hx-boost="false" class="card grid max-w-sm gap-4">
+			<label for="vault-passphrase" class="text-sm font-medium">Passphrase</label>
+			<input id="vault-passphrase" class="input" type="password" name="passphrase" autocomplete="current-password" required autofocus/>
+			if wrong {
+				<p class="text-sm text-red-600 dark:text-red-400">That's not it.</p>
+			}
+			<div>
+				<button class="btn" type="submit">Unlock</button>
+			</div>
+		</form>
+	}
+}
+
+// vaultOpen reports whether the request rendering this page unlocked the vault.
+func vaultOpen(ctx context.Context) bool {
+	return db.ViewerFrom(ctx).Secret
+}

@@ -87,7 +87,7 @@ func retryTagging(w http.ResponseWriter, r *http.Request) {
 
 func applyTagMatch(w http.ResponseWriter, r *http.Request) {
 	trackID, ok := pathUUID(w, r, "track_id")
-	if !ok {
+	if !ok || !visibleTrack(w, r, trackID.String()) {
 		return
 	}
 	recID, ok := pathUUID(w, r, "recording_id")
@@ -108,7 +108,7 @@ func applyTagMatch(w http.ResponseWriter, r *http.Request) {
 
 func rejectTagMatch(w http.ResponseWriter, r *http.Request) {
 	trackID, ok := pathUUID(w, r, "track_id")
-	if !ok {
+	if !ok || !visibleTrack(w, r, trackID.String()) {
 		return
 	}
 	recID, ok := pathUUID(w, r, "recording_id")

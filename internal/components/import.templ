@@ -16,6 +16,12 @@ templ ImportPage(artists []*audio.Artist) {
 				<div>
 					<label for="import-creator" class="mb-1 block text-sm font-medium">Creator <span class="font-normal text-zinc-500">(used where the tags name no artist)</span></label>
 					<input id="import-creator" class="input" type="text" list="import-artist-list" placeholder="e.g. CerberVT" autocomplete="off"/>
+					if vaultOpen(ctx) {
+						<label class="mt-2 flex items-center gap-2 text-sm">
+							<input id="import-secret" type="checkbox"/>
+							Import everything as secret
+						</label>
+					}
 					<datalist id="import-artist-list">
 						for _, a := range artists {
 							<option value={ a.Name }></option>

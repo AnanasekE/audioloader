@@ -110,6 +110,9 @@ func uploadTrackFile(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, db.ErrHasFile):
 		http.Error(w, "this track already has a file", http.StatusConflict)
 		return
+	case errors.Is(err, db.ErrHidden):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	case err != nil && strings.HasPrefix(err.Error(), "could not read audio duration"):
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -218,7 +221,7 @@ func previewYouTubeImport(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	releases, err := db.ListReleases(viewer(r))
+	releases, err := uploadTargets(r)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -264,6 +267,9 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid release id", http.StatusBadRequest)
 			return
 		}
+		if !visibleRelease(w, r, releaseID) {
+			return
+		}
 		positions, err := db.NextPositions()
 		if err != nil {
 			serverError(w, err)
@@ -284,7 +290,7 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "every video needs a title", http.StatusBadRequest)
 			return
 		}
-		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs}
+		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs, Secret: viewer(r).Secret}
 		if releaseID != "" {
 			imp.ReleaseID, imp.Disc, imp.Position = releaseID, 1, next
 			next++

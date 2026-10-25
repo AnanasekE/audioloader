@@ -109,6 +109,12 @@ templ AddTrackForm(artists []*audio.Artist) {
 				/>
 				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=exists]:text-amber-400" aria-live="polite"></small>
 			</div>
+			if vaultOpen(ctx) {
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" name="secret" value="1"/>
+					Secret: only shown while the vault is unlocked
+				</label>
+			}
 			<div>
 				<button class="btn disabled:cursor-not-allowed disabled:opacity-50" type="submit">Upload</button>
 			</div>
@@ -125,7 +131,12 @@ templ Track(t *audio.Track) {
 		@playButton(t, "size-10")
 		<img class="pixelated size-14 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
 		<div class="flex min-w-0 flex-col">
-			<strong class="truncate">{ t.Title }</strong>
+			<strong class="truncate">
+				{ t.Title }
+				if t.Secret {
+					<span class="ml-1 rounded bg-zinc-200 px-1 text-xs font-normal dark:bg-zinc-700">secret</span>
+				}
+			</strong>
 			<span class="truncate text-sm text-zinc-500 dark:text-zinc-400">
 				{ artistNames(t.Artists) }
 				@trackReleaseLabel(t)
@@ -151,6 +162,20 @@ templ trackMenu(t *audio.Track) {
 					hx-get={ "/ui/playlists/picker?track_id=" + t.ID.String() }
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
+				if vaultOpen(ctx) {
+					<button
+						type="button"
+						class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+						hx-post={ "/ui/tracks/" + t.ID.String() + "/secret" }
+						hx-vals={ secretToggle(t) }
+					>
+						if t.Secret {
+							Make public
+						} else {
+							Make secret
+						}
+					</button>
+				}
 			</div>
 		</details>
 	} else {
@@ -183,6 +208,9 @@ templ playableButton(t *audio.Track, size string) {
 		data-artists={ artistNames(t.Artists) }
 		data-img={ t.ImgURL }
 		data-src={ "/api/tracks/" + t.ID.String() + "/stream" }
+		if t.Secret {
+			data-secret="1"
+		}
 		if t.IsEpisode() {
 			data-kind="episode"
 			data-show={ t.ShowID }
@@ -263,4 +291,11 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%d:%02d:%02d", s/3600, s%3600/60, s%60)
 	}
 	return fmt.Sprintf("%d:%02d", s/60, s%60)
+}
+
+func secretToggle(t *audio.Track) string {
+	if t.Secret {
+		return `{"secret": "0"}`
+	}
+	return `{"secret": "1"}`
 }

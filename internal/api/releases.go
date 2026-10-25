@@ -140,7 +140,7 @@ func validateRelease(title string, typ audio.ReleaseType, date string, artistIDs
 
 func updateRelease(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "release_id")
-	if !ok {
+	if !ok || !visibleRelease(w, r, id.String()) {
 		return
 	}
 	title := strings.TrimSpace(r.FormValue("title"))
@@ -169,7 +169,7 @@ func updateRelease(w http.ResponseWriter, r *http.Request) {
 
 func deleteRelease(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "release_id")
-	if !ok {
+	if !ok || !visibleRelease(w, r, id.String()) {
 		return
 	}
 	err := db.DeleteRelease(id.String())
@@ -186,7 +186,7 @@ func deleteRelease(w http.ResponseWriter, r *http.Request) {
 
 func saveReleaseTracks(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "release_id")
-	if !ok {
+	if !ok || !visibleRelease(w, r, id.String()) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -254,4 +254,18 @@ func hxLocation(w http.ResponseWriter, path string) {
 	loc, _ := json.Marshal(map[string]string{"path": path, "target": "body"})
 	w.Header().Set("HX-Location", string(loc))
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// visibleRelease writes a 404 and returns false if the viewer can't see the release.
+func visibleRelease(w http.ResponseWriter, r *http.Request, id string) bool {
+	_, err := db.GetRelease(viewer(r), id)
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return false
+	}
+	if err != nil {
+		serverError(w, err)
+		return false
+	}
+	return true
 }

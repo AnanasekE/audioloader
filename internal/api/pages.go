@@ -48,7 +48,7 @@ func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	releases, err := db.ListReleases(viewer(r))
+	releases, err := uploadTargets(r)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -58,6 +58,14 @@ func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	// only the releases offered: the others' positions are none of the page's business
+	offered := map[string]map[int]int{}
+	for _, rel := range releases {
+		if p, ok := nextPositions[rel.ID.String()]; ok {
+			offered[rel.ID.String()] = p
+		}
+	}
+	nextPositions = offered
 
 	// ?release=<id> preselects that release for every row; its first artist
 	// becomes the default artist
@@ -123,4 +131,25 @@ func getSearchSuggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render(w, r, components.SearchSuggest(q, res))
+}
+
+// uploadTargets are the releases tracks can be uploaded onto. For a locked
+// viewer that leaves out releases with secret tracks: their next free
+// position would give the hidden tracks away.
+func uploadTargets(r *http.Request) ([]*audio.Release, error) {
+	releases, err := db.ListReleases(viewer(r))
+	if err != nil || viewer(r).Secret {
+		return releases, err
+	}
+	withSecrets, err := db.ReleasesWithSecrets()
+	if err != nil {
+		return nil, err
+	}
+	out := releases[:0]
+	for _, rel := range releases {
+		if !withSecrets[rel.ID.String()] {
+			out = append(out, rel)
+		}
+	}
+	return out, nil
 }

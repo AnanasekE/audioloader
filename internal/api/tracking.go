@@ -56,6 +56,10 @@ func followArtist(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if _, err := db.GetArtist(viewer(r), id.String()); err != nil {
+		http.NotFound(w, r)
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
@@ -113,6 +117,10 @@ func unfollowArtist(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if _, err := db.GetArtist(viewer(r), id.String()); err != nil {
+		http.NotFound(w, r)
+		return
+	}
 	if err := db.Unfollow(id.String()); err != nil {
 		serverError(w, err)
 		return
@@ -123,6 +131,10 @@ func unfollowArtist(w http.ResponseWriter, r *http.Request) {
 func checkArtistNow(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "artist_id")
 	if !ok {
+		return
+	}
+	if _, err := db.GetArtist(viewer(r), id.String()); err != nil {
+		http.NotFound(w, r)
 		return
 	}
 	if err := tracking.EnqueueCheck(id.String(), time.Time{}); err != nil {

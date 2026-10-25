@@ -230,6 +230,7 @@
 	function trackOf(btn) {
 		const d = btn.dataset;
 		const t = { id: d.id, title: d.title, artists: d.artists, img: d.img, src: d.src };
+		if (d.secret === "1") t.secret = true;
 		if (d.kind === "episode") Object.assign(t, { kind: "episode", show: d.show, position: d.position || 0 });
 		return t;
 	}
@@ -411,7 +412,31 @@
 
 	window.player = { playList, enqueue, playNext, next, prev, toggleShuffle, clear };
 
+	// a locked page must not keep secret tracks around from an unlocked one:
+	// not playing, not queued, not in storage
+	const locked = document.body.dataset.vault !== "1";
 	const state = restoreState();
+	if (state && locked) {
+		const keep = (t) => t && !t.secret;
+		if (Array.isArray(state.queue) && Array.isArray(state.order)) {
+			// rebuilt from the kept tracks in play order, so no secret entry stays in the queue
+			const current = state.order[state.pos];
+			const kept = state.order.filter((i) => keep(state.queue[i]));
+			state.pos = Math.max(0, kept.indexOf(current));
+			state.queue = kept.map((i) => state.queue[i]);
+			state.order = state.queue.map((_, i) => i);
+		}
+		if (!keep(state.track)) {
+			state.track = state.order?.length ? state.queue[state.order[state.pos]] : null;
+			state.time = 0;
+			state.paused = true;
+		}
+		// write the purged state back now, not at the next save
+		try {
+			if (state.track) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+			else localStorage.removeItem(STORAGE_KEY);
+		} catch {}
+	}
 	if (state?.track) {
 		if (typeof state.volume === "number") audio.volume = state.volume;
 		if (Array.isArray(state.queue) && Array.isArray(state.order) && state.order.every((i) => state.queue[i])) {

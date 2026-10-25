@@ -9,7 +9,7 @@ import (
 
 func getCover(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "release_id")
-	if !ok {
+	if !ok || !visibleRelease(w, r, id.String()) {
 		return
 	}
 	path, err := db.CoverFilePath(id)
@@ -29,7 +29,7 @@ func getCover(w http.ResponseWriter, r *http.Request) {
 
 func uploadCover(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "release_id")
-	if !ok {
+	if !ok || !visibleRelease(w, r, id.String()) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, db.MaxCoverSize+(1<<20))

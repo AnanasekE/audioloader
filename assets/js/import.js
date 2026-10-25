@@ -773,6 +773,7 @@
 					fd.append("date", it.values.date);
 				}
 			}
+			if ($("import-secret")?.checked) fd.append("secret", "1");
 			// MusicBrainz tags let the auto-tagger match the track without a lookup
 			if (it.tags.mb.recording) fd.append("mbid", it.tags.mb.recording);
 			if (it.tags.isrc) fd.append("isrc", it.tags.isrc);

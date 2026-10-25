@@ -134,6 +134,9 @@ func getPlaylistPicker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid track id", http.StatusBadRequest)
 		return
 	}
+	if !visibleTrack(w, r, trackID) {
+		return
+	}
 	playlists, err := db.ListPlaylists(viewer(r))
 	if err != nil {
 		serverError(w, err)
@@ -150,6 +153,9 @@ func addToPlaylist(w http.ResponseWriter, r *http.Request) {
 	trackID := validMBID(r.FormValue("track_id"))
 	if trackID == "" {
 		http.Error(w, "invalid track id", http.StatusBadRequest)
+		return
+	}
+	if !visibleTrack(w, r, trackID) {
 		return
 	}
 	if err := db.AppendToPlaylist(id, trackID); errors.Is(err, db.ErrBadReference) {

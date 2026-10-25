@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -17,18 +21,30 @@ import (
 	"audioloader/internal/jobs"
 	"audioloader/internal/tagging"
 	"audioloader/internal/tracking"
+	"audioloader/internal/vault"
 )
 
 func main() {
+	hashSecret := flag.Bool("hash-secret", false, "read a passphrase from stdin and print its hash for AUDIOLOADER_SECRET")
+	flag.Parse()
+	if *hashSecret {
+		printSecretHash()
+		return
+	}
+
 	db.Init()
 	defer db.DB.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	v, err := vault.FromEnv("data/secret.key")
+	if err != nil {
+		log.Fatal(err)
+	}
 	mux := http.NewServeMux()
 
-	api.Register(mux)
+	api.Register(mux, v)
 
 	tagging.Register()
 	tracking.Register()
@@ -47,7 +63,7 @@ func main() {
 		workers.Go(func() { jobs.Run(ctx, lane) })
 	}
 
-	srv := &http.Server{Addr: ":8080", Handler: mux}
+	srv := &http.Server{Addr: ":8080", Handler: api.WithViewer(mux)}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -60,4 +76,19 @@ func main() {
 		log.Fatal(err)
 	}
 	workers.Wait()
+}
+
+// printSecretHash reads a passphrase from stdin and prints its bcrypt hash,
+// to put into AUDIOLOADER_SECRET.
+func printSecretHash() {
+	fmt.Fprint(os.Stderr, "Passphrase: ")
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil && line == "" {
+		log.Fatal(err)
+	}
+	hash, err := vault.Hash(strings.TrimRight(line, "\r\n"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(hash)
 }
