@@ -42,6 +42,15 @@
 - Checked in the browser before upload and enforced on the server (unique index, 409)
 - Already-stored files are linked into albums instead of uploaded again
 
+### Auto-tagging (MusicBrainz)
+
+- Background job queue (one worker, retries with backoff), MusicBrainz at 1 request/s
+- Matching by embedded MusicBrainz IDs (Picard tags, read in the browser and on the server), then AcoustID fingerprints (`ACOUSTID_KEY` + `fpcalc`), then text search
+- Matches scoring 90%+ are applied; 50–90% wait on the Tagging page (apply, reject, apply all above a score)
+- Fills in MBIDs on tracks, artists and releases, ISRCs and missing release dates; never overwrites what you set, never writes into files
+- Release covers from the Cover Art Archive
+- Placeholder tracks are skipped
+
 ### Playback
 
 - Global player bar that keeps playing across pages (hx-boost + hx-preserve)
@@ -84,14 +93,6 @@
 - `secret` flag, unlocked through a second/secret UI
 - Server-side enforcement: signed cookie, every track query filters secret tracks
 - Cover every leak: stream endpoint, counts, artist pages, duplicate check, player state, search
-
-### Auto-tagging (MusicBrainz)
-
-- Embedded MusicBrainz IDs, AcoustID fingerprint lookup (Chromaprint), text search fallback
-- Background worker within the rate limits (MusicBrainz 1 req/s)
-- Review page for uncertain matches, auto-apply above a threshold
-- Cover Art Archive covers, MBIDs on artists and releases
-- Skip podcasts and secret tracks; don't write tags into files (it breaks fingerprints)
 
 ### Artist release tracking
 
