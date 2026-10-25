@@ -10,6 +10,7 @@ func Register(mux *http.ServeMux) {
 		http.FileServer(http.Dir("assets")),
 	))
 
+	mux.HandleFunc("GET /covers/{release_id}", getCover)
 	mux.HandleFunc("GET /{$}", getIndex)
 	mux.HandleFunc("GET /tracks", getTracksPage)
 	mux.HandleFunc("GET /upload", getUploadPage)
@@ -28,6 +29,7 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/releases", createRelease)
 	mux.HandleFunc("POST /ui/releases/{release_id}", updateRelease)
 	mux.HandleFunc("POST /ui/releases/{release_id}/delete", deleteRelease)
+	mux.HandleFunc("POST /ui/releases/{release_id}/cover", uploadCover)
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 
 	mux.HandleFunc("GET /api/tracks/{track_id}/stream", streamTrack)

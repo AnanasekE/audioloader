@@ -21,11 +21,11 @@ func newTestDB(t *testing.T) {
 	if err := Migrate(d); err != nil {
 		t.Fatal(err)
 	}
-	oldDB, oldDir := DB, TracksDir
-	DB, TracksDir = d, filepath.Join(dir, "tracks")
+	oldDB, oldTracks, oldCovers := DB, TracksDir, CoversDir
+	DB, TracksDir, CoversDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers")
 	t.Cleanup(func() {
 		d.Close()
-		DB, TracksDir = oldDB, oldDir
+		DB, TracksDir, CoversDir = oldDB, oldTracks, oldCovers
 	})
 }
 

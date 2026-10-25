@@ -2,6 +2,8 @@ package db
 
 import (
 	"errors"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"audioloader/internal/audio"
@@ -69,5 +71,45 @@ func TestDeleteReleaseKeepsTracks(t *testing.T) {
 	}
 	if _, err := GetTrack(tr); err != nil {
 		t.Fatalf("track gone: %v", err)
+	}
+}
+
+func TestReleaseCoverOnTracks(t *testing.T) {
+	newTestDB(t)
+	album, _ := newTestRelease(t, "album", audio.ReleaseAlbum)
+	tr := addTestTrack(t, "song", "x") // also creates its single
+	if err := SetReleaseTracks(album.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
+		t.Fatal(err)
+	}
+	track, _ := GetTrack(tr)
+	if track.ImgURL != DefaultCover {
+		t.Fatalf("no covers yet, got %q", track.ImgURL)
+	}
+
+	single := track.Releases[0]
+	if single.Type != audio.ReleaseSingle {
+		single = track.Releases[1]
+	}
+	if err := SetReleaseCover(single.ID, strings.NewReader("png"), ".png"); err != nil {
+		t.Fatal(err)
+	}
+	track, _ = GetTrack(tr)
+	if !strings.HasPrefix(track.ImgURL, "/covers/"+single.ID.String()) {
+		t.Fatalf("want the single's cover, got %q", track.ImgURL)
+	}
+
+	if err := SetReleaseCover(album.ID, strings.NewReader("jpg"), ".jpg"); err != nil {
+		t.Fatal(err)
+	}
+	track, _ = GetTrack(tr)
+	if !strings.HasPrefix(track.ImgURL, "/covers/"+album.ID.String()) {
+		t.Fatalf("album cover should win, got %q", track.ImgURL)
+	}
+	// replacing with another extension leaves one file
+	if err := SetReleaseCover(album.ID, strings.NewReader("png"), ".png"); err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := filepath.Glob(filepath.Join(CoversDir, album.ID.String()+".*")); len(m) != 1 {
+		t.Fatalf("cover files = %v", m)
 	}
 }

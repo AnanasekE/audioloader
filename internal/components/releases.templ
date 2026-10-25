@@ -253,6 +253,7 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 			<a class="btn" href={ releaseURL(r) }>Cancel</a>
 		}
 		@releaseDetailsForm(r, artists)
+		@releaseCoverForm(r)
 		<h2 class="mt-8 mb-3 text-lg font-semibold">Tracklist</h2>
 		<form
 			id="release-edit"
@@ -343,6 +344,26 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 		<div class="flex items-center gap-4">
 			<button class="btn" type="submit">Save details</button>
 			<span id="release-details-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+		</div>
+	</form>
+}
+
+templ releaseCoverForm(r *audio.Release) {
+	<form
+		class="card mt-8 flex flex-col gap-4 sm:flex-row sm:items-center"
+		hx-post={ "/ui/releases/" + r.ID.String() + "/cover" }
+		hx-encoding="multipart/form-data"
+		hx-target="#release-cover-result"
+		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-cover-result').textContent = event.detail.xhr.responseText || 'Could not upload the cover.'"
+	>
+		<img class="pixelated size-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<div class="grid gap-2">
+			<label for="release-cover" class="text-sm font-medium">Cover (JPEG, PNG or WebP, up to 10 MiB)</label>
+			<input id="release-cover" type="file" name="cover" accept="image/jpeg,image/png,image/webp" required/>
+			<div class="flex items-center gap-4">
+				<button class="btn" type="submit">Upload cover</button>
+				<span id="release-cover-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
 		</div>
 	</form>
 }

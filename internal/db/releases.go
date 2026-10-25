@@ -218,6 +218,9 @@ func DeleteRelease(id string) error {
 	} else if n == 0 {
 		return ErrNotFound
 	}
+	if rid, err := uuid.Parse(id); err == nil {
+		removeCover(rid)
+	}
 	return nil
 }
 
@@ -377,5 +380,31 @@ func attachReleases(tracks []*audio.Track) error {
 			t.Releases = append(t.Releases, &r)
 		}
 	}
-	return rows.Err()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, t := range tracks {
+		applyReleaseCover(t)
+	}
+	return nil
+}
+
+// applyReleaseCover shows the cover of the track's most important release
+// (album, then EP, single, compilation) unless the track has its own image.
+func applyReleaseCover(t *audio.Track) {
+	if t.ImgURL != DefaultCover {
+		return
+	}
+	var best *audio.Release
+	for _, r := range t.Releases {
+		if r.ImgURL == DefaultCover {
+			continue
+		}
+		if best == nil || coverPriority[string(r.Type)] < coverPriority[string(best.Type)] {
+			best = r
+		}
+	}
+	if best != nil {
+		t.ImgURL = best.ImgURL
+	}
 }
