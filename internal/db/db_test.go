@@ -108,3 +108,14 @@ func TestMergeDuplicateArtists(t *testing.T) {
 		t.Fatalf("AddArtist(bar) err = %v, want ErrArtistExists", err)
 	}
 }
+
+func titles(tracks []*audio.Track) string {
+	s := ""
+	for i, t := range tracks {
+		if i > 0 {
+			s += ","
+		}
+		s += t.Title
+	}
+	return s
+}

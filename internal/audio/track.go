@@ -121,6 +121,9 @@ func (r *Release) Discs() [][]*ReleaseTrack {
 type Playlist struct {
 	ID     uuid.UUID
 	Name   string
-	Tracks []*Track
-	ImgURL string
+	Tracks []*Track // in order; may repeat a track
+	ImgURL string   // the first track's image
+	// set by listings, which leave Tracks empty
+	Count    int
+	Duration time.Duration
 }

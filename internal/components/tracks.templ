@@ -136,7 +136,12 @@ templ trackMenu(t *audio.Track) {
 			<div class="absolute right-0 z-10 mt-1 grid w-44 rounded-md border border-zinc-300 bg-white p-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
 				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="next">Play next</button>
 				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="add">Add to queue</button>
-				{ children... }
+				<button
+					type="button"
+					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					hx-get={ "/ui/playlists/picker?track_id=" + t.ID.String() }
+					hx-swap="outerHTML"
+				>Add to playlist…</button>
 			</div>
 		</details>
 	} else {

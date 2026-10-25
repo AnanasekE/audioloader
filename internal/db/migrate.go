@@ -83,7 +83,8 @@ var migrations = []func(tx *sql.Tx) error{
 	func(tx *sql.Tx) error {
 		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN tag_status TEXT CHECK (tag_status IN ('matched', 'review', 'none'));`)
 		return err
-	},	// 7: followed artists, the inbox of their releases missing from the
+	},
+	// 7: followed artists, the inbox of their releases missing from the
 	// library, and downloads filling in placeholder tracks
 	func(tx *sql.Tx) error {
 		_, err := tx.Exec(`
@@ -119,7 +120,8 @@ var migrations = []func(tx *sql.Tx) error{
 			ALTER TABLE tracks ADD COLUMN source_url TEXT;
 			CREATE INDEX tracks_source_url ON tracks(source_url) WHERE source_url IS NOT NULL;`)
 		return err
-	},	// 8: full-text search over tracks, releases and artists. Triggers mark
+	},
+	// 8: full-text search over tracks, releases and artists. Triggers mark
 	// the index stale on any change; Search rebuilds it before querying.
 	func(tx *sql.Tx) error {
 		_, err := tx.Exec(`
@@ -144,6 +146,22 @@ var migrations = []func(tx *sql.Tx) error{
 			CREATE TRIGGER search_dirty_release_artist_map_insert AFTER INSERT ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
 			CREATE TRIGGER search_dirty_release_artist_map_update AFTER UPDATE ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
 			CREATE TRIGGER search_dirty_release_artist_map_delete AFTER DELETE ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;`)
+		return err
+	},
+	// 9: playlists; a track may be on one more than once
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE playlists (
+				uuid TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				created_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			CREATE TABLE playlist_tracks (
+				playlist_id TEXT NOT NULL REFERENCES playlists(uuid) ON DELETE CASCADE,
+				position INTEGER NOT NULL,
+				track_id TEXT NOT NULL REFERENCES tracks(uuid) ON DELETE CASCADE,
+				PRIMARY KEY (playlist_id, position)
+			);`)
 		return err
 	},
 }

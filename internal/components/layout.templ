@@ -91,6 +91,7 @@ templ nav(active string) {
 			<ul class="flex flex-wrap gap-x-5 gap-y-1">
 				@navLink("/tracks", "Tracks", active == PageTracks)
 				@navLink("/releases", "Releases", active == PageReleases)
+				@navLink("/playlists", "Playlists", active == PagePlaylists)
 				@navLink("/upload", "Upload", active == PageUpload)
 				@navLink("/artists", "Artists", active == PageArtists)
 				@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
