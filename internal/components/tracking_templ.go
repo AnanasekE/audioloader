@@ -518,7 +518,7 @@ func InboxPage(releases []*db.InboxRelease, follows []*db.Follow) templ.Componen
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Inbox", fmt.Sprintf("%d new releases from %d followed artists", len(releases), len(follows))).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(len(releases), "new release"), plural(len(follows), "followed artist"))).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -896,6 +896,14 @@ func lastChecked(at string) string {
 		return "Not checked yet"
 	}
 	return "Checked " + at + " UTC"
+}
+
+// plural formats n with noun, adding an "s" unless n is 1.
+func plural(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 var _ = templruntime.GeneratedTemplate

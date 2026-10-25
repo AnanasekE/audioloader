@@ -102,7 +102,7 @@ templ followFilters(follow *db.Follow) {
 
 templ InboxPage(releases []*db.InboxRelease, follows []*db.Follow) {
 	@layout("Inbox", PageInbox) {
-		@pageHeader("Inbox", fmt.Sprintf("%d new releases from %d followed artists", len(releases), len(follows))) {
+		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(len(releases), "new release"), plural(len(follows), "followed artist"))) {
 			if len(releases) > 1 {
 				<button class="btn" hx-post="/ui/inbox/confirm-all" hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
 			}
@@ -207,4 +207,12 @@ func lastChecked(at string) string {
 		return "Not checked yet"
 	}
 	return "Checked " + at + " UTC"
+}
+
+// plural formats n with noun, adding an "s" unless n is 1.
+func plural(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }

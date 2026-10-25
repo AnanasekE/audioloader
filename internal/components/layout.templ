@@ -73,7 +73,22 @@ templ nav(active string) {
 				<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
 				audioloader
 			</a>
-			<ul class="flex gap-5">
+			<form action="/search" class="relative order-last w-full sm:order-none sm:w-56" role="search">
+				<input
+					class="input"
+					type="search"
+					name="q"
+					placeholder="Search"
+					aria-label="Search the library"
+					autocomplete="off"
+					hx-get="/ui/search"
+					hx-trigger="input changed delay:200ms, focus"
+					hx-target="#search-suggest"
+					hx-sync="this:replace"
+				/>
+				<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
+			</form>
+			<ul class="flex flex-wrap gap-x-5 gap-y-1">
 				@navLink("/tracks", "Tracks", active == PageTracks)
 				@navLink("/releases", "Releases", active == PageReleases)
 				@navLink("/upload", "Upload", active == PageUpload)

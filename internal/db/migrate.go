@@ -119,6 +119,32 @@ var migrations = []func(tx *sql.Tx) error{
 			ALTER TABLE tracks ADD COLUMN source_url TEXT;
 			CREATE INDEX tracks_source_url ON tracks(source_url) WHERE source_url IS NOT NULL;`)
 		return err
+	},	// 8: full-text search over tracks, releases and artists. Triggers mark
+	// the index stale on any change; Search rebuilds it before querying.
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE VIRTUAL TABLE search USING fts5(
+				kind UNINDEXED, ref UNINDEXED, title, artists,
+				tokenize = 'unicode61 remove_diacritics 2'
+			);
+			CREATE TABLE search_state (dirty INTEGER NOT NULL);
+			INSERT INTO search_state(dirty) VALUES(1);
+			CREATE TRIGGER search_dirty_tracks_insert AFTER INSERT ON tracks BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_tracks_update AFTER UPDATE ON tracks BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_tracks_delete AFTER DELETE ON tracks BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_releases_insert AFTER INSERT ON releases BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_releases_update AFTER UPDATE ON releases BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_releases_delete AFTER DELETE ON releases BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_artists_insert AFTER INSERT ON artists BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_artists_update AFTER UPDATE ON artists BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_artists_delete AFTER DELETE ON artists BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_track_artist_map_insert AFTER INSERT ON track_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_track_artist_map_update AFTER UPDATE ON track_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_track_artist_map_delete AFTER DELETE ON track_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_release_artist_map_insert AFTER INSERT ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_release_artist_map_update AFTER UPDATE ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;
+			CREATE TRIGGER search_dirty_release_artist_map_delete AFTER DELETE ON release_artist_map BEGIN UPDATE search_state SET dirty = 1; END;`)
+		return err
 	},
 }
 

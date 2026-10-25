@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
@@ -92,4 +93,24 @@ func getImportPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render(w, r, components.ImportPage(artists))
+}
+
+func getSearchPage(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	res, err := db.Search(q, 50)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.SearchPage(q, res))
+}
+
+func getSearchSuggest(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	res, err := db.Search(q, 5)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.SearchSuggest(q, res))
 }

@@ -22,6 +22,7 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /releases/{release_id}/edit", getReleaseEditPage)
 	mux.HandleFunc("GET /tagging", getTaggingPage)
 	mux.HandleFunc("GET /inbox", getInboxPage)
+	mux.HandleFunc("GET /search", getSearchPage)
 	mux.HandleFunc("GET /downloads", getDownloadsPage)
 	mux.HandleFunc("GET /upload/youtube", getYouTubeImportPage)
 	mux.HandleFunc("GET /artists/{artist_id}/follow", getFollowPage)
@@ -37,6 +38,7 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/releases/{release_id}/cover", uploadCover)
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 
+	mux.HandleFunc("GET /ui/search", getSearchSuggest)
 	mux.HandleFunc("GET /ui/badges/tagging", getTaggingBadge)
 	mux.HandleFunc("GET /ui/badges/inbox", getInboxBadge)
 	mux.HandleFunc("POST /ui/artists/{artist_id}/follow", followArtist)
