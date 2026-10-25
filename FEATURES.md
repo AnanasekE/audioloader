@@ -51,6 +51,18 @@
 - Release covers from the Cover Art Archive
 - Placeholder tracks are skipped
 
+### Artist release tracking
+
+- Follow an artist (linked to their MusicBrainz ID, picked from search results) with filters: release types, secondary types to skip (live, remix, ...)
+- Daily background check of followed artists' discographies; "Check now"
+- Inbox of releases missing from the library: cover, type, date, tracklist with owned tracks marked; Confirm, Confirm all, Don't ask again
+- Confirming creates the release, its artists and tracklist; owned tracks are linked, the rest become placeholders with queued downloads
+- Download sources, best first (lossless, then bitrate, then `AUDIOLOADER_SOURCES` order): a watched folder (`AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags), yt-dlp from pasted YouTube URLs
+- Downloads page: progress, failed (with yt-dlp's error), couldn't find; paste a YouTube URL or upload the file by hand
+- Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
+- Import from YouTube: a video or playlist as new tracks, onto a release or as singles
+- Downloaded files go through the usual fingerprint and duration checks; a file already in the library merges the placeholder into it
+
 ### Playback
 
 - Global player bar that keeps playing across pages (hx-boost + hx-preserve)
@@ -93,20 +105,6 @@
 - `secret` flag, unlocked through a second/secret UI
 - Server-side enforcement: signed cookie, every track query filters secret tracks
 - Cover every leak: stream endpoint, counts, artist pages, duplicate check, player state, search
-
-### Artist release tracking
-
-- Follow an artist (linked to their MusicBrainz artist ID) to track their full discography: albums, EPs, singles, compilations
-- Background check for new releases within the MusicBrainz rate limit (1 req/s); compare against the library by MBID, ISRC and title
-- Inbox of releases that aren't in the library yet, each with cover, type, date and tracklist; already-owned tracks marked
-- One confirmation per release (or "confirm all") creates the release, its artists and tracklist, then queues the downloads
-- Ignore a release once ("don't ask again"); per-artist filters (e.g. skip live albums, remixes, compilations)
-- Auto-download confirmed tracks from the best available source, in order of quality: lossless before lossy, higher bitrate first
-  - sources you have rights to: purchases (e.g. Bandcamp downloads), the artist's own free downloads, files already in a watched folder
-  - pluggable source adapters, so each source is one small module
-- Downloaded files go through the normal pipeline: fingerprint duplicate check, duration, placed on the confirmed release at the right disc and position
-- Download queue with progress, retries, and a "couldn't find" list to resolve by hand (upload the file manually)
-- Notifications for new releases waiting for confirmation
 
 ### Apps
 

@@ -22,7 +22,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 ## Decisions shared across plans
 
 - **Placeholder tracks** (plan 0, step 6). A track can exist without a file (`tracks.has_file = 0`). Only plan 2 creates them, but every track query must handle them from plan 0 on.
-- **One background worker** (plan 1). A `jobs` table plus one goroutine. Plans 2 and 4 add job types; they don't start their own goroutines.
+- **Background workers** (plan 1). A `jobs` table worked by two goroutines: one for downloads, one for everything else (so a long download and a long MusicBrainz check don't block each other). New job types join one of these lanes; they don't start their own goroutines.
 - **One rate limiter per external host** (plan 1). MusicBrainz is 1 req/s, shared by tagging and release tracking.
 - **yt-dlp is the core download source** (plan 2, step 5a). It's driven by YouTube URLs the user pastes, and needs `yt-dlp` and `ffmpeg` on PATH.
 - **Central track filter** (plan 0, step 6). All track reads use one SQL fragment or helper. Plan 5 extends it for secret tracks.
