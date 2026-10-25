@@ -2,6 +2,8 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
+**Status:** all six plans are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
 | 0 | [Prerequisites](00-prerequisites.md) | migrations, tests, unique artists, release editing, covers, placeholder tracks |

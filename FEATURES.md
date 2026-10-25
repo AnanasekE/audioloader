@@ -82,6 +82,16 @@
 - Player for episodes: −15 s / +30 s, speed 0.8–2× remembered per show, pitch kept
 - Chapters from ID3 CHAP frames and MP4 Nero chapters: list to jump to, current chapter under the title
 
+### Secret tracks
+
+- Mark tracks secret (track menu, or a checkbox on single, batch, import and episode uploads); only shown while the vault is unlocked
+- Vault at `/vault`: passphrase whose bcrypt hash is `AUDIOLOADER_SECRET` (`audioloader -hash-secret` makes one); signed, HttpOnly, SameSite=Strict cookie for 12 hours; Lock in the nav
+- Locked viewers don't see secret tracks anywhere: lists, releases (renumbered without gaps), artists, shows and releases made up only of them, search, playlists, counts, positions, chapters, downloads, tagging, the stream, the duplicate check (a generic error instead of "already exists")
+- Saving a tracklist or playlist while locked keeps the hidden tracks in their places
+- The player drops secret tracks from its saved state on a locked page
+- Secret tracks are never auto-tagged or matched as owned in the inbox
+- A test requests every GET route while locked and fails on any trace of a secret track
+
 ### Discovery
 
 - Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing
@@ -107,11 +117,11 @@
 
 - Maybe a Preact island for the player if it grows complex
 
-### Secret tracks
+### Downloads and podcasts
 
-- `secret` flag, unlocked through a second/secret UI
-- Server-side enforcement: signed cookie, every track query filters secret tracks
-- Cover every leak: stream endpoint, counts, artist pages, duplicate check, player state, search
+- Bandcamp purchases as a download source (behind a flag, with the user's own cookie)
+- YouTube search (`ytsearch5:`) for missing tracks, always confirmed by hand
+- Library import: treat untagged files over 30 minutes as episodes (the single upload form already does)
 
 ### Apps
 
