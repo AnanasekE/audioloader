@@ -83,6 +83,42 @@ var migrations = []func(tx *sql.Tx) error{
 	func(tx *sql.Tx) error {
 		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN tag_status TEXT CHECK (tag_status IN ('matched', 'review', 'none'));`)
 		return err
+	},	// 7: followed artists, the inbox of their releases missing from the
+	// library, and downloads filling in placeholder tracks
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE artist_follows (
+				artist_id TEXT PRIMARY KEY REFERENCES artists(uuid) ON DELETE CASCADE,
+				filters TEXT NOT NULL DEFAULT '{}', -- JSON, see FollowFilters
+				last_checked TEXT
+			);
+
+			CREATE TABLE inbox_releases (
+				release_group_mbid TEXT PRIMARY KEY,
+				artist_id TEXT NOT NULL REFERENCES artists(uuid) ON DELETE CASCADE,
+				release_mbid TEXT, -- the release picked to stand for the group
+				title TEXT NOT NULL,
+				type TEXT NOT NULL,
+				date TEXT,
+				data TEXT NOT NULL, -- JSON, see InboxData
+				status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'confirmed', 'ignored')),
+				found_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+
+			CREATE TABLE downloads (
+				track_id TEXT PRIMARY KEY REFERENCES tracks(uuid) ON DELETE CASCADE,
+				status TEXT NOT NULL DEFAULT 'queued'
+					CHECK (status IN ('queued', 'searching', 'downloading', 'done', 'not_found', 'failed')),
+				source TEXT,
+				progress REAL,
+				last_error TEXT,
+				updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+
+			-- where a downloaded file came from, e.g. a YouTube video URL
+			ALTER TABLE tracks ADD COLUMN source_url TEXT;
+			CREATE INDEX tracks_source_url ON tracks(source_url) WHERE source_url IS NOT NULL;`)
+		return err
 	},
 }
 
