@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -119,8 +120,12 @@ func (c *Client) limiter(host string) *limiter {
 	return l
 }
 
-// get fetches rawURL for the given host's limiter. On 503 (MusicBrainz's
-// "slow down") it waits and retries once. The caller closes the body.
+// retries503 is how often a 503 (MusicBrainz's "busy, slow down") is
+// retried, waiting 2, 4, then 8 seconds.
+const retries503 = 3
+
+// get fetches rawURL for the given host's limiter, retrying on 503. The
+// caller closes the body.
 func (c *Client) get(ctx context.Context, host, rawURL string) (*http.Response, error) {
 	for attempt := 0; ; attempt++ {
 		if err := c.limiter(host).wait(ctx, c.Sleep); err != nil {
@@ -142,9 +147,10 @@ func (c *Client) get(ctx context.Context, host, rawURL string) (*http.Response, 
 		case resp.StatusCode == http.StatusNotFound:
 			resp.Body.Close()
 			return nil, ErrNotFound
-		case resp.StatusCode == http.StatusServiceUnavailable && attempt == 0:
+		case resp.StatusCode == http.StatusServiceUnavailable && attempt < retries503:
 			resp.Body.Close()
-			if err := c.Sleep(ctx, 2*time.Second); err != nil {
+			log.Printf("%s busy (503), retrying: %s", host, rawURL)
+			if err := c.Sleep(ctx, 2*time.Second<<attempt); err != nil {
 				return nil, err
 			}
 			continue

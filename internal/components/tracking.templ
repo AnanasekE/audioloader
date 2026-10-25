@@ -1,0 +1,210 @@
+package components
+
+import (
+	"fmt"
+	"slices"
+	"time"
+
+	"audioloader/internal/audio"
+	"audioloader/internal/db"
+	"audioloader/internal/mb"
+)
+
+const PageInbox = "inbox"
+
+// FollowPage sets up following an artist: its MusicBrainz ID, picked from
+// candidates when unknown, and which releases to track.
+templ FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, searchErr string) {
+	@layout("Follow "+a.Name, PageArtists) {
+		@pageHeader("Follow "+a.Name, "Get new releases in your inbox") {
+			<a class="btn" href="/artists">Back</a>
+		}
+		<form
+			class="card grid max-w-2xl gap-6"
+			hx-post={ "/ui/artists/" + a.ID.String() + "/follow" }
+			hx-target="#follow-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('follow-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+		>
+			<fieldset class="grid gap-2">
+				<legend class="mb-1 text-sm font-medium">MusicBrainz artist</legend>
+				if a.MBID != "" {
+					<label class="flex items-center gap-2 text-sm">
+						<input type="radio" name="mbid" value={ a.MBID } checked/>
+						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } target="_blank" rel="noopener">{ a.Name }</a>
+						<span class="text-zinc-500">(linked)</span>
+					</label>
+				}
+				for i, c := range candidates {
+					if c.ID != a.MBID {
+						<label class="flex items-center gap-2 text-sm">
+							<input type="radio" name="mbid" value={ c.ID } checked?={ a.MBID == "" && i == 0 }/>
+							<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
+							<span class="text-zinc-500">{ artistDetails(c) }</span>
+						</label>
+					}
+				}
+				if searchErr != "" {
+					<p class="text-sm text-red-600 dark:text-red-400">{ searchErr }</p>
+				}
+				<label class="mt-2 text-sm">
+					Or paste a MusicBrainz artist ID or URL
+					<input class="input mt-1" type="text" name="mbid_manual" placeholder="https://musicbrainz.org/artist/…"/>
+				</label>
+			</fieldset>
+			@followFilters(follow)
+			<div class="flex flex-wrap items-center gap-2">
+				<button class="btn" type="submit">
+					if follow != nil {
+						Save
+					} else {
+						Follow
+					}
+				</button>
+				if follow != nil {
+					<button class="btn" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/check" }>Check now</button>
+					<button class="btn" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/unfollow" } hx-confirm={ "Stop following " + a.Name + "?" }>Unfollow</button>
+					<span class="text-sm text-zinc-500">{ lastChecked(follow.LastChecked) }</span>
+				}
+				<span id="follow-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
+		</form>
+	}
+}
+
+templ followFilters(follow *db.Follow) {
+	{{ f := db.DefaultFilters() }}
+	if follow != nil {
+		{{ f = follow.Filters }}
+	}
+	<fieldset>
+		<legend class="mb-1 text-sm font-medium">Release types</legend>
+		<div class="flex flex-wrap gap-4">
+			for _, typ := range audio.ReleaseTypes {
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" name="type" value={ string(typ) } checked?={ slices.Contains(f.Types, string(typ)) }/>
+					{ typ.Label() }
+				</label>
+			}
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend class="mb-1 text-sm font-medium">Skip</legend>
+		<div class="flex flex-wrap gap-4">
+			for _, s := range db.SecondaryTypes {
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" name="skip" value={ s } checked?={ slices.Contains(f.SkipSecondary, s) }/>
+					{ s }
+				</label>
+			}
+		</div>
+	</fieldset>
+}
+
+templ InboxPage(releases []*db.InboxRelease, follows []*db.Follow) {
+	@layout("Inbox", PageInbox) {
+		@pageHeader("Inbox", fmt.Sprintf("%d new releases from %d followed artists", len(releases), len(follows))) {
+			if len(releases) > 1 {
+				<button class="btn" hx-post="/ui/inbox/confirm-all" hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
+			}
+		}
+		if len(follows) == 0 {
+			@emptyState() {
+				Follow artists on the Artists page to get their new releases here.
+			}
+		} else if len(releases) == 0 {
+			@emptyState() {
+				Nothing new.
+			}
+		}
+		<div class="grid gap-4">
+			for _, r := range releases {
+				@inboxRelease(r)
+			}
+		</div>
+		if len(follows) > 0 {
+			<h2 class="mt-10 mb-3 text-lg font-semibold">Following</h2>
+			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, f := range follows {
+					<li class="flex flex-wrap items-center justify-between gap-2 py-2">
+						<a href={ templ.SafeURL("/artists/" + f.Artist.ID.String() + "/follow") }>{ f.Artist.Name }</a>
+						<span class="text-sm text-zinc-500">{ lastChecked(f.LastChecked) }</span>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ inboxRelease(r *db.InboxRelease) {
+	<article class="card flex flex-col gap-4 sm:flex-row">
+		<img
+			class="size-32 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800"
+			src={ r.Data.CoverURL }
+			alt=""
+			loading="lazy"
+			onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+		/>
+		<div class="min-w-0 flex-1">
+			<h2 class="font-semibold">
+				<a href={ templ.SafeURL("https://musicbrainz.org/release-group/" + r.ReleaseGroupMBID) } target="_blank" rel="noopener">{ r.Title }</a>
+			</h2>
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">
+				{ r.ArtistName } · { audio.ReleaseType(r.Type).Label() }
+				if r.Date != "" {
+					{ " · " + r.Date }
+				}
+				{ fmt.Sprintf(" · %d tracks", len(r.Data.Tracks)) }
+				if r.Owned() > 0 {
+					{ fmt.Sprintf(", %d already in your library", r.Owned()) }
+				}
+			</p>
+			<details class="mt-2">
+				<summary class="cursor-pointer text-sm">Tracklist</summary>
+				<ol class="mt-2 text-sm">
+					for _, t := range r.Data.Tracks {
+						<li class="flex gap-2">
+							<span class="w-8 shrink-0 text-right text-zinc-500 tabular-nums">{ trackNumber(t) }</span>
+							<span class="flex-1 truncate">{ t.Title }</span>
+							if t.OwnedTrackID != "" {
+								<span class="text-emerald-600 dark:text-emerald-400" title="In your library">✓</span>
+							}
+							<span class="text-zinc-500 tabular-nums">{ formatDuration(time.Duration(t.LengthMs) * time.Millisecond) }</span>
+						</li>
+					}
+				</ol>
+			</details>
+			<div class="mt-3 flex gap-2">
+				<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/confirm" }>Confirm</button>
+				<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/ignore" }>Don't ask again</button>
+			</div>
+		</div>
+	</article>
+}
+
+func trackNumber(t db.InboxTrack) string {
+	if t.Disc > 1 {
+		return fmt.Sprintf("%d-%d", t.Disc, t.Position)
+	}
+	return fmt.Sprint(t.Position)
+}
+
+func artistDetails(a mb.Artist) string {
+	s := ""
+	for _, part := range []string{a.Disambiguation, a.Type, a.Country} {
+		if part == "" {
+			continue
+		}
+		if s != "" {
+			s += ", "
+		}
+		s += part
+	}
+	return s
+}
+
+func lastChecked(at string) string {
+	if at == "" {
+		return "Not checked yet"
+	}
+	return "Checked " + at + " UTC"
+}

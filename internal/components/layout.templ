@@ -62,6 +62,7 @@ templ nav(active string) {
 				@navLink("/releases", "Releases", active == PageReleases)
 				@navLink("/upload", "Upload", active == PageUpload)
 				@navLink("/artists", "Artists", active == PageArtists)
+				@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
 				@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
 			</ul>
 		</nav>

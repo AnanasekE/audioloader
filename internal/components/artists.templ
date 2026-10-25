@@ -67,6 +67,13 @@ templ Artist(a *audio.Artist) {
 		<img class="pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900" src={ a.ImgURL } alt=""/>
 		<span class="truncate">{ a.Name }</span>
 		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
+		<a class="text-sm" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
+			if a.Followed {
+				Following
+			} else {
+				Follow releases
+			}
+		</a>
 	</article>
 }
 

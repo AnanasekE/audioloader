@@ -13,7 +13,10 @@ import (
 var ErrArtistExists = errors.New("an artist with that name already exists")
 
 func ListArtists() ([]*audio.Artist, error) {
-	rows, err := DB.Query(`SELECT uuid, name, img_url, COALESCE(mbid, '') FROM artists ORDER BY name COLLATE NOCASE;`)
+	rows, err := DB.Query(`
+		SELECT a.uuid, a.name, a.img_url, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
+		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
+		ORDER BY a.name COLLATE NOCASE;`)
 	if err != nil {
 		return nil, err
 	}
@@ -22,12 +25,25 @@ func ListArtists() ([]*audio.Artist, error) {
 	artists := make([]*audio.Artist, 0)
 	for rows.Next() {
 		var a audio.Artist
-		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed); err != nil {
 			return nil, err
 		}
 		artists = append(artists, &a)
 	}
 	return artists, rows.Err()
+}
+
+// GetArtist returns one artist.
+func GetArtist(id string) (*audio.Artist, error) {
+	var a audio.Artist
+	err := DB.QueryRow(`
+		SELECT a.uuid, a.name, a.img_url, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
+		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
+		WHERE a.uuid = ?;`, id).Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	return &a, err
 }
 
 func AddArtist(name string) (*audio.Artist, error) {

@@ -26,6 +26,8 @@ type Artist struct {
 	Name   string
 	ImgURL string
 	MBID   string // MusicBrainz artist ID, "" if unknown
+	// Followed is set by artist listings: new releases are tracked
+	Followed bool
 }
 
 type ReleaseType string

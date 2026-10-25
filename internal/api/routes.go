@@ -21,6 +21,8 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /releases/{release_id}", getReleasePage)
 	mux.HandleFunc("GET /releases/{release_id}/edit", getReleaseEditPage)
 	mux.HandleFunc("GET /tagging", getTaggingPage)
+	mux.HandleFunc("GET /inbox", getInboxPage)
+	mux.HandleFunc("GET /artists/{artist_id}/follow", getFollowPage)
 
 	mux.HandleFunc("POST /ui/artists", createArtist)
 	mux.HandleFunc("GET /ui/artists", getArtists)
@@ -34,6 +36,13 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 
 	mux.HandleFunc("GET /ui/badges/tagging", getTaggingBadge)
+	mux.HandleFunc("GET /ui/badges/inbox", getInboxBadge)
+	mux.HandleFunc("POST /ui/artists/{artist_id}/follow", followArtist)
+	mux.HandleFunc("POST /ui/artists/{artist_id}/unfollow", unfollowArtist)
+	mux.HandleFunc("POST /ui/artists/{artist_id}/check", checkArtistNow)
+	mux.HandleFunc("POST /ui/inbox/confirm-all", confirmAllInbox)
+	mux.HandleFunc("POST /ui/inbox/{release_group}/confirm", confirmInboxRelease)
+	mux.HandleFunc("POST /ui/inbox/{release_group}/ignore", ignoreInboxRelease)
 	mux.HandleFunc("POST /ui/tagging/run", runTagging)
 	mux.HandleFunc("POST /ui/tagging/retry", retryTagging)
 	mux.HandleFunc("POST /ui/tagging/apply-all", applyAllTagMatches)
