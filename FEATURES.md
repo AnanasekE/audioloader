@@ -12,6 +12,10 @@
 - Multi-disc releases
 - Edit tracklist: reorder, change disc, add from library, remove
 - One track can be on several releases (e.g. the single and the album)
+- Edit a release's title, type, date and artists; delete a release (its tracks stay)
+- Release covers (JPEG, PNG, WebP); tracks show the cover of their album, else EP, single, compilation
+- Unique artist names (case-insensitive); existing duplicates merged
+- Placeholder tracks: known from a tracklist, shown greyed out until their file is added
 
 ### Uploading
 
@@ -52,16 +56,14 @@
 - air live reload with browser refresh; Makefile (`build`, `css`, `css-watch`, `dev`)
 - Favicon and default track/artist images
 - SQLite foreign keys enforced
+- Versioned migrations (`PRAGMA user_version`), DB tests (`go test ./...`)
 
 ## Not implemented yet
 
 ### Library and editing
 
-- Delete or rename releases; edit a release's date and type
-- Upload release cover art; show the release cover on its tracks
 - Edit and delete tracks
 - Artist pages and profile pictures
-- Unique artist names
 - Playlists (the type exists, nothing uses it)
 - Search
 - Turn the existing tracks without a release into singles
