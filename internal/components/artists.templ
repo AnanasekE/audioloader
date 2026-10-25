@@ -1,0 +1,84 @@
+package components
+
+import (
+	"fmt"
+
+	"audioloader/internal/audio"
+)
+
+templ ArtistsPage(artists []*audio.Artist) {
+	@layout("Artists", PageArtists) {
+		@pageHeader("Artists", fmt.Sprintf("%d in library", len(artists))) {
+		}
+		@AddArtistForm()
+		<div
+			id="artist-list"
+			class="mt-6"
+			hx-get="/ui/artists"
+			hx-trigger="artistsChanged from:body"
+			hx-swap="innerHTML"
+		>
+			@ArtistList(artists)
+		</div>
+	}
+}
+
+templ AddArtistForm() {
+	<section class="card">
+		<form
+			class="flex gap-2"
+			hx-post="/ui/artists"
+			hx-encoding="multipart/form-data"
+			hx-target="#result-artist"
+			hx-on::after-request="if (event.detail.successful) this.reset()"
+		>
+			<label for="artist-name" class="sr-only">Artist name</label>
+			<input id="artist-name" class="input flex-1" type="text" name="name" placeholder="New artist name" required/>
+			<button class="btn shrink-0" type="submit">Add artist</button>
+		</form>
+		<div id="result-artist" aria-live="polite"></div>
+	</section>
+}
+
+// artistPicker is a dropdown of artist checkboxes, submitted as repeated
+// artist_id values. The summary text is kept up to date by artist-picker.js.
+templ artistPicker(artists []*audio.Artist, selected string) {
+	<details class="relative" data-artist-picker>
+		<summary class="input cursor-pointer list-none truncate" data-artist-summary>Select artists</summary>
+		<div class="absolute z-10 mt-1 w-full rounded-md border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+			// no name attribute: the search box is never submitted with the form
+			<input type="search" class="input mb-2" placeholder="Search artists…" aria-label="Search artists" autocomplete="off" data-artist-search/>
+			<div class="max-h-60 overflow-auto" data-artist-options>
+				for _, a := range artists {
+					<label class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
+						<input type="checkbox" name="artist_id" value={ a.ID.String() } data-name={ a.Name } checked?={ a.ID.String() == selected }/>
+						{ a.Name }
+					</label>
+				}
+			</div>
+			<p class="px-1 py-1 text-sm text-zinc-500" hidden data-artist-empty>No matching artists.</p>
+		</div>
+	</details>
+}
+
+templ Artist(a *audio.Artist) {
+	<article class="card flex flex-col items-center gap-2 px-2 py-4 text-center">
+		<img class="pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900" src={ a.ImgURL } alt=""/>
+		<span class="truncate">{ a.Name }</span>
+		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
+	</article>
+}
+
+templ ArtistList(artists []*audio.Artist) {
+	if len(artists) == 0 {
+		@emptyState() {
+			No artists yet.
+		}
+	} else {
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-4">
+			for _, artist := range artists {
+				@Artist(artist)
+			}
+		</div>
+	}
+}

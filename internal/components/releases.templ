@@ -1,0 +1,402 @@
+package components
+
+import (
+	"fmt"
+	"time"
+
+	"audioloader/internal/audio"
+)
+
+templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
+	@layout("Releases", PageReleases) {
+		@pageHeader("Releases", fmt.Sprintf("%d in library", len(releases))) {
+		}
+		<details class="mb-8" open?={ len(releases) == 0 }>
+			<summary class="mb-2 cursor-pointer text-sm font-medium">New release</summary>
+			@NewReleaseForm(artists, false)
+		</details>
+		if len(releases) == 0 {
+			@emptyState() {
+				No releases yet.
+			}
+		}
+		// one shelf per type: singles are never mixed in with albums
+		for _, typ := range audio.ReleaseTypes {
+			if rs := releasesOfType(releases, typ); len(rs) > 0 {
+				<section class="mb-10">
+					<h2 class="mb-4 text-xl font-semibold">{ pluralLabel(typ) }</h2>
+					if typ == audio.ReleaseSingle {
+						@singleList(rs)
+					} else {
+						@releaseGrid(rs)
+					}
+				</section>
+			}
+		}
+		<script src="/assets/js/artist-picker.js" defer></script>
+	}
+}
+
+// NewReleaseForm creates a release. With upload set it's the upload page's
+// version: the type comes from the page's radio buttons and the browser
+// continues to batch upload for the new release.
+templ NewReleaseForm(artists []*audio.Artist, upload bool) {
+	<section class="card">
+		if upload {
+			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create the release first, then upload all of its tracks together.</p>
+		}
+		<form
+			id="new-release-form"
+			class="grid max-w-lg gap-4"
+			hx-post="/ui/releases"
+			hx-target="#release-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('release-result').textContent = event.detail.xhr.responseText || 'Could not create the release.'"
+		>
+			<div>
+				<label for="release-title" class="mb-1 block text-sm font-medium">Title</label>
+				<input id="release-title" class="input" type="text" name="title" required/>
+			</div>
+			if upload {
+				<input type="hidden" name="next" value="batch"/>
+			}
+			<div class="grid grid-cols-2 gap-4">
+				if !upload {
+					<div>
+						<label for="release-type" class="mb-1 block text-sm font-medium">Type</label>
+						<select id="release-type" class="input" name="type">
+							for _, typ := range audio.ReleaseTypes {
+								<option value={ string(typ) } selected?={ typ == audio.ReleaseAlbum }>{ typ.Label() }</option>
+							}
+						</select>
+					</div>
+				}
+				<div>
+					<label for="release-date" class="mb-1 block text-sm font-medium">Release date</label>
+					<input
+						id="release-date"
+						class="input"
+						type="text"
+						name="date"
+						placeholder="YYYY or YYYY-MM-DD"
+						pattern="\d{4}(-\d{2}(-\d{2})?)?"
+						title="YYYY, YYYY-MM or YYYY-MM-DD"
+					/>
+				</div>
+			</div>
+			<div>
+				<span class="mb-1 block text-sm font-medium">Artists</span>
+				@artistPicker(artists, "")
+			</div>
+			<div>
+				<button class="btn" type="submit">
+					if upload {
+						Create and upload tracks
+					} else {
+						Create release
+					}
+				</button>
+			</div>
+		</form>
+		<div id="release-result" class="mt-4 text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></div>
+	</section>
+}
+
+templ releaseGrid(releases []*audio.Release) {
+	<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
+		for _, r := range releases {
+			<a class="card block p-3 text-inherit hover:no-underline dark:text-inherit" href={ releaseURL(r) }>
+				<img class="pixelated mb-2 aspect-square w-full rounded bg-white object-cover dark:bg-zinc-900" src={ r.ImgURL } alt=""/>
+				<strong class="block truncate">{ r.Title }</strong>
+				<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(r.Artists) }</span>
+				if r.Year() != "" {
+					<span class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Year() }</span>
+				}
+			</a>
+		}
+	</div>
+}
+
+// singleList shows singles as song rows rather than album covers.
+templ singleList(releases []*audio.Release) {
+	<ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
+		for _, r := range releases {
+			<li>
+				<a class="flex items-center gap-4 py-2 text-inherit hover:no-underline dark:text-inherit" href={ releaseURL(r) }>
+					<img class="pixelated size-12 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+					<span class="min-w-0 flex-1">
+						<strong class="block truncate">{ r.Title }</strong>
+						<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(r.Artists) }</span>
+					</span>
+					<span class="text-sm text-zinc-500 dark:text-zinc-400">
+						Single
+						if r.Year() != "" {
+							· { r.Year() }
+						}
+					</span>
+				</a>
+			</li>
+		}
+	</ul>
+}
+
+templ ReleasePage(r *audio.Release) {
+	@layout(r.Title, PageReleases) {
+		if r.IsSingle() {
+			@singleView(r)
+		} else {
+			@albumView(r)
+		}
+	}
+}
+
+templ releaseActions(r *audio.Release) {
+	<div class="mt-4 flex flex-wrap gap-2">
+		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
+		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit tracklist</a>
+	</div>
+}
+
+templ albumView(r *audio.Release) {
+	<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+		<img class="pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<div class="min-w-0">
+			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{ r.Type.Label() }</p>
+			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
+			<p class="mt-1">{ artistNames(r.Artists) }</p>
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">{ releaseFacts(r) }</p>
+			@releaseActions(r)
+		</div>
+	</div>
+	if len(r.Tracks) == 0 {
+		@emptyState() {
+			No tracks yet. Upload tracks, or add existing ones with Edit tracklist.
+		}
+	}
+	for _, disc := range r.Discs() {
+		<section class="mb-8">
+			if len(r.Discs()) > 1 {
+				<h2 class="mb-2 text-lg font-semibold">Disc { fmt.Sprint(disc[0].Disc) }</h2>
+			}
+			<ol class="divide-y divide-zinc-200 dark:divide-zinc-800">
+				for _, rt := range disc {
+					<li>
+						@releaseTrackRow(rt, r)
+					</li>
+				}
+			</ol>
+		</section>
+	}
+}
+
+// singleView centres a single on its song: the first track is the A-side,
+// any others are B-sides.
+templ singleView(r *audio.Release) {
+	<div class="mb-10 flex flex-col gap-8 sm:flex-row sm:items-center">
+		<img class="pixelated size-64 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<div class="min-w-0">
+			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Single</p>
+			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
+			<p class="mt-1">{ artistNames(r.Artists) }</p>
+			if r.Date != "" {
+				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Date }</p>
+			}
+			if len(r.Tracks) > 0 {
+				<div class="mt-6 flex items-center gap-4">
+					@playButton(r.Tracks[0].Track, "size-14 text-xl")
+					<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
+				</div>
+				for _, other := range r.Tracks[0].Track.Releases {
+					if other.ID != r.ID && !other.IsSingle() {
+						<p class="mt-3 text-sm">Also on <a href={ releaseURL(other) }>{ other.Title }</a></p>
+					}
+				}
+			}
+			@releaseActions(r)
+		</div>
+	</div>
+	if len(r.Tracks) == 0 {
+		@emptyState() {
+			No track yet. Upload it, or add an existing one with Edit tracklist.
+		}
+	} else if len(r.Tracks) > 1 {
+		<section>
+			<h2 class="mb-2 text-lg font-semibold">Also on this single</h2>
+			<ol class="divide-y divide-zinc-200 dark:divide-zinc-800">
+				for _, rt := range r.Tracks[1:] {
+					<li>
+						@releaseTrackRow(rt, r)
+					</li>
+				}
+			</ol>
+		</section>
+	}
+}
+
+templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
+	<div class="grid grid-cols-[2rem_auto_1fr_auto] items-center gap-x-3 py-2">
+		<span class="text-right text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ fmt.Sprint(rt.Position) }</span>
+		@playButton(rt.Track, "size-9 text-sm")
+		<div class="min-w-0">
+			<span class="block truncate">{ rt.Track.Title }</span>
+			// only shown when they differ from the release's, e.g. features or compilations
+			if artistNames(rt.Track.Artists) != artistNames(r.Artists) {
+				<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(rt.Track.Artists) }</span>
+			}
+		</div>
+		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(rt.Track.Duration) }</span>
+	</div>
+}
+
+templ ReleaseEditPage(r *audio.Release, library []*audio.Track) {
+	@layout("Edit "+r.Title, PageReleases) {
+		@pageHeader("Edit tracklist", r.Type.Label()+": "+r.Title) {
+			<a class="btn" href={ releaseURL(r) }>Cancel</a>
+		}
+		<form
+			id="release-edit"
+			class="card"
+			hx-post={ "/ui/releases/" + r.ID.String() + "/tracks" }
+			hx-target="#release-edit-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('release-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+		>
+			<ol id="release-edit-rows" class="divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, rt := range r.Tracks {
+					@editRow(rt.Track.ID.String(), rt.Track.Title, artistNames(rt.Track.Artists), rt.Disc)
+				}
+			</ol>
+			<p class="py-4 text-sm text-zinc-500" data-edit-empty hidden?={ len(r.Tracks) > 0 }>No tracks on this release.</p>
+			<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+				<label for="release-add-track" class="text-sm font-medium">Add from library</label>
+				<select id="release-add-track" class="input w-auto min-w-64 flex-1">
+					<option value="">Choose a track…</option>
+					for _, t := range notOnRelease(library, r) {
+						<option value={ t.ID.String() } data-title={ t.Title } data-artists={ artistNames(t.Artists) }>
+							{ trackOptionLabel(t) }
+						</option>
+					}
+				</select>
+				<button type="button" class="btn" data-action="add">Add</button>
+			</div>
+			<div class="mt-6 flex items-center gap-4">
+				<button type="submit" class="btn">Save tracklist</button>
+				<span id="release-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
+		</form>
+		<template id="release-edit-row">
+			@editRow("", "", "", 1)
+		</template>
+		<script src="/assets/js/release-edit.js" defer></script>
+	}
+}
+
+// editRow is one tracklist entry. Positions aren't stored in the form: they
+// follow the row order within each disc and are shown by release-edit.js.
+templ editRow(trackID, title, artists string, disc int) {
+	<li class="release-edit-row grid grid-cols-[2rem_5.5rem_1fr_auto] items-center gap-3 py-2">
+		<input type="hidden" name="track_id" value={ trackID }/>
+		<span class="text-right text-sm text-zinc-500 tabular-nums" data-number></span>
+		<label class="flex items-center gap-1 text-sm">
+			Disc
+			<input class="input w-14 px-2" type="number" name="disc" min="1" value={ fmt.Sprint(disc) } required/>
+		</label>
+		<div class="min-w-0">
+			<strong class="block truncate" data-title>{ title }</strong>
+			<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400" data-artists>{ artists }</span>
+		</div>
+		<div class="flex gap-1">
+			<button type="button" class="btn px-2.5" data-action="up" aria-label="Move up">↑</button>
+			<button type="button" class="btn px-2.5" data-action="down" aria-label="Move down">↓</button>
+			<button type="button" class="btn px-2.5" data-action="remove" aria-label="Remove from release">✕</button>
+		</div>
+	</li>
+}
+
+func releaseURL(r *audio.Release) templ.SafeURL {
+	return templ.SafeURL("/releases/" + r.ID.String())
+}
+
+func releasesOfType(releases []*audio.Release, typ audio.ReleaseType) []*audio.Release {
+	var out []*audio.Release
+	for _, r := range releases {
+		if r.Type == typ {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func pluralLabel(typ audio.ReleaseType) string {
+	switch typ {
+	case audio.ReleaseAlbum:
+		return "Albums"
+	case audio.ReleaseEP:
+		return "EPs"
+	case audio.ReleaseSingle:
+		return "Singles"
+	case audio.ReleaseCompilation:
+		return "Compilations"
+	}
+	return typ.Label()
+}
+
+// releaseFacts is the summary line under an album title, e.g. "2025 · 3 discs · 39 tracks · 2 h 13 min".
+func releaseFacts(r *audio.Release) string {
+	var parts []string
+	if r.Year() != "" {
+		parts = append(parts, r.Year())
+	}
+	if n := len(r.Discs()); n > 1 {
+		parts = append(parts, fmt.Sprintf("%d discs", n))
+	}
+	switch n := len(r.Tracks); n {
+	case 0:
+	case 1:
+		parts = append(parts, "1 track")
+	default:
+		parts = append(parts, fmt.Sprintf("%d tracks", n))
+	}
+	if d := r.Duration(); d > 0 {
+		parts = append(parts, formatLongDuration(d))
+	}
+	return joinDot(parts)
+}
+
+func formatLongDuration(d time.Duration) string {
+	m := int(d.Round(time.Minute).Minutes())
+	if m < 60 {
+		return fmt.Sprintf("%d min", m)
+	}
+	return fmt.Sprintf("%d h %d min", m/60, m%60)
+}
+
+func joinDot(parts []string) string {
+	out := ""
+	for i, p := range parts {
+		if i > 0 {
+			out += " · "
+		}
+		out += p
+	}
+	return out
+}
+
+func notOnRelease(library []*audio.Track, r *audio.Release) []*audio.Track {
+	on := make(map[string]bool, len(r.Tracks))
+	for _, rt := range r.Tracks {
+		on[rt.Track.ID.String()] = true
+	}
+	var out []*audio.Track
+	for _, t := range library {
+		if !on[t.ID.String()] {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+func trackOptionLabel(t *audio.Track) string {
+	if names := artistNames(t.Artists); names != "" {
+		return t.Title + " — " + names
+	}
+	return t.Title
+}

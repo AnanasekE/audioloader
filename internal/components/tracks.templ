@@ -1,0 +1,213 @@
+package components
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"audioloader/internal/audio"
+)
+
+templ TracksPage(tracks []*audio.Track) {
+	@layout("Tracks", PageTracks) {
+		@pageHeader("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
+			<a class="btn" href="/upload">Upload track</a>
+		}
+		@TrackList(tracks)
+	}
+}
+
+// UploadPage starts with the kind of release. A single is uploaded right
+// here; an album, EP or compilation is created first and its tracks are then
+// uploaded together in batch mode. The switch is CSS only (group-has).
+templ UploadPage(artists []*audio.Artist) {
+	@layout("Upload", PageUpload) {
+		@pageHeader("Upload", "Add music to the library") {
+			<div class="flex flex-wrap gap-2">
+				<a class="btn" href="/upload/import">Import library</a>
+				<a class="btn" href="/upload/batch">Batch mode</a>
+			</div>
+		}
+		<div class="group">
+			<fieldset class="mb-4">
+				<legend class="mb-2 text-sm font-medium">What are you uploading?</legend>
+				<div class="flex flex-wrap gap-2">
+					for _, typ := range audio.ReleaseTypes {
+						<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+							// form= ties the choice to the release form, which needs the type
+							<input id={ "kind-" + string(typ) } class="sr-only" type="radio" name="type" value={ string(typ) } form="new-release-form" checked?={ typ == audio.ReleaseSingle }/>
+							{ typ.Label() }
+						</label>
+					}
+				</div>
+			</fieldset>
+			<div class="hidden group-has-[#kind-single:checked]:block">
+				@AddTrackForm(artists)
+			</div>
+			<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
+				@NewReleaseForm(artists, true)
+			</div>
+		</div>
+	}
+}
+
+templ AddTrackForm(artists []*audio.Artist) {
+	<section class="card">
+		<form
+			id="upload-form"
+			class="grid max-w-lg gap-4"
+			hx-post="/ui/tracks"
+			hx-encoding="multipart/form-data"
+			hx-target="#result-tracks"
+			hx-on::after-request="
+				if (event.detail.successful) this.reset();
+				else document.getElementById('result-tracks').textContent = event.detail.xhr.responseText || 'Upload failed.';
+			"
+		>
+			<div>
+				<label for="track-title" class="mb-1 block text-sm font-medium">Title</label>
+				<input id="track-title" class="input" type="text" name="title" placeholder="Track name" required/>
+			</div>
+			<div>
+				<span class="mb-1 block text-sm font-medium">Artists</span>
+				@artistPicker(artists, "")
+				if len(artists) == 0 {
+					<small class="mt-1 block text-zinc-500">No artists yet. <a href="/artists">Add one first</a>.</small>
+				}
+			</div>
+			<div>
+				<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-zinc-500">(optional)</span></label>
+				<input
+					id="track-date"
+					class="input"
+					type="text"
+					name="date"
+					placeholder="YYYY or YYYY-MM-DD"
+					pattern="\d{4}(-\d{2}(-\d{2})?)?"
+					title="YYYY, YYYY-MM or YYYY-MM-DD"
+				/>
+			</div>
+			<div>
+				<label for="track-file" class="mb-1 block text-sm font-medium">Audio file</label>
+				<input
+					id="track-file"
+					class="input file:mr-3 file:rounded file:border-0 file:bg-zinc-200 file:px-2 file:py-1 file:text-sm dark:file:bg-zinc-700"
+					type="file"
+					name="track"
+					required
+					accept="audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac"
+				/>
+				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=exists]:text-amber-400" aria-live="polite"></small>
+			</div>
+			<div>
+				<button class="btn disabled:cursor-not-allowed disabled:opacity-50" type="submit">Upload</button>
+			</div>
+		</form>
+		<div id="result-tracks" class="mt-4 text-sm" aria-live="polite"></div>
+	</section>
+	<script src="/assets/js/artist-picker.js" defer></script>
+	<script src="/assets/js/track-hash.js" defer></script>
+	<script src="/assets/js/upload.js" defer></script>
+}
+
+templ Track(t *audio.Track) {
+	<article class="grid grid-cols-[auto_3.5rem_1fr_auto] items-center gap-x-4 py-3">
+		@playButton(t, "size-10")
+		<img class="pixelated size-14 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
+		<div class="flex min-w-0 flex-col">
+			<strong class="truncate">{ t.Title }</strong>
+			<span class="truncate text-sm text-zinc-500 dark:text-zinc-400">
+				{ artistNames(t.Artists) }
+				@trackReleaseLabel(t)
+			</span>
+		</div>
+		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(t.Duration) }</span>
+	</article>
+}
+
+// playButton hands t to the global player (player.js); size sets the button's size classes.
+templ playButton(t *audio.Track, size string) {
+	<button
+		type="button"
+		class={ "btn shrink-0 justify-center rounded-full p-0", size }
+		aria-label={ "Play " + t.Title }
+		aria-pressed="false"
+		data-play-track
+		data-id={ t.ID.String() }
+		data-title={ t.Title }
+		data-artists={ artistNames(t.Artists) }
+		data-img={ t.ImgURL }
+		data-src={ "/api/tracks/" + t.ID.String() + "/stream" }
+	>▶</button>
+}
+
+// trackReleaseLabel names where a track comes from. An album, EP or
+// compilation wins over a single, so a song released both ways is listed
+// once, under its album, with a note that it was also a single.
+templ trackReleaseLabel(t *audio.Track) {
+	// separators are string expressions: templ drops plain whitespace next to a component call
+	if main, single := mainRelease(t), firstSingle(t); main != nil {
+		{ " · " }
+		<a href={ templ.SafeURL("/releases/" + main.ID.String()) }>{ main.Title }</a>
+		if single != nil {
+			{ " · also a single" }
+		}
+	} else if single != nil {
+		{ " · " }
+		<a href={ templ.SafeURL("/releases/" + single.ID.String()) }>Single</a>
+		if single.Year() != "" {
+			{ " · " + single.Year() }
+		}
+	}
+}
+
+func mainRelease(t *audio.Track) *audio.Release {
+	for _, r := range t.Releases {
+		if !r.IsSingle() {
+			return r
+		}
+	}
+	return nil
+}
+
+func firstSingle(t *audio.Track) *audio.Release {
+	for _, r := range t.Releases {
+		if r.IsSingle() {
+			return r
+		}
+	}
+	return nil
+}
+
+func artistNames(artists []*audio.Artist) string {
+	names := make([]string, len(artists))
+	for i, a := range artists {
+		names[i] = a.Name
+	}
+	return strings.Join(names, ", ")
+}
+
+templ TrackList(tracks []*audio.Track) {
+	if len(tracks) == 0 {
+		@emptyState() {
+			No tracks yet. <a href="/upload">Upload one</a>.
+		}
+	} else {
+		<ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
+			for _, track := range tracks {
+				<li>
+					@Track(track)
+				</li>
+			}
+		</ul>
+	}
+}
+
+// formatDuration renders d as m:ss, or h:mm:ss for long tracks.
+func formatDuration(d time.Duration) string {
+	s := int(d.Round(time.Second).Seconds())
+	if s >= 3600 {
+		return fmt.Sprintf("%d:%02d:%02d", s/3600, s%3600/60, s%60)
+	}
+	return fmt.Sprintf("%d:%02d", s/60, s%60)
+}

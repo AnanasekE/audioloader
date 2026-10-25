@@ -1,0 +1,166 @@
+package components
+
+import (
+	"encoding/json"
+
+	"audioloader/internal/audio"
+)
+
+const audioAccept = "audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac"
+
+// batchCols keeps the header and every row on the same grid.
+const batchCols = "md:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)_12rem_4rem_auto]"
+
+// BatchUploadPage uploads many tracks at once. Each row goes to a release of
+// its own choosing, or becomes a new single. release, if set, is preselected
+// for every row. nextPositions maps release ID and disc to the next free position.
+templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*audio.Release, release *audio.Release, nextPositions map[string]map[int]int) {
+	@layout("Batch upload", PageUpload) {
+		if release != nil {
+			@pageHeader("Batch upload", "Into "+release.Type.Label()+": "+release.Title) {
+				<a class="btn" href={ releaseURL(release) }>Back to release</a>
+			}
+		} else {
+			@pageHeader("Batch upload", "Tracks without a release each become a single") {
+				<a class="btn" href="/upload">Single upload</a>
+			}
+		}
+		<details class="mb-4" open?={ len(artists) == 0 }>
+			<summary class="mb-2 cursor-pointer text-sm font-medium">New artist</summary>
+			@AddArtistForm()
+		</details>
+		<section
+			id="batch"
+			class="card"
+			data-cancel-url={ batchCancelURL(release) }
+			data-done-url={ batchExitURL(release) }
+			data-next-positions={ toJSON(nextPositions) }
+		>
+			<input id="batch-picker" class="hidden" type="file" multiple accept={ audioAccept }/>
+			<div id="batch-start" class="py-8 text-center">
+				<button type="button" class="btn" data-action="pick">Choose files</button>
+				<p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Pick one or more audio files.</p>
+			</div>
+			<div id="batch-table" hidden>
+				<div class="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+					<div class="flex items-center gap-2">
+						<label for="batch-default-artist" class="text-sm font-medium">Artist for all tracks</label>
+						<select id="batch-default-artist" class="input w-auto min-w-48">
+							<option value="">Choose…</option>
+							for _, a := range artists {
+								<option value={ a.ID.String() } selected?={ a.ID.String() == defaultArtist }>{ a.Name }</option>
+							}
+						</select>
+					</div>
+					<div class="flex items-center gap-2">
+						<label for="batch-default-release" class="text-sm font-medium">Release for all tracks</label>
+						@releaseSelect("batch-default-release", releases, release, "input w-auto min-w-48")
+					</div>
+				</div>
+				<div class={ "hidden gap-2 pb-2 text-sm font-medium text-zinc-500 md:grid dark:text-zinc-400", batchCols }>
+					<span>Title</span>
+					<span>Artist</span>
+					<span>File</span>
+					<span>Release</span>
+					<span>Disc</span>
+					<span class="sr-only">Actions</span>
+				</div>
+				<div id="batch-rows" class="divide-y divide-zinc-200 dark:divide-zinc-700"></div>
+				<div class="mt-4 flex flex-wrap items-center gap-4">
+					<button type="button" class="btn" data-action="pick">Add tracks</button>
+					<p id="batch-result" class="flex-1 text-sm" aria-live="polite"></p>
+					<button type="button" class="btn" data-action="submit">Upload all</button>
+				</div>
+			</div>
+			<template id="batch-row-template">
+				@batchRow(artists, defaultArtist, releases, release)
+			</template>
+		</section>
+		<script src="/assets/js/artist-picker.js" defer></script>
+		<script src="/assets/js/track-hash.js" defer></script>
+		<script src="/assets/js/batch.js" defer></script>
+	}
+}
+
+// batchRow is one track in the batch. Each row is its own form, so every
+// track is uploaded by its own request to the normal upload endpoint.
+templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.Release, release *audio.Release) {
+	<form
+		class={ "batch-row grid items-start gap-2 py-3", batchCols }
+		hx-post="/ui/tracks"
+		hx-encoding="multipart/form-data"
+		hx-trigger="batch-submit"
+		hx-target="find .row-status"
+		hx-swap="innerHTML"
+	>
+		<input class="input" type="text" name="title" aria-label="Title" placeholder="Title" required/>
+		@artistPicker(artists, defaultArtist)
+		<div class="flex min-h-9 min-w-0 items-center text-sm">
+			<input class="hidden" type="file" name="track" accept={ audioAccept }/>
+			<span class="truncate" data-file-name></span>
+		</div>
+		<div>
+			@releaseSelect("", releases, release, "input")
+			// filled in by batch.js right before upload, from the row order within each release and disc
+			<input type="hidden" name="position"/>
+		</div>
+		// disabled (and so not submitted) while the row is a new single
+		<input class="input px-2 disabled:opacity-40" type="number" name="disc" min="1" value="1" aria-label="Disc" required disabled?={ release == nil }/>
+		<button type="button" class="btn px-2.5" data-action="remove" title="Remove from batch" aria-label="Remove from batch">✕</button>
+		<div class="row-status col-span-full text-sm empty:hidden data-[state=error]:text-red-600 data-[state=exists]:text-amber-600 data-[state=link]:text-sky-600 data-[state=pending]:text-zinc-500 dark:data-[state=error]:text-red-400 dark:data-[state=exists]:text-amber-400 dark:data-[state=link]:text-sky-400"></div>
+	</form>
+}
+
+// releaseSelect lists "New single" plus every release, grouped by type.
+// Rows submit it as release_id; the toolbar copy has an id and no name.
+templ releaseSelect(id string, releases []*audio.Release, selected *audio.Release, class string) {
+	<select
+		class={ class }
+		if id != "" {
+			id={ id }
+		} else {
+			name="release_id"
+			aria-label="Release"
+		}
+	>
+		<option value="">New single</option>
+		for _, typ := range audio.ReleaseTypes {
+			if rs := releasesOfType(releases, typ); len(rs) > 0 {
+				<optgroup label={ pluralLabel(typ) }>
+					for _, r := range rs {
+						<option value={ r.ID.String() } selected?={ selected != nil && r.ID == selected.ID }>{ releaseOptionLabel(r) }</option>
+					}
+				</optgroup>
+			}
+		}
+	</select>
+}
+
+func releaseOptionLabel(r *audio.Release) string {
+	if names := artistNames(r.Artists); names != "" {
+		return r.Title + " — " + names
+	}
+	return r.Title
+}
+
+func batchCancelURL(release *audio.Release) string {
+	if release != nil {
+		return "/releases/" + release.ID.String()
+	}
+	return "/upload"
+}
+
+func batchExitURL(release *audio.Release) string {
+	if release != nil {
+		return "/releases/" + release.ID.String()
+	}
+	return "/tracks"
+}
+
+func toJSON(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
