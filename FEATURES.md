@@ -70,6 +70,13 @@
 - OS media controls (Media Session API)
 - Streaming with Range requests (seeking)
 - Duration detection: WAV, MP3, FLAC, Ogg Opus, MP4/M4A
+- Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
+- Play next / Add to queue from a track's menu; "Up next" list with remove and clear; queue survives a reload
+
+### Discovery
+
+- Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing
+- Playlists: create, add from a track's menu, reorder, remove, rename, delete; a track can be on a playlist more than once
 
 ### Tooling and UI
 
@@ -85,13 +92,10 @@
 
 - Edit and delete tracks
 - Artist pages and profile pictures
-- Playlists (the type exists, nothing uses it)
-- Search
 - Turn the existing tracks without a release into singles
 
 ### Playback
 
-- Queue, next/previous, shuffle, "play release"
 - Maybe a Preact island for the player if it grows complex
 
 ### Podcasts and long audio (over 30 min)
