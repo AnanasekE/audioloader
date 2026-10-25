@@ -14,6 +14,9 @@ type Track struct {
 	Artists  []*Artist
 	ImgURL   string
 	Releases []*Release // without their Tracks
+	// false for a placeholder: the track is known (e.g. from a release's
+	// tracklist) but its file hasn't been added yet
+	HasFile bool
 }
 
 type Artist struct {

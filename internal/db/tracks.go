@@ -14,7 +14,12 @@ import (
 // ErrNotFound is returned when a looked-up row or file doesn't exist.
 var ErrNotFound = errors.New("not found")
 
-const selectTrack = `SELECT uuid, title, duration_seconds, img_url FROM tracks`
+const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file FROM tracks t`
+
+// libraryTracks is the condition every library listing of tracks uses, on
+// a tracks table aliased t. Placeholders have no file to play, so they only
+// show up on their releases.
+const libraryTracks = `t.has_file = 1`
 
 // scanner is implemented by both *sql.Row and *sql.Rows.
 type scanner interface {
@@ -24,7 +29,7 @@ type scanner interface {
 func scanTrack(s scanner) (*audio.Track, error) {
 	var t audio.Track
 	var seconds int
-	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL); err != nil {
+	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile); err != nil {
 		return nil, err
 	}
 	t.Duration = time.Duration(seconds) * time.Second
@@ -32,7 +37,7 @@ func scanTrack(s scanner) (*audio.Track, error) {
 }
 
 func ListTracks() ([]*audio.Track, error) {
-	rows, err := DB.Query(selectTrack + `;`)
+	rows, err := DB.Query(selectTrack + ` WHERE ` + libraryTracks + `;`)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +66,7 @@ func ListTracks() ([]*audio.Track, error) {
 }
 
 func GetTrack(id string) (*audio.Track, error) {
-	t, err := scanTrack(DB.QueryRow(selectTrack+` WHERE uuid = ?;`, id))
+	t, err := scanTrack(DB.QueryRow(selectTrack+` WHERE t.uuid = ?;`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -214,4 +219,68 @@ func insertTrack(id string, artistIDs []string, track *audio.Track, fp Fingerpri
 		return err
 	}
 	return tx.Commit()
+}
+
+// ErrHasFile is returned when a file is attached to a track that already has one.
+var ErrHasFile = errors.New("track already has a file")
+
+// AttachFile stores file for the placeholder track id, turning it into a
+// normal, playable track. If the file is already stored under another
+// track it returns ErrExists and that track's ID, so the caller can merge
+// the placeholder into it.
+func AttachFile(id string, file io.ReadSeeker, ext string, duration time.Duration) (existingID string, err error) {
+	var hasFile bool
+	err = DB.QueryRow(`SELECT has_file FROM tracks WHERE uuid = ?;`, id).Scan(&hasFile)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", err
+	}
+	if hasFile {
+		return "", ErrHasFile
+	}
+
+	fp, err := FingerprintOf(file)
+	if err != nil {
+		return "", err
+	}
+	if existing, err := trackByFingerprint(fp); err != nil || existing != "" {
+		if err == nil {
+			err = ErrExists
+		}
+		return existing, err
+	}
+
+	path, err := saveTrackFile(id, file, ext)
+	if err != nil {
+		return "", err
+	}
+	_, err = DB.Exec(
+		`UPDATE tracks SET has_file = 1, file_size = ?, head_hash = ?, duration_seconds = ? WHERE uuid = ?;`,
+		fp.Size, fp.HeadHash, int(duration.Round(time.Second).Seconds()), id,
+	)
+	if err != nil {
+		os.Remove(path)
+		// the same file was attached elsewhere in the meantime
+		if isUniqueViolation(err) {
+			existing, lerr := trackByFingerprint(fp)
+			if lerr != nil {
+				return "", lerr
+			}
+			return existing, ErrExists
+		}
+		return "", err
+	}
+	return "", nil
+}
+
+// trackByFingerprint returns the ID of the track stored with fp, or "".
+func trackByFingerprint(fp Fingerprint) (string, error) {
+	var id string
+	err := DB.QueryRow(`SELECT uuid FROM tracks WHERE file_size = ? AND head_hash = ?;`, fp.Size, fp.HeadHash).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
 }

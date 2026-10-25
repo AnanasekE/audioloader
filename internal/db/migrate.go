@@ -35,6 +35,11 @@ var migrations = []func(tx *sql.Tx) error{
 		_, err := tx.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS artists_name ON artists(lower(name));`)
 		return err
 	},
+	// 4: placeholder tracks, known from metadata but without a file yet
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN has_file INTEGER NOT NULL DEFAULT 1;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

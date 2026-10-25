@@ -127,6 +127,18 @@ templ Track(t *audio.Track) {
 
 // playButton hands t to the global player (player.js); size sets the button's size classes.
 templ playButton(t *audio.Track, size string) {
+	if !t.HasFile {
+		<span
+			class={ "btn shrink-0 justify-center rounded-full p-0 opacity-40", size }
+			title="Not in the library yet"
+			aria-label={ t.Title + " is not in the library yet" }
+		>–</span>
+	} else {
+		@playableButton(t, size)
+	}
+}
+
+templ playableButton(t *audio.Track, size string) {
 	<button
 		type="button"
 		class={ "btn shrink-0 justify-center rounded-full p-0", size }

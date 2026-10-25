@@ -233,7 +233,7 @@ templ singleView(r *audio.Release) {
 }
 
 templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
-	<div class="grid grid-cols-[2rem_auto_1fr_auto] items-center gap-x-3 py-2">
+	<div class={ "grid grid-cols-[2rem_auto_1fr_auto] items-center gap-x-3 py-2", templ.KV("text-zinc-400 dark:text-zinc-500", !rt.Track.HasFile) }>
 		<span class="text-right text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ fmt.Sprint(rt.Position) }</span>
 		@playButton(rt.Track, "size-9 text-sm")
 		<div class="min-w-0">
