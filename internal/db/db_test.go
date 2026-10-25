@@ -3,7 +3,6 @@ package db
 import (
 	"bytes"
 	"errors"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,20 +12,11 @@ import (
 // newTestDB points DB and TracksDir at a fresh, migrated database in a temp dir.
 func newTestDB(t *testing.T) {
 	t.Helper()
-	dir := t.TempDir()
-	d, err := Open(filepath.Join(dir, "test.db"))
+	restore, err := UseTemp(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Migrate(d); err != nil {
-		t.Fatal(err)
-	}
-	oldDB, oldTracks, oldCovers := DB, TracksDir, CoversDir
-	DB, TracksDir, CoversDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers")
-	t.Cleanup(func() {
-		d.Close()
-		DB, TracksDir, CoversDir = oldDB, oldTracks, oldCovers
-	})
+	t.Cleanup(restore)
 }
 
 // addTestTrack stores a track whose file content is body.

@@ -1,21 +1,48 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"audioloader/internal/api"
 	"audioloader/internal/db"
+	"audioloader/internal/jobs"
 )
 
 func main() {
 	db.Init()
 	defer db.DB.Close()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	mux := http.NewServeMux()
 
 	api.Register(mux)
 
+	workerDone := make(chan struct{})
+	go func() {
+		jobs.Run(ctx)
+		close(workerDone)
+	}()
+
+	srv := &http.Server{Addr: ":8080", Handler: mux}
+	go func() {
+		<-ctx.Done()
+		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		srv.Shutdown(shutdown)
+	}()
+
 	log.Println("Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal(err)
+	}
+	<-workerDone
 }

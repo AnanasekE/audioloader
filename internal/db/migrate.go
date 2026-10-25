@@ -40,6 +40,45 @@ var migrations = []func(tx *sql.Tx) error{
 		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN has_file INTEGER NOT NULL DEFAULT 1;`)
 		return err
 	},
+	// 5: MusicBrainz IDs, the background job queue and tagging matches
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			ALTER TABLE tracks   ADD COLUMN mbid TEXT; -- recording MBID
+			ALTER TABLE tracks   ADD COLUMN isrc TEXT;
+			ALTER TABLE releases ADD COLUMN mbid TEXT; -- release MBID
+			ALTER TABLE releases ADD COLUMN release_group_mbid TEXT;
+			ALTER TABLE artists  ADD COLUMN mbid TEXT;
+			CREATE UNIQUE INDEX artists_mbid  ON artists(mbid)  WHERE mbid IS NOT NULL;
+			CREATE UNIQUE INDEX releases_mbid ON releases(mbid) WHERE mbid IS NOT NULL;
+
+			CREATE TABLE jobs (
+				id INTEGER PRIMARY KEY,
+				type TEXT NOT NULL,
+				payload TEXT NOT NULL, -- JSON
+				-- optional: at most one queued or running job per (type, key)
+				dedupe_key TEXT,
+				status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'done', 'failed')),
+				attempts INTEGER NOT NULL DEFAULT 0,
+				last_error TEXT,
+				run_after TEXT NOT NULL DEFAULT (datetime('now')),
+				created_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			CREATE INDEX jobs_next ON jobs(status, run_after);
+			CREATE UNIQUE INDEX jobs_dedupe ON jobs(type, dedupe_key)
+				WHERE dedupe_key IS NOT NULL AND status IN ('queued', 'running');
+
+			CREATE TABLE tag_matches (
+				track_id TEXT NOT NULL REFERENCES tracks(uuid) ON DELETE CASCADE,
+				source TEXT NOT NULL CHECK (source IN ('tags', 'acoustid', 'search')),
+				recording_mbid TEXT NOT NULL,
+				release_mbid TEXT,
+				score REAL NOT NULL,
+				data TEXT NOT NULL, -- JSON snapshot of what would be applied
+				status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'applied', 'rejected')),
+				PRIMARY KEY (track_id, recording_mbid)
+			);`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.
