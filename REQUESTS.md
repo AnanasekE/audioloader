@@ -82,6 +82,27 @@ A cover stays credited to the cover artist. The original is only a reference, so
 - **Maybe:** search finds covers by the original's title or artist, and an artist page lists "Covered by" for their songs.
 - **Depends on:** "Edit and delete tracks" from `FEATURES.md`, for a track edit form to set it on.
 
+## Pick the right match from the top 5
+
+### YouTube
+
+When YouTube is the only source left for a missing track (no own file, no spotDL match), don't download a guess. Show the top 5 results and let me pick.
+
+- **Search:** `ytsearch5:"<artist> - <title>"` through `yt-dlp -J --flat-playlist` (no download), or YouTube Music search if it gives better results.
+- **Per candidate:** thumbnail, video title, channel, length, and the difference from the expected length. A small badge for official channels and "- Topic" auto-generated channels, which are usually the right audio.
+- **Actions:** "Use this" downloads that video into the placeholder (as pasting its URL does now), "Preview" opens the video, and "None of these" leaves it under "Couldn't find".
+- **Where:** a "Pick from YouTube" button on Downloads rows, and on release pages for each missing track. Results are fetched when opened, not ahead of time.
+- **Never automatic:** with YouTube as the last resort, the download waits in a "needs a pick" state instead of taking result #1.
+
+### MusicBrainz artists
+
+Same idea for linking an artist to MusicBrainz: show the top 5 and let me pick, wherever an artist gets an MBID.
+
+- **Already there:** the Follow page lists MusicBrainz's 5 best name matches. Extend it with more to tell them apart: disambiguation, type, country, active years, and a few release titles (one extra lookup per candidate, only when expanded).
+- **Also offer it** on the artist page ("Link to MusicBrainz"), and in tagging when an applied match credits an artist whose MBID isn't set yet and the names are close but not exact.
+- **"None of these":** leave the artist unlinked; a pasted MusicBrainz URL still works.
+- **Never guess:** an MBID is only set from a pick, an exact embedded tag, or an exact name match in an applied tagging match (as now).
+
 ## Better inbox organization
 
 The inbox is one long list of cards. Ideas, to be decided:
