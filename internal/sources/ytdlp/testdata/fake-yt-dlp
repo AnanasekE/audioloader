@@ -1,0 +1,34 @@
+#!/bin/sh
+# Stands in for yt-dlp in tests: -J prints fixture JSON, otherwise it
+# "downloads" testdata/audio.opus to the -o template's directory.
+here=$(dirname "$0")
+url=""
+out=""
+json=0
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--version) echo 2099.01.01; exit 0 ;;
+		-J) json=1 ;;
+		-o) shift; out="$1" ;;
+		--) shift; url="$1" ;;
+	esac
+	shift
+done
+if [ "$json" = 1 ]; then
+	case "$url" in
+		*playlist*) cat "$here/playlist.json" ;;
+		*) cat "$here/video.json" ;;
+	esac
+	exit 0
+fi
+case "$url" in
+	*v=failfailfai) echo "ERROR: [youtube] failfailfai: Video unavailable" >&2; exit 1 ;;
+esac
+id=${url##*v=}
+dir=$(dirname "$out")
+echo "download:  10.0%"
+echo "download:  55.5%"
+echo "download: 100.0%"
+# copy, then make the bytes unique per video so fingerprints differ
+cp "$here/audio.opus" "$dir/$id.opus"
+printf '%s' "$id" >> "$dir/$id.opus"
