@@ -192,8 +192,8 @@ func insertTrack(id string, artistIDs []string, track *audio.Track, fp Fingerpri
 	defer tx.Rollback()
 
 	_, err = tx.Exec(
-		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash) VALUES(?, ?, ?, ?, ?);`,
-		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash,
+		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, mbid, isrc) VALUES(?, ?, ?, ?, ?, ?, ?);`,
+		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, nullIfEmpty(track.MBID), nullIfEmpty(track.ISRC),
 	)
 	if err != nil {
 		return err
@@ -283,4 +283,12 @@ func trackByFingerprint(fp Fingerprint) (string, error) {
 		return "", nil
 	}
 	return id, err
+}
+
+// nullIfEmpty stores "" as NULL, for optional columns.
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }

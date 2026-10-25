@@ -758,6 +758,9 @@
 			} else if (it.values.date) {
 				fd.append("date", it.values.date);
 			}
+			// MusicBrainz tags let the auto-tagger match the track without a lookup
+			if (it.tags.mb.recording) fd.append("mbid", it.tags.mb.recording);
+			if (it.tags.isrc) fd.append("isrc", it.tags.isrc);
 			fd.append("track", it.file, it.file.name);
 			try {
 				const res = await fetch("/ui/tracks", { method: "POST", body: fd });

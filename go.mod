@@ -4,6 +4,7 @@ go 1.27.1
 
 require (
 	github.com/a-h/templ v0.3.1070
+	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/glebarez/go-sqlite v1.23.0
 )
 

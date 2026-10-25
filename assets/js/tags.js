@@ -3,8 +3,9 @@
 // atoms (M4A) and RIFF chunks (WAV). Only the bytes that are needed are read,
 // via File.slice.
 // readTags(file) resolves to:
-//   { title, artists: [], albumArtist, album, track, trackTotal, disc, discTotal, date, releaseType }
-// with "" or 0 for anything missing. It never rejects: unreadable files give empty tags.
+//   { title, artists: [], albumArtist, album, track, trackTotal, disc, discTotal, date, releaseType,
+//     isrc, mb: { recording, release, releaseGroup, artists: [] } }
+// with "" or 0 for anything missing. mb holds MusicBrainz IDs, as written by Picard. It never rejects: unreadable files give empty tags.
 window.readTags = (() => {
 	// cover art can make tags large; give up beyond this
 	const MAX_TAG_BYTES = 32 << 20;
@@ -34,7 +35,28 @@ window.readTags = (() => {
 	const utf8 = new TextDecoder("utf-8");
 
 	function empty() {
-		return { title: "", artists: [], albumArtist: "", album: "", track: 0, trackTotal: 0, disc: 0, discTotal: 0, date: "", releaseType: "" };
+		return {
+			title: "", artists: [], albumArtist: "", album: "", track: 0, trackTotal: 0, disc: 0, discTotal: 0, date: "", releaseType: "",
+			isrc: "", mb: { recording: "", release: "", releaseGroup: "", artists: [] },
+		};
+	}
+
+	const MBID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+	// setMB stores a MusicBrainz ID or ISRC tag. key is the tag's name with the
+	// format's prefix removed and lowercased, e.g. "musicbrainz album id".
+	// Returns whether key was one of them.
+	function setMB(t, key, value) {
+		const ids = () => String(value).split(/[\0/;,]\s*|\s+/).map((s) => s.trim().toLowerCase()).filter((s) => MBID.test(s));
+		switch (key.replace(/_/g, " ")) {
+			// Vorbis and MP4 call the recording ID "track id"; ID3 keeps it in UFID
+			case "musicbrainz track id": case "musicbrainz trackid": t.mb.recording ||= ids()[0] || ""; return true;
+			case "musicbrainz album id": case "musicbrainz albumid": t.mb.release ||= ids()[0] || ""; return true;
+			case "musicbrainz release group id": case "musicbrainz releasegroupid": t.mb.releaseGroup ||= ids()[0] || ""; return true;
+			case "musicbrainz artist id": case "musicbrainz artistid": if (!t.mb.artists.length) t.mb.artists = ids(); return true;
+			case "isrc": t.isrc ||= String(value).trim().toUpperCase().replace(/-/g, ""); return true;
+		}
+		return false;
 	}
 
 	// "3/12" -> [3, 12]
@@ -131,6 +153,13 @@ window.readTags = (() => {
 			if (id === "TXXX" || id === "TXX") {
 				const [desc, value] = decodeID3Text(frame[0], frame.subarray(1));
 				if (/^(musicbrainz album type|releasetype)$/i.test(desc || "")) setReleaseType(t, value || "");
+				else setMB(t, (desc || "").toLowerCase(), value || "");
+				continue;
+			}
+			if (id === "UFID" || id === "UFI") {
+				// owner URL, NUL, then the identifier as plain bytes
+				const nul = frame.indexOf(0);
+				if (nul > 0 && ascii(frame.subarray(0, nul)) === "http://musicbrainz.org") setMB(t, "musicbrainz track id", ascii(frame.subarray(nul + 1)));
 				continue;
 			}
 			if (id[0] !== "T") continue;
@@ -143,6 +172,7 @@ window.readTags = (() => {
 				case "TALB": case "TAL": t.album ||= values[0]; break;
 				case "TRCK": case "TRK": setTrack(t, values[0]); break;
 				case "TPOS": case "TPA": setDisc(t, values[0]); break;
+				case "TSRC": case "TRC": setMB(t, "isrc", values[0]); break;
 				case "TDRC": case "TDRL": case "TYER": case "TYE": setDate(t, values[0]); break;
 				case "TDAT": case "TDA":
 					// v2.3 day and month as DDMM, completing TYER
@@ -212,6 +242,7 @@ window.readTags = (() => {
 				case "DISCTOTAL": case "TOTALDISCS": t.discTotal ||= parseInt(value, 10) || 0; break;
 				case "DATE": case "YEAR": case "ORIGINALDATE": setDate(t, value); break;
 				case "RELEASETYPE": case "MUSICBRAINZ_ALBUMTYPE": setReleaseType(t, value); break;
+				default: setMB(t, key.toLowerCase(), value);
 			}
 		}
 	}
@@ -318,6 +349,7 @@ window.readTags = (() => {
 					// name is a full box too: skip version and flags
 					const key = name ? utf8.decode(await reader.bytes(name.start + 4, name.end - name.start - 4)) : "";
 					if (/^(musicbrainz album type|releasetype)$/i.test(key)) setReleaseType(t, text());
+					else setMB(t, key.toLowerCase(), text());
 					break;
 				}
 			}

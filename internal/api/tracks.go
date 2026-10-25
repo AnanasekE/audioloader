@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -90,6 +91,9 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 	track := &audio.Track{
 		Title:    title,
 		Duration: duration.Round(time.Second),
+		// optional, from the file's tags; invalid values are dropped, not rejected
+		MBID: validMBID(r.FormValue("mbid")),
+		ISRC: validISRC(r.FormValue("isrc")),
 	}
 	ext := filepath.Ext(header.Filename)
 	res, err := db.AddTrack(artistIDs, track, file, ext, link, singleDate)
@@ -212,4 +216,25 @@ func pathUUID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, b
 		return uuid.UUID{}, false
 	}
 	return id, true
+}
+
+// isrcPattern is an ISRC without hyphens: country, registrant, year, number.
+var isrcPattern = regexp.MustCompile(`^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$`)
+
+// validMBID returns s normalized if it is a MusicBrainz ID (a UUID), else "".
+func validMBID(s string) string {
+	id, err := uuid.Parse(strings.TrimSpace(s))
+	if err != nil {
+		return ""
+	}
+	return id.String()
+}
+
+// validISRC returns s normalized if it is an ISRC, else "".
+func validISRC(s string) string {
+	s = strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(s), "-", ""))
+	if !isrcPattern.MatchString(s) {
+		return ""
+	}
+	return s
 }
