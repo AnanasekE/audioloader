@@ -118,3 +118,27 @@ func TestDedupe(t *testing.T) {
 		t.Fatalf("counts = %v", counts)
 	}
 }
+
+func TestRunStopsWhenCancelled(t *testing.T) {
+	dbtest.New(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	Register("test_ctx", func(ctx context.Context, p json.RawMessage) error {
+		cancel()
+		return ctx.Err()
+	})
+	Enqueue("test_ctx", nil)
+	done := make(chan struct{})
+	go func() {
+		Run(ctx)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run kept going after cancel")
+	}
+	// the interrupted job is queued again without using up an attempt
+	if s := jobState(t, 1); s.status != "queued" || s.attempts != 0 {
+		t.Fatalf("job = %+v", s)
+	}
+}

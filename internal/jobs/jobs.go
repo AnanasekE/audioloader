@@ -97,7 +97,7 @@ func Run(ctx context.Context) {
 	if _, err := db.DB.Exec(`UPDATE jobs SET status = 'queued' WHERE status = 'running';`); err != nil {
 		log.Println("jobs: reset running:", err)
 	}
-	for {
+	for ctx.Err() == nil {
 		ran, err := RunOnce(ctx)
 		if err != nil {
 			log.Println("jobs:", err)

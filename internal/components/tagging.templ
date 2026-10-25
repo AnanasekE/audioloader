@@ -1,0 +1,128 @@
+package components
+
+import (
+	"fmt"
+	"time"
+
+	"audioloader/internal/audio"
+	"audioloader/internal/db"
+)
+
+const PageTagging = "tagging"
+
+// TaggingReview is one track waiting for review with its candidates, best first.
+type TaggingReview struct {
+	Track      *audio.Track
+	Candidates []db.Match
+}
+
+// TaggingStatus summarizes the auto-tagger for the review page header.
+type TaggingStatus struct {
+	Tracks   map[string]int // by tag status, "" = never tagged
+	Jobs     map[string]int // tagging and cover jobs by status
+	AcoustID bool           // fingerprint lookups available
+}
+
+templ TaggingPage(status TaggingStatus, reviews []TaggingReview) {
+	@layout("Tagging", PageTagging) {
+		@pageHeader("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
+			status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])) {
+			<div class="flex flex-wrap gap-2">
+				<button class="btn" hx-post="/ui/tagging/run">Auto-tag library</button>
+				if status.Jobs["failed"] > 0 {
+					<button class="btn" hx-post="/ui/tagging/retry">Retry { fmt.Sprint(status.Jobs["failed"]) } failed</button>
+				}
+			</div>
+		}
+		<section class="card mb-6 text-sm text-zinc-600 dark:text-zinc-300">
+			<p>
+				Queue: { fmt.Sprint(status.Jobs["queued"]) } waiting, { fmt.Sprint(status.Jobs["running"]) } running,
+				{ fmt.Sprint(status.Jobs["failed"]) } failed. MusicBrainz allows one request per second, so a large library takes a while.
+			</p>
+			if !status.AcoustID {
+				<p class="mt-2">
+					Fingerprint matching (AcoustID) is off: set <code>ACOUSTID_KEY</code> and install <code>fpcalc</code> (Chromaprint)
+					to identify tracks without useful tags.
+				</p>
+			}
+		</section>
+		if len(reviews) == 0 {
+			@emptyState() {
+				Nothing to review.
+			}
+		} else {
+			<form class="mb-6 flex flex-wrap items-center gap-2" hx-post="/ui/tagging/apply-all">
+				<label for="apply-threshold" class="text-sm">Apply every best match scoring at least</label>
+				<select id="apply-threshold" class="input w-auto" name="min">
+					for _, p := range []int{80, 70, 60} {
+						<option value={ fmt.Sprint(p) }>{ fmt.Sprint(p) }%</option>
+					}
+				</select>
+				<button class="btn" type="submit">Apply</button>
+			</form>
+			<div class="grid gap-4">
+				for _, rv := range reviews {
+					@taggingReview(rv)
+				}
+			</div>
+		}
+	}
+}
+
+templ taggingReview(rv TaggingReview) {
+	<section class="card">
+		<h2 class="font-semibold">{ rv.Track.Title }</h2>
+		<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+			{ artistNames(rv.Track.Artists) } · { formatDuration(rv.Track.Duration) }
+			for _, r := range rv.Track.Releases {
+				{ " · " }<a href={ releaseURL(r) }>{ r.Title }</a>
+			}
+		</p>
+		<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			for _, m := range rv.Candidates {
+				<li class="flex flex-wrap items-center justify-between gap-3 py-2">
+					<div class="min-w-0">
+						<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/recording/" + m.RecordingID) } target="_blank" rel="noopener">{ m.Title }</a>
+						<span class="text-sm text-zinc-500 dark:text-zinc-400">
+							{ " by " + matchArtistNames(m.Artists) } · { formatDuration(time.Duration(m.LengthMs) * time.Millisecond) }
+						</span>
+						if m.ReleaseTitle != "" {
+							<span class="block text-sm text-zinc-500 dark:text-zinc-400">
+								{ "on " + m.ReleaseTitle }
+								if m.ReleaseType != "" {
+									{ " (" + audio.ReleaseType(m.ReleaseType).Label() + ")" }
+								}
+								if m.ReleaseDate != "" {
+									{ ", " + m.ReleaseDate }
+								}
+							</span>
+						}
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="text-sm tabular-nums" title={ "found by " + m.Source }>{ fmt.Sprintf("%.0f%%", m.Score*100) }</span>
+						<button class="btn" hx-post={ "/ui/tagging/" + rv.Track.ID.String() + "/" + m.RecordingID + "/apply" }>Apply</button>
+						<button class="btn" hx-post={ "/ui/tagging/" + rv.Track.ID.String() + "/" + m.RecordingID + "/reject" }>Reject</button>
+					</div>
+				</li>
+			}
+		</ul>
+	</section>
+}
+
+// Badge is a small count next to a nav link; it renders nothing for 0.
+templ Badge(n int) {
+	if n > 0 {
+		<span class="ml-1 rounded-full bg-zinc-900 px-1.5 text-xs text-white tabular-nums dark:bg-zinc-100 dark:text-zinc-900">{ fmt.Sprint(n) }</span>
+	}
+}
+
+func matchArtistNames(artists []db.MatchArtist) string {
+	names := ""
+	for i, a := range artists {
+		if i > 0 {
+			names += ", "
+		}
+		names += a.Name
+	}
+	return names
+}

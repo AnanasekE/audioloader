@@ -20,6 +20,7 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /releases", getReleasesPage)
 	mux.HandleFunc("GET /releases/{release_id}", getReleasePage)
 	mux.HandleFunc("GET /releases/{release_id}/edit", getReleaseEditPage)
+	mux.HandleFunc("GET /tagging", getTaggingPage)
 
 	mux.HandleFunc("POST /ui/artists", createArtist)
 	mux.HandleFunc("GET /ui/artists", getArtists)
@@ -31,6 +32,13 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/releases/{release_id}/delete", deleteRelease)
 	mux.HandleFunc("POST /ui/releases/{release_id}/cover", uploadCover)
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
+
+	mux.HandleFunc("GET /ui/badges/tagging", getTaggingBadge)
+	mux.HandleFunc("POST /ui/tagging/run", runTagging)
+	mux.HandleFunc("POST /ui/tagging/retry", retryTagging)
+	mux.HandleFunc("POST /ui/tagging/apply-all", applyAllTagMatches)
+	mux.HandleFunc("POST /ui/tagging/{track_id}/{recording_id}/apply", applyTagMatch)
+	mux.HandleFunc("POST /ui/tagging/{track_id}/{recording_id}/reject", rejectTagMatch)
 
 	mux.HandleFunc("GET /api/tracks/{track_id}/stream", streamTrack)
 	mux.HandleFunc("POST /api/tracks/exists", checkTracksExist)

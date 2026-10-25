@@ -51,6 +51,10 @@ func SetReleaseCover(id uuid.UUID, r io.Reader, ext string) error {
 		return err
 	}
 	_, err = io.Copy(tmp, r)
+	if err == nil {
+		// CreateTemp makes the file private; covers are served to anyone
+		err = tmp.Chmod(0o644)
+	}
 	if cerr := tmp.Close(); err == nil {
 		err = cerr
 	}
