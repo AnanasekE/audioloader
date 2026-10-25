@@ -54,11 +54,11 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Type != "playlist" || len(info.Videos()) != 3 {
+	if info.Type != "playlist" || info.Title != "Mezzanine" || len(info.Videos()) != 3 {
 		t.Fatalf("playlist = %+v", info)
 	}
 	info, err = c.Info(context.Background(), VideoURL("aqz-KE-bpKQ"))
-	if err != nil || len(info.Videos()) != 1 || info.Videos()[0].ABR == 0 {
+	if err != nil || len(info.Videos()) != 1 || info.Videos()[0].ID != "aqz-KE-bpKQ" || info.Videos()[0].Title == "" || info.Videos()[0].ABR == 0 {
 		t.Fatalf("video = %+v, %v", info, err)
 	}
 }

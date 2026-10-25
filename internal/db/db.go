@@ -74,6 +74,8 @@ func Init() {
 // Open opens the SQLite database at path with foreign keys enforced.
 func Open(path string) (*sql.DB, error) {
 	// SQLite leaves foreign keys off unless enabled per connection; the DSN
-	// pragma applies it to every connection in the pool
-	return sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
+	// pragmas apply to every connection in the pool. Background workers and
+	// requests write at the same time: WAL lets reads go on during a write,
+	// and the busy timeout makes a writer wait for the lock instead of failing.
+	return sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)")
 }

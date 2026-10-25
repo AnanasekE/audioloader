@@ -1,0 +1,292 @@
+package components
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"audioloader/internal/audio"
+	"audioloader/internal/db"
+	"audioloader/internal/downloads"
+	"audioloader/internal/jobs"
+	"audioloader/internal/sources/ytdlp"
+)
+
+const PageDownloads = "downloads"
+
+// DownloadsPage lists placeholder tracks waiting for their files. ytErr is
+// why yt-dlp is unavailable, or "".
+templ DownloadsPage(active, failed, notFound []*db.Download, ytErr string) {
+	@layout("Downloads", PageDownloads) {
+		@pageHeader("Downloads", fmt.Sprintf("%d in progress · %d failed · %d not found", len(active), len(failed), len(notFound))) {
+		}
+		if ytErr != "" {
+			<p class="card mb-6 text-sm">YouTube downloads are off: { ytErr }.</p>
+		}
+		<h2 class="mb-3 text-lg font-semibold">In progress</h2>
+		@DownloadsActive(active)
+		<h2 class="mt-8 mb-1 text-lg font-semibold">Failed</h2>
+		if len(failed) > 0 {
+			<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+				YouTube often changes in ways that break yt-dlp; updating it usually fixes failed downloads.
+			</p>
+		}
+		@downloadList(failed, true)
+		<h2 class="mt-8 mb-3 text-lg font-semibold">Couldn't find</h2>
+		@downloadList(notFound, false)
+	}
+}
+
+// DownloadsActive is polled while downloads run; it stops polling itself
+// once nothing is left.
+templ DownloadsActive(active []*db.Download) {
+	<div
+		id="downloads-active"
+		if len(active) > 0 {
+			hx-get="/ui/downloads/active"
+			hx-trigger="every 2s"
+			hx-swap="outerHTML"
+		}
+	>
+		if len(active) == 0 {
+			@emptyState() {
+				Nothing downloading.
+			}
+		} else {
+			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, d := range active {
+					<li class="flex flex-wrap items-center justify-between gap-2 py-2">
+						@downloadTrack(d)
+						<span class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+							{ downloadStatus(d) }
+							if d.Status == db.DownloadDownloading {
+								<progress class="w-24" max="1" value={ fmt.Sprint(d.Progress) }></progress>
+							}
+						</span>
+					</li>
+				}
+			</ul>
+		}
+	</div>
+}
+
+templ downloadList(list []*db.Download, retry bool) {
+	if len(list) == 0 {
+		@emptyState() {
+			None.
+		}
+	} else {
+		<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+			for _, d := range list {
+				<li class="grid gap-2 py-3">
+					<div class="flex flex-wrap items-center justify-between gap-2">
+						@downloadTrack(d)
+						if retry {
+							<button class="btn" hx-post={ "/ui/downloads/" + d.Track.ID.String() + "/retry" }>Retry</button>
+						}
+					</div>
+					if d.LastError != "" {
+						<p class="text-sm break-words text-red-600 dark:text-red-400">{ d.LastError }</p>
+					}
+					@downloadFix(d.Track)
+				</li>
+			}
+		</ul>
+	}
+}
+
+// downloadFix offers the manual ways to get a track's file: a YouTube URL,
+// or uploading the file.
+templ downloadFix(t *audio.Track) {
+	<div class="flex flex-wrap gap-x-6 gap-y-2">
+		<form
+			class="flex flex-wrap items-center gap-2"
+			hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube" }
+			hx-target="next .fix-result"
+			hx-on::after-request="if (!event.detail.successful) this.parentElement.querySelector('.fix-result').textContent = event.detail.xhr.responseText"
+		>
+			<input class="input w-64" type="url" name="url" placeholder="YouTube video URL" aria-label={ "YouTube URL for " + t.Title } required/>
+			<button class="btn" type="submit">Download</button>
+		</form>
+		<form
+			class="flex flex-wrap items-center gap-2"
+			hx-post={ "/ui/tracks/" + t.ID.String() + "/file" }
+			hx-encoding="multipart/form-data"
+			hx-on::after-request="if (!event.detail.successful) this.parentElement.querySelector('.fix-result').textContent = event.detail.xhr.responseText"
+		>
+			<input type="file" name="track" accept={ audioAccept } aria-label={ "File for " + t.Title } required/>
+			<button class="btn" type="submit">Upload</button>
+		</form>
+		<span class="fix-result text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+	</div>
+}
+
+templ downloadTrack(d *db.Download) {
+	<span class="min-w-0">
+		<span class="block truncate">{ d.Track.Title }</span>
+		<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+			{ artistNames(d.Track.Artists) }
+			if d.Release != nil {
+				{ " · " }<a href={ releaseURL(d.Release) }>{ d.Release.Title }</a>{ fmt.Sprintf(" #%d", d.Position) }
+			}
+		</span>
+	</span>
+}
+
+func downloadStatus(d *db.Download) string {
+	switch d.Status {
+	case db.DownloadQueued:
+		return "Waiting"
+	case db.DownloadSearching:
+		return "Looking for a file"
+	case db.DownloadDownloading:
+		return "Downloading from " + d.Source
+	}
+	return d.Status
+}
+
+// releaseMissing is the release page's section for its placeholder tracks.
+templ releaseMissing(r *audio.Release) {
+	if n := missingCount(r); n > 0 {
+		<section class="card mt-6">
+			<h2 class="font-semibold">{ fmt.Sprintf("%d tracks not in your library yet", n) }</h2>
+			<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+				See <a href="/downloads">Downloads</a>, or fill them from a YouTube playlist of this release.
+			</p>
+			<form
+				class="flex flex-wrap items-center gap-2"
+				hx-post={ "/ui/releases/" + r.ID.String() + "/youtube" }
+				hx-target="#playlist-mapping"
+				hx-on::after-request="if (!event.detail.successful) document.getElementById('playlist-mapping').textContent = event.detail.xhr.responseText"
+				hx-indicator="#playlist-loading"
+			>
+				<input class="input w-80" type="url" name="url" placeholder="YouTube playlist URL" aria-label="YouTube playlist URL" required/>
+				<button class="btn" type="submit">Match tracks</button>
+				<span id="playlist-loading" class="htmx-indicator text-sm text-zinc-500">Reading the playlist…</span>
+			</form>
+			<div id="playlist-mapping" class="mt-4 text-sm"></div>
+		</section>
+	}
+}
+
+func missingCount(r *audio.Release) int {
+	n := 0
+	for _, rt := range r.Tracks {
+		if !rt.Track.HasFile {
+			n++
+		}
+	}
+	return n
+}
+
+// PlaylistMapping lets the user check which video fills which track.
+templ PlaylistMapping(r *audio.Release, mapping []downloads.Mapping, videos []ytdlp.Entry) {
+	<form hx-post={ "/ui/releases/" + r.ID.String() + "/youtube/confirm" } class="grid gap-2">
+		for _, m := range mapping {
+			<label class="grid items-center gap-2 sm:grid-cols-[2rem_1fr_1fr]">
+				<span class="text-right text-zinc-500 tabular-nums">{ fmt.Sprint(m.Track.Position) }</span>
+				<span class="truncate">{ m.Track.Track.Title }</span>
+				<input type="hidden" name="track_id" value={ m.Track.Track.ID.String() }/>
+				<select class="input" name="video_id" aria-label={ "Video for " + m.Track.Track.Title }>
+					<option value="">No video</option>
+					for _, v := range videos {
+						<option value={ v.ID } selected?={ v.ID == m.VideoID }>{ fmt.Sprintf("%s (%s)", v.Title, formatSeconds(v.Duration)) }</option>
+					}
+				</select>
+			</label>
+		}
+		<div>
+			<button class="btn" type="submit">Download matched videos</button>
+		</div>
+	</form>
+}
+
+func formatSeconds(s float64) string {
+	return fmt.Sprintf("%d:%02d", int(s)/60, int(s)%60)
+}
+
+// YouTubeImportPage imports videos or a playlist as new tracks.
+templ YouTubeImportPage(recent []jobs.Job) {
+	@layout("Import from YouTube", PageUpload) {
+		@pageHeader("Import from YouTube", "Download a video or a whole playlist as tracks") {
+			<a class="btn" href="/upload">Upload</a>
+		}
+		<form
+			class="card flex flex-wrap items-center gap-2"
+			hx-post="/ui/youtube/preview"
+			hx-target="#youtube-preview"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('youtube-preview').textContent = event.detail.xhr.responseText"
+			hx-indicator="#youtube-loading"
+		>
+			<input class="input flex-1" type="url" name="url" placeholder="YouTube video or playlist URL" aria-label="YouTube URL" required/>
+			<button class="btn" type="submit">Read</button>
+			<span id="youtube-loading" class="htmx-indicator text-sm text-zinc-500">Reading…</span>
+		</form>
+		<div id="youtube-preview" class="mt-6"></div>
+		if len(recent) > 0 {
+			<h2 class="mt-8 mb-3 text-lg font-semibold">Recent imports</h2>
+			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, j := range recent {
+					<li class="flex flex-wrap justify-between gap-2 py-2 text-sm">
+						<span>{ importTitle(j) }</span>
+						<span class="text-zinc-500">{ j.Status }</span>
+						if j.LastError != "" {
+							<span class="w-full break-words text-red-600 dark:text-red-400">{ j.LastError }</span>
+						}
+					</li>
+				}
+			</ul>
+		}
+		<script src="/assets/js/artist-picker.js" defer></script>
+	}
+}
+
+func importTitle(j jobs.Job) string {
+	var imp downloads.YouTubeImport
+	if json.Unmarshal(j.Payload, &imp) != nil {
+		return "?"
+	}
+	return imp.Title
+}
+
+// YouTubePreview lists the URL's videos with editable titles, and where
+// they go: artists, and a release or new singles.
+templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist, releases []*audio.Release) {
+	<form
+		class="card grid gap-4"
+		hx-post="/ui/youtube/import"
+		hx-target="#youtube-import-result"
+		hx-on::after-request="if (!event.detail.successful) document.getElementById('youtube-import-result').textContent = event.detail.xhr.responseText"
+	>
+		<p class="text-sm text-zinc-500 dark:text-zinc-400">
+			if info.Type == "playlist" {
+				{ fmt.Sprintf("%s: %d videos", info.Title, len(info.Videos())) }
+			} else {
+				One video
+			}
+		</p>
+		<ol class="grid gap-2">
+			for i, v := range info.Videos() {
+				<li class="grid items-center gap-2 sm:grid-cols-[auto_1fr_4rem]">
+					<input type="checkbox" name="video_id" value={ v.ID } checked aria-label={ "Import " + v.Title }/>
+					<input class="input" type="text" name={ "title_" + v.ID } value={ titles[i] } aria-label="Title" required/>
+					<span class="text-sm text-zinc-500 tabular-nums">{ formatSeconds(v.Duration) }</span>
+				</li>
+			}
+		</ol>
+		<div class="grid gap-4 sm:grid-cols-2">
+			<div>
+				<span class="mb-1 block text-sm font-medium">Artists</span>
+				@artistPicker(artists, nil)
+			</div>
+			<div>
+				<span class="mb-1 block text-sm font-medium">Release</span>
+				@releaseSelect("", releases, nil, "input")
+				<p class="mt-1 text-xs text-zinc-500">On a release, videos are added after its last track, in this order.</p>
+			</div>
+		</div>
+		<div class="flex items-center gap-4">
+			<button class="btn" type="submit">Import</button>
+			<span id="youtube-import-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+		</div>
+	</form>
+}

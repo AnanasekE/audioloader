@@ -43,7 +43,7 @@ func TestRunOnceSuccess(t *testing.T) {
 	if err := Enqueue("test_ok", "hello"); err != nil {
 		t.Fatal(err)
 	}
-	ran, err := RunOnce(context.Background())
+	ran, err := RunOnce(context.Background(), Lane{})
 	if err != nil || !ran {
 		t.Fatalf("ran = %v, err = %v", ran, err)
 	}
@@ -53,7 +53,7 @@ func TestRunOnceSuccess(t *testing.T) {
 	if s := jobState(t, 1); s.status != "done" {
 		t.Fatalf("status = %s", s.status)
 	}
-	if ran, _ := RunOnce(context.Background()); ran {
+	if ran, _ := RunOnce(context.Background(), Lane{}); ran {
 		t.Fatal("ran a job twice")
 	}
 }
@@ -64,19 +64,19 @@ func TestRetryWithBackoff(t *testing.T) {
 		return errors.New("boom")
 	})
 	Enqueue("test_fail", nil)
-	RunOnce(context.Background())
+	RunOnce(context.Background(), Lane{})
 	s := jobState(t, 1)
 	if s.status != "queued" || s.attempts != 1 || s.lastErr != "boom" || s.due {
 		t.Fatalf("after one failure: %+v", s)
 	}
 	// not due yet, so nothing runs
-	if ran, _ := RunOnce(context.Background()); ran {
+	if ran, _ := RunOnce(context.Background(), Lane{}); ran {
 		t.Fatal("ran before its backoff ended")
 	}
 
 	// the last allowed attempt marks it failed
 	db.DB.Exec(`UPDATE jobs SET attempts = ?, run_after = datetime('now', '-1 second');`, MaxAttempts-1)
-	RunOnce(context.Background())
+	RunOnce(context.Background(), Lane{})
 	if s := jobState(t, 1); s.status != "failed" || s.attempts != MaxAttempts {
 		t.Fatalf("after max attempts: %+v", s)
 	}
@@ -96,8 +96,8 @@ func TestPermanentAndUnknown(t *testing.T) {
 	})
 	Enqueue("test_perm", nil)
 	Enqueue("test_unknown", nil)
-	RunOnce(context.Background())
-	RunOnce(context.Background())
+	RunOnce(context.Background(), Lane{})
+	RunOnce(context.Background(), Lane{})
 	if s := jobState(t, 1); s.status != "failed" {
 		t.Fatalf("permanent: %+v", s)
 	}
@@ -129,7 +129,7 @@ func TestRunStopsWhenCancelled(t *testing.T) {
 	Enqueue("test_ctx", nil)
 	done := make(chan struct{})
 	go func() {
-		Run(ctx)
+		Run(ctx, Lane{})
 		close(done)
 	}()
 	select {
@@ -140,5 +140,25 @@ func TestRunStopsWhenCancelled(t *testing.T) {
 	// the interrupted job is queued again without using up an attempt
 	if s := jobState(t, 1); s.status != "queued" || s.attempts != 0 {
 		t.Fatalf("job = %+v", s)
+	}
+}
+
+func TestLanes(t *testing.T) {
+	dbtest.New(t)
+	Register("test_a", func(ctx context.Context, p json.RawMessage) error { return nil })
+	Register("test_b", func(ctx context.Context, p json.RawMessage) error { return nil })
+	Enqueue("test_a", nil)
+	Enqueue("test_b", nil)
+	if ran, _ := RunOnce(context.Background(), Lane{Only: []string{"test_b"}}); !ran {
+		t.Fatal("lane didn't run its job")
+	}
+	if s := jobState(t, 2); s.status != "done" {
+		t.Fatalf("test_b = %+v", s)
+	}
+	if ran, _ := RunOnce(context.Background(), Lane{Except: []string{"test_a"}}); ran {
+		t.Fatal("lane ran an excluded job")
+	}
+	if s := jobState(t, 1); s.status != "queued" {
+		t.Fatalf("test_a = %+v", s)
 	}
 }

@@ -153,13 +153,12 @@ type Entry struct {
 	ABR      float64 `json:"abr"` // audio bitrate, kbit/s; only for single videos
 }
 
-// Info is what yt-dlp knows about a URL.
+// Info is what yt-dlp knows about a URL: a video, or a playlist whose ID
+// and title are in Entry too.
 type Info struct {
 	Type    string  `json:"_type"` // "video" or "playlist"
-	ID      string  `json:"id"`
-	Title   string  `json:"title"`
 	Entries []Entry `json:"entries"`
-	Entry           // the video's own fields when Type is "video"
+	Entry
 }
 
 // Videos returns the playlist's entries, or the video itself.
