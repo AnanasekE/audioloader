@@ -45,7 +45,23 @@ templ player() {
 				<strong id="player-title" class="block truncate text-sm"></strong>
 				<span id="player-artists" class="block truncate text-xs text-zinc-500 dark:text-zinc-400"></span>
 			</div>
+			<div class="flex shrink-0 items-center gap-1">
+				<button id="player-prev" type="button" class="btn px-2" aria-label="Previous track">⏮</button>
+				<button id="player-next" type="button" class="btn px-2" aria-label="Next track">⏭</button>
+				<button id="player-shuffle" type="button" class="btn px-2 aria-pressed:bg-zinc-900 aria-pressed:text-white dark:aria-pressed:bg-zinc-100 dark:aria-pressed:text-zinc-900" aria-label="Shuffle" aria-pressed="false">⇄</button>
+			</div>
 			<audio id="player-audio" class="h-9 min-w-0 flex-1" controls preload="metadata"></audio>
+			<details id="player-queue" class="relative shrink-0">
+				<summary class="btn cursor-pointer list-none px-2" aria-label="Queue">☰</summary>
+				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-md border border-zinc-300 bg-white p-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+					<div class="mb-1 flex items-center justify-between">
+						<strong>Up next</strong>
+						<button id="player-queue-clear" type="button" class="text-xs underline">Clear</button>
+					</div>
+					<ol id="player-queue-list" class="max-h-72 overflow-auto"></ol>
+					<p id="player-queue-empty" class="py-1 text-zinc-500">Nothing queued.</p>
+				</div>
+			</details>
 		</div>
 	</div>
 }
@@ -72,19 +88,23 @@ templ nav(active string) {
 
 templ navLink(href string, label string, current bool) {
 	<li>
-		if current {
-			<a href={ templ.SafeURL(href) } aria-current="page" class="font-semibold text-zinc-900 underline underline-offset-4 dark:text-zinc-100">{ label }</a>
-		} else {
-			<a href={ templ.SafeURL(href) } class="text-zinc-500 hover:text-zinc-900 hover:no-underline dark:text-zinc-400 dark:hover:text-zinc-100">{ label }</a>
-		}
+		@navAnchor(href, label, current)
 	</li>
+}
+
+templ navAnchor(href string, label string, current bool) {
+	if current {
+		<a href={ templ.SafeURL(href) } aria-current="page" class="font-semibold text-zinc-900 underline underline-offset-4 dark:text-zinc-100">{ label }</a>
+	} else {
+		<a href={ templ.SafeURL(href) } class="text-zinc-500 hover:text-zinc-900 hover:no-underline dark:text-zinc-400 dark:hover:text-zinc-100">{ label }</a>
+	}
 }
 
 // navLinkBadge is a nav link with a count loaded from badgeURL after the
 // page, so pages don't each have to look the count up.
 templ navLinkBadge(href string, label string, current bool, badgeURL string) {
 	<li class="flex items-center">
-		@navLink(href, label, current)
+		@navAnchor(href, label, current)
 		<span hx-get={ badgeURL } hx-trigger="load" hx-swap="outerHTML"></span>
 	</li>
 }

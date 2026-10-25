@@ -152,6 +152,10 @@ templ ReleasePage(r *audio.Release) {
 
 templ releaseActions(r *audio.Release) {
 	<div class="mt-4 flex flex-wrap gap-2">
+		if missingCount(r) < len(r.Tracks) {
+			<button type="button" class="btn" data-play-list="release-tracks">Play</button>
+			<button type="button" class="btn" data-play-list="release-tracks" data-shuffle>Shuffle</button>
+		}
 		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
 		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
 	</div>
@@ -173,6 +177,7 @@ templ albumView(r *audio.Release) {
 			No tracks yet. Upload tracks, or add existing ones with Edit tracklist.
 		}
 	}
+	<div id="release-tracks" data-track-list>
 	for _, disc := range r.Discs() {
 		<section class="mb-8">
 			if len(r.Discs()) > 1 {
@@ -187,6 +192,7 @@ templ albumView(r *audio.Release) {
 			</ol>
 		</section>
 	}
+	</div>
 }
 
 // singleView centres a single on its song: the first track is the A-side,
@@ -202,7 +208,7 @@ templ singleView(r *audio.Release) {
 				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Date }</p>
 			}
 			if len(r.Tracks) > 0 {
-				<div class="mt-6 flex items-center gap-4">
+				<div class="mt-6 flex items-center gap-4" id="release-tracks" data-track-list data-track-row>
 					@playButton(r.Tracks[0].Track, "size-14 text-xl")
 					<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
 				</div>
@@ -234,7 +240,7 @@ templ singleView(r *audio.Release) {
 }
 
 templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
-	<div class={ "grid grid-cols-[2rem_auto_1fr_auto] items-center gap-x-3 py-2", templ.KV("text-zinc-400 dark:text-zinc-500", !rt.Track.HasFile) }>
+	<div class={ "grid grid-cols-[2rem_auto_1fr_auto_auto] items-center gap-x-3 py-2", templ.KV("text-zinc-400 dark:text-zinc-500", !rt.Track.HasFile) } data-track-row>
 		<span class="text-right text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ fmt.Sprint(rt.Position) }</span>
 		@playButton(rt.Track, "size-9 text-sm")
 		<div class="min-w-0">
@@ -245,6 +251,7 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 			}
 		</div>
 		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(rt.Track.Duration) }</span>
+		@trackMenu(rt.Track)
 	</div>
 }
 

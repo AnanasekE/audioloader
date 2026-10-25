@@ -112,7 +112,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 }
 
 templ Track(t *audio.Track) {
-	<article class="grid grid-cols-[auto_3.5rem_1fr_auto] items-center gap-x-4 py-3">
+	<article class="grid grid-cols-[auto_3.5rem_1fr_auto_auto] items-center gap-x-4 py-3" data-track-row>
 		@playButton(t, "size-10")
 		<img class="pixelated size-14 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
 		<div class="flex min-w-0 flex-col">
@@ -123,7 +123,25 @@ templ Track(t *audio.Track) {
 			</span>
 		</div>
 		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(t.Duration) }</span>
+		@trackMenu(t)
 	</article>
+}
+
+// trackMenu offers queueing a track; player.js handles its buttons. It
+// reads the track from the play button in the same [data-track-row].
+templ trackMenu(t *audio.Track) {
+	if t.HasFile {
+		<details class="relative" data-track-menu>
+			<summary class="btn cursor-pointer list-none px-2" aria-label={ "More for " + t.Title }>⋯</summary>
+			<div class="absolute right-0 z-10 mt-1 grid w-44 rounded-md border border-zinc-300 bg-white p-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="next">Play next</button>
+				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="add">Add to queue</button>
+				{ children... }
+			</div>
+		</details>
+	} else {
+		<span></span>
+	}
 }
 
 // playButton hands t to the global player (player.js); size sets the button's size classes.
@@ -206,7 +224,8 @@ templ TrackList(tracks []*audio.Track) {
 			No tracks yet. <a href="/upload">Upload one</a>.
 		}
 	} else {
-		<ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
+		// data-track-list: playing a track queues the rest of the list after it
+		<ul class="divide-y divide-zinc-200 dark:divide-zinc-800" data-track-list>
 			for _, track := range tracks {
 				<li>
 					@Track(track)
