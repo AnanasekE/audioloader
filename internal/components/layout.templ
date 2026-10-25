@@ -44,10 +44,20 @@ templ player() {
 			<div class="w-32 min-w-0 shrink-0 sm:w-56">
 				<strong id="player-title" class="block truncate text-sm"></strong>
 				<span id="player-artists" class="block truncate text-xs text-zinc-500 dark:text-zinc-400"></span>
+				<span id="player-chapter" class="block truncate text-xs text-zinc-500 dark:text-zinc-400" hidden></span>
 			</div>
 			<div class="flex shrink-0 items-center gap-1">
 				<button id="player-prev" type="button" class="btn px-2" aria-label="Previous track">⏮</button>
 				<button id="player-next" type="button" class="btn px-2" aria-label="Next track">⏭</button>
+				<span id="player-episode-controls" class="flex items-center gap-1" hidden>
+					<button id="player-back" type="button" class="btn px-2 text-xs" aria-label="Back 15 seconds">−15</button>
+					<button id="player-forward" type="button" class="btn px-2 text-xs" aria-label="Forward 30 seconds">+30</button>
+					<select id="player-speed" class="input w-auto px-1 py-1 text-xs" aria-label="Playback speed">
+						for _, s := range []string{"0.8", "1", "1.1", "1.25", "1.5", "1.75", "2"} {
+							<option value={ s } selected?={ s == "1" }>{ s }×</option>
+						}
+					</select>
+				</span>
 				<button id="player-shuffle" type="button" class="btn px-2 aria-pressed:bg-zinc-900 aria-pressed:text-white dark:aria-pressed:bg-zinc-100 dark:aria-pressed:text-zinc-900" aria-label="Shuffle" aria-pressed="false">⇄</button>
 			</div>
 			<audio id="player-audio" class="h-9 min-w-0 flex-1" controls preload="metadata"></audio>
@@ -60,6 +70,10 @@ templ player() {
 					</div>
 					<ol id="player-queue-list" class="max-h-72 overflow-auto"></ol>
 					<p id="player-queue-empty" class="py-1 text-zinc-500">Nothing queued.</p>
+					<div id="player-chapters-box" class="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-700" hidden>
+						<strong>Chapters</strong>
+						<ol id="player-chapters" class="max-h-60 overflow-auto"></ol>
+					</div>
 				</div>
 			</details>
 		</div>
@@ -92,6 +106,7 @@ templ nav(active string) {
 				@navLink("/tracks", "Tracks", active == PageTracks)
 				@navLink("/releases", "Releases", active == PageReleases)
 				@navLink("/playlists", "Playlists", active == PagePlaylists)
+				@navLink("/shows", "Podcasts", active == PageShows)
 				@navLink("/upload", "Upload", active == PageUpload)
 				@navLink("/artists", "Artists", active == PageArtists)
 				@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")

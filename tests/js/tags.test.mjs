@@ -24,3 +24,11 @@ for (const name of ["tagged.mp3", "tagged.flac", "tagged.m4a"]) {
 		assert.equal(t.isrc, "GBAAA9800322");
 	});
 }
+
+test("podcast flags", async () => {
+	const t = await window.readTags(fixture("podcast.mp3"));
+	assert.equal(t.genre, "Podcast");
+	assert.equal(t.podcast, true);
+	const music = await window.readTags(fixture("tagged.mp3"));
+	assert.equal(music.podcast, false);
+});

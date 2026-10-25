@@ -1,0 +1,182 @@
+package components
+
+import (
+	"fmt"
+
+	"audioloader/internal/audio"
+)
+
+const PageShows = "shows"
+
+templ ShowsPage(shows []*audio.Show, continueListening []*audio.Track) {
+	@layout("Podcasts", PageShows) {
+		@pageHeader("Podcasts", plural(len(shows), "show")) {
+			<a class="btn" href="/upload#episode">Upload episode</a>
+		}
+		@ContinueListening(continueListening)
+		if len(shows) == 0 {
+			@emptyState() {
+				No podcasts yet. Upload an episode to start one.
+			}
+		} else {
+			<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
+				for _, s := range shows {
+					<a class="card block hover:no-underline" href={ showURL(s.ID.String()) }>
+						<img class="pixelated mb-2 aspect-square w-full rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ s.ImgURL } alt=""/>
+						<strong class="block truncate text-zinc-900 dark:text-zinc-100">{ s.Title }</strong>
+						<span class="text-sm text-zinc-500 dark:text-zinc-400">
+							{ plural(s.Count, "episode") }
+							if s.Unplayed > 0 {
+								{ fmt.Sprintf(", %d unplayed", s.Unplayed) }
+							}
+						</span>
+					</a>
+				}
+			</div>
+		}
+	}
+}
+
+// ContinueListening lists episodes that were started but not finished.
+templ ContinueListening(tracks []*audio.Track) {
+	if len(tracks) > 0 {
+		<section class="mb-8">
+			<h2 class="mb-3 text-lg font-semibold">Continue listening</h2>
+			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, t := range tracks {
+					<li class="flex items-center gap-3 py-2" data-track-row>
+						@playButton(t, "size-10")
+						<div class="min-w-0 flex-1">
+							<a class="block truncate" href={ showURL(t.ShowID) }>{ t.Title }</a>
+							@episodeProgress(t)
+						</div>
+					</li>
+				}
+			</ul>
+		</section>
+	}
+}
+
+templ ShowPage(s *audio.Show) {
+	@layout(s.Title, PageShows) {
+		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+			<img class="pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ s.ImgURL } alt=""/>
+			<div class="min-w-0">
+				<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Podcast</p>
+				<h1 class="text-4xl font-bold tracking-tight">{ s.Title }</h1>
+				if s.Author != "" {
+					<p class="mt-1">{ s.Author }</p>
+				}
+				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ plural(s.Count, "episode") }{ fmt.Sprintf(", %d unplayed", s.Unplayed) }</p>
+			</div>
+		</div>
+		if len(s.Episodes) == 0 {
+			@emptyState() {
+				No episodes yet.
+			}
+		} else {
+			// not a [data-track-list]: an episode plays on its own, it doesn't queue the rest
+			<ol class="divide-y divide-zinc-200 dark:divide-zinc-800">
+				for _, t := range s.Episodes {
+					<li class={ "grid grid-cols-[auto_1fr_auto] items-center gap-x-4 py-3", templ.KV("opacity-60", t.Finished) } data-track-row>
+						@playButton(t, "size-10")
+						<div class="min-w-0">
+							<strong class="block truncate">{ t.Title }</strong>
+							<span class="text-sm text-zinc-500 dark:text-zinc-400">
+								if t.Published != "" {
+									{ t.Published + " · " }
+								}
+								{ formatDuration(t.Duration) }
+							</span>
+							@episodeProgress(t)
+						</div>
+						if t.Finished || t.Position > 0 {
+							<button class="btn text-sm" hx-post={ "/ui/tracks/" + t.ID.String() + "/unplayed" }>Mark unplayed</button>
+						} else {
+							<button class="btn text-sm" hx-post={ "/ui/tracks/" + t.ID.String() + "/played" }>Mark played</button>
+						}
+					</li>
+				}
+			</ol>
+		}
+	}
+}
+
+templ episodeProgress(t *audio.Track) {
+	if t.Finished {
+		<span class="block text-xs text-zinc-500">Played</span>
+	} else if t.Position > 0 && t.Duration > 0 {
+		<div class="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+			<progress class="h-1.5 w-32" max={ fmt.Sprint(int(t.Duration.Seconds())) } value={ fmt.Sprint(int(t.Position.Seconds())) }></progress>
+			{ formatDuration(t.Duration-t.Position) + " left" }
+		</div>
+	}
+}
+
+func showURL(id string) templ.SafeURL {
+	return templ.SafeURL("/shows/" + id)
+}
+
+// EpisodeForm uploads a podcast episode into a show, new or existing.
+templ EpisodeForm(shows []*audio.Show) {
+	<section class="card">
+		<form
+			id="episode-form"
+			class="grid max-w-lg gap-4"
+			hx-post="/ui/episodes"
+			hx-encoding="multipart/form-data"
+			hx-target="#result-episode"
+			hx-on::after-request="
+				if (event.detail.successful) this.reset();
+				else document.getElementById('result-episode').textContent = event.detail.xhr.responseText || 'Upload failed.';
+			"
+		>
+			<div>
+				<label for="episode-title" class="mb-1 block text-sm font-medium">Episode title</label>
+				<input id="episode-title" class="input" type="text" name="title" required/>
+			</div>
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label for="episode-show" class="mb-1 block text-sm font-medium">Show</label>
+					<select id="episode-show" class="input" name="show_id">
+						<option value="">New show…</option>
+						for i, s := range shows {
+							<option value={ s.ID.String() } selected?={ i == 0 }>{ s.Title }</option>
+						}
+					</select>
+				</div>
+				<div>
+					<label for="episode-show-name" class="mb-1 block text-sm font-medium">New show name</label>
+					<input id="episode-show-name" class="input" type="text" name="show_name" placeholder="Only for a new show"/>
+				</div>
+			</div>
+			<div>
+				<label for="episode-date" class="mb-1 block text-sm font-medium">Published <span class="font-normal text-zinc-500">(optional)</span></label>
+				<input
+					id="episode-date"
+					class="input"
+					type="text"
+					name="published"
+					placeholder="YYYY-MM-DD"
+					pattern="\d{4}(-\d{2}(-\d{2})?)?"
+					title="YYYY, YYYY-MM or YYYY-MM-DD"
+				/>
+			</div>
+			<div>
+				<label for="episode-file" class="mb-1 block text-sm font-medium">Audio file</label>
+				<input
+					id="episode-file"
+					class="input file:mr-3 file:rounded file:border-0 file:bg-zinc-200 file:px-2 file:py-1 file:text-sm dark:file:bg-zinc-700"
+					type="file"
+					name="track"
+					required
+					accept={ audioAccept }
+				/>
+			</div>
+			<div>
+				<button class="btn" type="submit">Upload episode</button>
+			</div>
+		</form>
+		<div id="result-episode" class="mt-4 text-sm" aria-live="polite"></div>
+	</section>
+}

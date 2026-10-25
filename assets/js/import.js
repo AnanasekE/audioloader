@@ -14,6 +14,7 @@
 	const review = $("import-review");
 	const groupsEl = $("import-groups");
 	const singlesEl = $("import-singles");
+	const episodesEl = $("import-episodes");
 	const summary = $("import-summary");
 	const result = $("import-result");
 	const moveSelect = $("import-move");
@@ -94,6 +95,8 @@
 				trackFingerprint?.supported() ? trackFingerprint.of(file).catch(() => null) : null,
 			]);
 			const item = { id: nextID++, file, path, tags, fp, inLibrary: false, dupOf: null, groupID: null, done: false };
+			// podcast episodes go to a show, not a release, unless moved into one
+			item.episode = tags.podcast || /podcast/i.test(tags.genre);
 			const tagArtists = tags.artists.flatMap(splitArtists);
 			item.values = {
 				title: cleanTitle(tags.title || titleFromFile(path), tagArtists.length ? tagArtists : [creator()]),
@@ -160,7 +163,7 @@
 		}
 
 		for (const it of added) {
-			if (it.dupOf) continue;
+			if (it.dupOf || it.episode) continue;
 			const t = it.tags;
 			let key = null;
 			let title = "";
@@ -241,10 +244,15 @@
 		syncAll();
 		groups = groups.filter((g) => g.itemIDs.length);
 		groupsEl.replaceChildren(...groups.map(renderGroup));
-		const singles = [...items.values()].filter((it) => !it.groupID && !it.dupOf);
+		const loose = [...items.values()].filter((it) => !it.groupID && !it.dupOf);
+		const singles = loose.filter((it) => !it.episode);
+		const episodes = loose.filter((it) => it.episode);
 		singlesEl.replaceChildren(...singles.map((it) => renderItem(it, templates.single)));
 		$("import-singles-count").textContent = `(${singles.length})`;
 		$("import-singles-section").hidden = !singles.length;
+		episodesEl.replaceChildren(...episodes.map((it) => renderItem(it, templates.single)));
+		$("import-episodes-count").textContent = `(${episodes.length})`;
+		$("import-episodes-section").hidden = !episodes.length;
 
 		const dups = [...items.values()].filter((it) => it.dupOf).length;
 		const inLib = [...items.values()].filter((it) => it.inLibrary).length;
@@ -252,6 +260,7 @@
 		summary.textContent =
 			`${items.size} files: ${count("album")} albums, ${count("ep")} EPs, ${count("compilation")} compilations, ` +
 			`${count("single") + singles.length} singles` +
+			(episodes.length ? `, ${episodes.length} podcast episodes` : "") +
 			(inLib ? `, ${inLib} already in the library` : "") +
 			(dups ? `, ${dups} duplicate files left out` : "") +
 			".";
@@ -750,20 +759,26 @@
 			setStatus(it, "pending", "Uploading…");
 			const fd = new FormData();
 			fd.append("title", it.values.title.trim());
-			idsFor(it.values.artists || artistsFallback(it)).forEach((id) => fd.append("artist_id", id));
-			if (release) {
-				fd.append("release_id", release.id);
-				fd.append("disc", release.disc);
-				fd.append("position", release.position);
-			} else if (it.values.date) {
-				fd.append("date", it.values.date);
+			const episode = it.episode && !release;
+			if (episode) {
+				fd.append("show_name", it.tags.album || it.tags.albumArtist || it.values.artists || "Podcast");
+				if (it.values.date) fd.append("published", it.values.date);
+			} else {
+				idsFor(it.values.artists || artistsFallback(it)).forEach((id) => fd.append("artist_id", id));
+				if (release) {
+					fd.append("release_id", release.id);
+					fd.append("disc", release.disc);
+					fd.append("position", release.position);
+				} else if (it.values.date) {
+					fd.append("date", it.values.date);
+				}
 			}
 			// MusicBrainz tags let the auto-tagger match the track without a lookup
 			if (it.tags.mb.recording) fd.append("mbid", it.tags.mb.recording);
 			if (it.tags.isrc) fd.append("isrc", it.tags.isrc);
 			fd.append("track", it.file, it.file.name);
 			try {
-				const res = await fetch("/ui/tracks", { method: "POST", body: fd });
+				const res = await fetch(episode ? "/ui/episodes" : "/ui/tracks", { method: "POST", body: fd });
 				const text = (await res.text()).replace(/<[^>]*>/g, "").trim();
 				if (res.ok) {
 					it.done = true;

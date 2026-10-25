@@ -19,7 +19,12 @@ func getTracksPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.TracksPage(tracks))
+	cont, err := db.ContinueListening(5)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.TracksPage(tracks, cont))
 }
 
 func getUploadPage(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +33,12 @@ func getUploadPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.UploadPage(artists))
+	shows, err := db.ListShows()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.UploadPage(artists, shows))
 }
 
 func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {

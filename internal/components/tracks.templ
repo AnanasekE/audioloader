@@ -8,11 +8,12 @@ import (
 	"audioloader/internal/audio"
 )
 
-templ TracksPage(tracks []*audio.Track) {
+templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track) {
 	@layout("Tracks", PageTracks) {
 		@pageHeader("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
 			<a class="btn" href="/upload">Upload track</a>
 		}
+		@ContinueListening(continueListening)
 		@TrackList(tracks)
 	}
 }
@@ -20,7 +21,7 @@ templ TracksPage(tracks []*audio.Track) {
 // UploadPage starts with the kind of release. A single is uploaded right
 // here; an album, EP or compilation is created first and its tracks are then
 // uploaded together in batch mode. The switch is CSS only (group-has).
-templ UploadPage(artists []*audio.Artist) {
+templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 	@layout("Upload", PageUpload) {
 		@pageHeader("Upload", "Add music to the library") {
 			<div class="flex flex-wrap gap-2">
@@ -40,6 +41,11 @@ templ UploadPage(artists []*audio.Artist) {
 							{ typ.Label() }
 						</label>
 					}
+					<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+						// not part of the release form: an episode isn't a release
+						<input id="kind-episode" class="sr-only" type="radio" name="type" value="episode" form="episode-form"/>
+						Podcast episode
+					</label>
 				</div>
 			</fieldset>
 			<div class="hidden group-has-[#kind-single:checked]:block">
@@ -47,6 +53,9 @@ templ UploadPage(artists []*audio.Artist) {
 			</div>
 			<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
 				@NewReleaseForm(artists, true)
+			</div>
+			<div class="hidden group-has-[#kind-episode:checked]:block">
+				@EpisodeForm(shows)
 			</div>
 		</div>
 	}
@@ -174,6 +183,13 @@ templ playableButton(t *audio.Track, size string) {
 		data-artists={ artistNames(t.Artists) }
 		data-img={ t.ImgURL }
 		data-src={ "/api/tracks/" + t.ID.String() + "/stream" }
+		if t.IsEpisode() {
+			data-kind="episode"
+			data-show={ t.ShowID }
+			if !t.Finished {
+				data-position={ fmt.Sprint(int(t.Position.Seconds())) }
+			}
+		}
 	>▶</button>
 }
 

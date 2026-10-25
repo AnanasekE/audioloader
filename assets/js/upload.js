@@ -18,7 +18,42 @@
 		status.textContent = msg;
 	}
 
+	// fileDuration reads a file's length in seconds through an <audio>
+	// element, or resolves 0 if the browser can't tell
+	function fileDuration(file) {
+		return new Promise((resolve) => {
+			const el = document.createElement("audio");
+			const url = URL.createObjectURL(file);
+			const done = (d) => (URL.revokeObjectURL(url), resolve(d));
+			el.preload = "metadata";
+			el.onloadedmetadata = () => done(Number.isFinite(el.duration) ? el.duration : 0);
+			el.onerror = () => done(0);
+			el.src = url;
+		});
+	}
+
+	// Files over 30 minutes are usually podcast episodes: move the file to
+	// the episode form. Picking "Single" again moves back by hand.
+	const LONG = 30 * 60;
+	async function suggestEpisode(file) {
+		const episodeInput = document.getElementById("episode-file");
+		const episodeKind = document.getElementById("kind-episode");
+		if (!episodeInput || !episodeKind || (await fileDuration(file)) < LONG) return false;
+		const dt = new DataTransfer();
+		dt.items.add(file);
+		episodeInput.files = dt.files;
+		const title = form.querySelector("input[name=title]").value;
+		if (title) document.getElementById("episode-title").value = title;
+		episodeKind.checked = true;
+		document.getElementById("result-episode").textContent = "This file is over 30 minutes, so it's set up as a podcast episode. Pick Single above if it's music.";
+		input.value = "";
+		return true;
+	}
+
+	if (location.hash === "#episode") document.getElementById("kind-episode")?.click();
+
 	input.addEventListener("change", async () => {
+		if (input.files[0] && (await suggestEpisode(input.files[0]))) return;
 		const id = ++checkID;
 		// a custom validity message blocks submission until cleared
 		input.setCustomValidity("");

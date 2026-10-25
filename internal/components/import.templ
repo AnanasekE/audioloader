@@ -61,6 +61,11 @@ templ ImportPage(artists []*audio.Artist) {
 					<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Each track here becomes its own single.</p>
 					<ol id="import-singles" class="divide-y divide-zinc-200 dark:divide-zinc-700"></ol>
 				</section>
+				<section id="import-episodes-section" hidden>
+					<h2 class="mt-6 mb-2 text-lg font-semibold">Podcast episodes <span id="import-episodes-count" class="text-sm font-normal text-zinc-500"></span></h2>
+					<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Tagged as podcasts. Each goes into the show named by its album tag.</p>
+					<ol id="import-episodes" class="divide-y divide-zinc-200 dark:divide-zinc-700"></ol>
+				</section>
 				<div class="mt-6 flex flex-wrap items-center gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
 					<button type="button" class="btn" data-action="pick-files">Add more files</button>
 					<p id="import-result" class="flex-1 text-sm" aria-live="polite"></p>

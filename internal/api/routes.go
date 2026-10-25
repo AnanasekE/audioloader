@@ -23,6 +23,8 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /tagging", getTaggingPage)
 	mux.HandleFunc("GET /inbox", getInboxPage)
 	mux.HandleFunc("GET /search", getSearchPage)
+	mux.HandleFunc("GET /shows", getShowsPage)
+	mux.HandleFunc("GET /shows/{show_id}", getShowPage)
 	mux.HandleFunc("GET /playlists", getPlaylistsPage)
 	mux.HandleFunc("GET /playlists/{playlist_id}", getPlaylistPage)
 	mux.HandleFunc("GET /playlists/{playlist_id}/edit", getPlaylistPage)
@@ -42,6 +44,9 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 
 	mux.HandleFunc("GET /ui/search", getSearchSuggest)
+	mux.HandleFunc("POST /ui/episodes", addEpisode)
+	mux.HandleFunc("POST /ui/tracks/{track_id}/played", markPlayed)
+	mux.HandleFunc("POST /ui/tracks/{track_id}/unplayed", markPlayed)
 	mux.HandleFunc("GET /ui/playlists/picker", getPlaylistPicker)
 	mux.HandleFunc("POST /ui/playlists", createPlaylist)
 	mux.HandleFunc("POST /ui/playlists/{playlist_id}/rename", renamePlaylist)
@@ -71,6 +76,8 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ui/tagging/{track_id}/{recording_id}/reject", rejectTagMatch)
 
 	mux.HandleFunc("GET /api/tracks/{track_id}/stream", streamTrack)
+	mux.HandleFunc("GET /api/tracks/{track_id}/chapters", getChapters)
+	mux.HandleFunc("POST /api/tracks/{track_id}/position", savePosition)
 	mux.HandleFunc("POST /api/tracks/exists", checkTracksExist)
 	mux.HandleFunc("POST /api/artists/resolve", resolveArtists)
 	mux.HandleFunc("POST /api/releases", createReleaseJSON)

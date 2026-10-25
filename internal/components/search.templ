@@ -23,6 +23,14 @@ templ SearchPage(q string, res *db.SearchResults) {
 				@ArtistList(res.Artists)
 			</div>
 		}
+		if len(res.Shows) > 0 {
+			<h2 class="mb-3 text-lg font-semibold">Podcasts</h2>
+			<ul class="card mb-8 divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, s := range res.Shows {
+					<li class="py-2"><a href={ showURL(s.ID.String()) }>{ s.Title }</a></li>
+				}
+			</ul>
+		}
 		if len(res.Releases) > 0 {
 			<h2 class="mb-3 text-lg font-semibold">Releases</h2>
 			<div class="mb-8">
@@ -53,6 +61,11 @@ templ SearchSuggest(q string, res *db.SearchResults) {
 			for _, a := range res.Artists {
 				<a class="block truncate rounded px-2 py-1 hover:bg-zinc-100 hover:no-underline dark:hover:bg-zinc-700" href={ searchURL(a.Name) }>
 					{ a.Name }<span class="text-zinc-500">{ " · Artist" }</span>
+				</a>
+			}
+			for _, s := range res.Shows {
+				<a class="block truncate rounded px-2 py-1 hover:bg-zinc-100 hover:no-underline dark:hover:bg-zinc-700" href={ showURL(s.ID.String()) }>
+					{ s.Title }<span class="text-zinc-500">{ " · Podcast" }</span>
 				</a>
 			}
 			for _, r := range res.Releases {

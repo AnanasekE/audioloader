@@ -4,7 +4,7 @@
 // via File.slice.
 // readTags(file) resolves to:
 //   { title, artists: [], albumArtist, album, track, trackTotal, disc, discTotal, date, releaseType,
-//     isrc, mb: { recording, release, releaseGroup, artists: [] } }
+//     isrc, mb: { recording, release, releaseGroup, artists: [] }, genre, podcast }
 // with "" or 0 for anything missing. mb holds MusicBrainz IDs, as written by Picard. It never rejects: unreadable files give empty tags.
 window.readTags = (() => {
 	// cover art can make tags large; give up beyond this
@@ -38,6 +38,8 @@ window.readTags = (() => {
 		return {
 			title: "", artists: [], albumArtist: "", album: "", track: 0, trackTotal: 0, disc: 0, discTotal: 0, date: "", releaseType: "",
 			isrc: "", mb: { recording: "", release: "", releaseGroup: "", artists: [] },
+			// podcast: the file says it's a podcast episode (ID3 PCST/TGID, MP4 pcst)
+			genre: "", podcast: false,
 		};
 	}
 
@@ -156,6 +158,11 @@ window.readTags = (() => {
 				else setMB(t, (desc || "").toLowerCase(), value || "");
 				continue;
 			}
+			// podcast frames: PCST is a flag, TGID the podcast's ID
+			if (id === "PCST" || id === "TGID") {
+				t.podcast = true;
+				continue;
+			}
 			if (id === "UFID" || id === "UFI") {
 				// owner URL, NUL, then the identifier as plain bytes
 				const nul = frame.indexOf(0);
@@ -173,6 +180,8 @@ window.readTags = (() => {
 				case "TRCK": case "TRK": setTrack(t, values[0]); break;
 				case "TPOS": case "TPA": setDisc(t, values[0]); break;
 				case "TSRC": case "TRC": setMB(t, "isrc", values[0]); break;
+				// ID3v1 genre 186 is "Podcast"
+				case "TCON": case "TCO": t.genre ||= values[0] === "(186)" || values[0] === "186" ? "Podcast" : values[0]; break;
 				case "TDRC": case "TDRL": case "TYER": case "TYE": setDate(t, values[0]); break;
 				case "TDAT": case "TDA":
 					// v2.3 day and month as DDMM, completing TYER
@@ -242,6 +251,7 @@ window.readTags = (() => {
 				case "DISCTOTAL": case "TOTALDISCS": t.discTotal ||= parseInt(value, 10) || 0; break;
 				case "DATE": case "YEAR": case "ORIGINALDATE": setDate(t, value); break;
 				case "RELEASETYPE": case "MUSICBRAINZ_ALBUMTYPE": setReleaseType(t, value); break;
+				case "GENRE": t.genre ||= value; break;
 				default: setMB(t, key.toLowerCase(), value);
 			}
 		}
@@ -342,6 +352,8 @@ window.readTags = (() => {
 				case "aART": t.albumArtist ||= text(); break;
 				case "©alb": t.album ||= text(); break;
 				case "©day": setDate(t, text()); break;
+				case "©gen": t.genre ||= text(); break;
+				case "pcst": t.podcast ||= value[0] === 1; break;
 				case "trkn": t.track ||= (value[2] << 8) | value[3]; t.trackTotal ||= (value[4] << 8) | value[5]; break;
 				case "disk": t.disc ||= (value[2] << 8) | value[3]; t.discTotal ||= (value[4] << 8) | value[5]; break;
 				case "----": {
