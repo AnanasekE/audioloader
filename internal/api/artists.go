@@ -39,7 +39,7 @@ func createArtist(w http.ResponseWriter, r *http.Request) {
 }
 
 func getArtists(w http.ResponseWriter, r *http.Request) {
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return

@@ -16,12 +16,12 @@ import (
 )
 
 func getShowsPage(w http.ResponseWriter, r *http.Request) {
-	shows, err := db.ListShows()
+	shows, err := db.ListShows(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	cont, err := db.ContinueListening(10)
+	cont, err := db.ContinueListening(viewer(r), 10)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -34,7 +34,7 @@ func getShowPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	s, err := db.GetShow(id.String())
+	s, err := db.GetShow(viewer(r), id.String())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return

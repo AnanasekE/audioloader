@@ -198,6 +198,19 @@ var migrations = []func(tx *sql.Tx) error{
 			CREATE TRIGGER search_dirty_shows_delete AFTER DELETE ON shows BEGIN UPDATE search_state SET dirty = 1; END;`)
 		return err
 	},
+	// 11: secret tracks, visible only to a viewer who unlocked the vault;
+	// the search index gets a column to filter them, so it is rebuilt
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			ALTER TABLE tracks ADD COLUMN secret INTEGER NOT NULL DEFAULT 0;
+			DROP TABLE search;
+			CREATE VIRTUAL TABLE search USING fts5(
+				kind UNINDEXED, ref UNINDEXED, secret UNINDEXED, title, artists,
+				tokenize = 'unicode61 remove_diacritics 2'
+			);
+			UPDATE search_state SET dirty = 1;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

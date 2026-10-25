@@ -14,12 +14,12 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTracksPage(w http.ResponseWriter, r *http.Request) {
-	tracks, err := db.ListTracks()
+	tracks, err := db.ListTracks(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	cont, err := db.ContinueListening(5)
+	cont, err := db.ContinueListening(viewer(r), 5)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -28,12 +28,12 @@ func getTracksPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUploadPage(w http.ResponseWriter, r *http.Request) {
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	shows, err := db.ListShows()
+	shows, err := db.ListShows(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -42,13 +42,13 @@ func getUploadPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
 
-	releases, err := db.ListReleases()
+	releases, err := db.ListReleases(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -88,7 +88,7 @@ func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getArtistsPage(w http.ResponseWriter, r *http.Request) {
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -97,7 +97,7 @@ func getArtistsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getImportPage(w http.ResponseWriter, r *http.Request) {
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -107,7 +107,7 @@ func getImportPage(w http.ResponseWriter, r *http.Request) {
 
 func getSearchPage(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	res, err := db.Search(q, 50)
+	res, err := db.Search(viewer(r), q, 50)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -117,7 +117,7 @@ func getSearchPage(w http.ResponseWriter, r *http.Request) {
 
 func getSearchSuggest(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	res, err := db.Search(q, 5)
+	res, err := db.Search(viewer(r), q, 5)
 	if err != nil {
 		serverError(w, err)
 		return

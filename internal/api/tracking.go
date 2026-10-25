@@ -23,7 +23,7 @@ func getFollowPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	a, err := db.GetArtist(id.String())
+	a, err := db.GetArtist(viewer(r), id.String())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return

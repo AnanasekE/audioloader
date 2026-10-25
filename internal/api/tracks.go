@@ -20,7 +20,7 @@ import (
 )
 
 func getTracks(w http.ResponseWriter, r *http.Request) {
-	tracks, err := db.ListTracks()
+	tracks, err := db.ListTracks(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -34,7 +34,7 @@ func getTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	track, err := db.GetTrack(id.String())
+	track, err := db.GetTrack(viewer(r), id.String())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -98,7 +98,7 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 		ISRC: validISRC(r.FormValue("isrc")),
 	}
 	ext := filepath.Ext(header.Filename)
-	res, err := db.AddTrack(artistIDs, track, file, ext, link, singleDate)
+	res, err := db.AddTrack(viewer(r), artistIDs, track, file, ext, link, singleDate)
 	switch {
 	case errors.Is(err, db.ErrExists):
 		http.Error(w, "already exists", http.StatusConflict)
@@ -163,7 +163,7 @@ func checkTracksExist(w http.ResponseWriter, r *http.Request) {
 
 	exists := make([]bool, len(fps))
 	for i, fp := range fps {
-		ok, err := db.TrackExists(fp)
+		ok, err := db.TrackExists(viewer(r), fp)
 		if err != nil {
 			serverError(w, err)
 			return

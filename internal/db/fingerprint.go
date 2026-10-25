@@ -46,10 +46,12 @@ func FingerprintOf(r io.ReadSeeker) (Fingerprint, error) {
 	return Fingerprint{Size: size, HeadHash: hex.EncodeToString(h.Sum(nil))}, nil
 }
 
-func TrackExists(fp Fingerprint) (bool, error) {
+// TrackExists reports whether a track with fp is stored. For v, a secret
+// track it can't see doesn't exist.
+func TrackExists(v Viewer, fp Fingerprint) (bool, error) {
 	var n int
 	err := DB.QueryRow(
-		`SELECT COUNT(*) FROM tracks WHERE file_size = ? AND head_hash = ?;`,
+		`SELECT COUNT(*) FROM tracks t WHERE file_size = ? AND head_hash = ? AND `+v.trackCond("t")+`;`,
 		fp.Size, fp.HeadHash,
 	).Scan(&n)
 	return n > 0, err

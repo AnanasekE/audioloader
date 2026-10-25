@@ -57,7 +57,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	// owned as a single; the tracklists in the fixture all have Teardrop
-	_, err := db.AddTrack([]string{a.ID.String()}, &audio.Track{Title: "Teardrop", Duration: 331 * time.Second},
+	_, err := db.AddTrack(db.All, []string{a.ID.String()}, &audio.Track{Title: "Teardrop", Duration: 331 * time.Second},
 		bytes.NewReader([]byte("x")), ".mp3", nil, "")
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rel, _ := db.GetRelease(relID)
+	rel, _ := db.GetRelease(db.All, relID)
 	if len(rel.Tracks) != 11 {
 		t.Fatalf("tracks = %d", len(rel.Tracks))
 	}

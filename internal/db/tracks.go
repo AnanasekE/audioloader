@@ -15,7 +15,7 @@ import (
 var ErrNotFound = errors.New("not found")
 
 const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''),
-	t.kind, COALESCE(t.show_id, ''), COALESCE(t.published, '') FROM tracks t`
+	t.kind, COALESCE(t.show_id, ''), COALESCE(t.published, ''), t.secret FROM tracks t`
 
 // libraryTracks is the condition every listing of the music library uses,
 // on a tracks table aliased t. Placeholders have no file to play, so they
@@ -30,15 +30,15 @@ type scanner interface {
 func scanTrack(s scanner) (*audio.Track, error) {
 	var t audio.Track
 	var seconds int
-	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind, &t.ShowID, &t.Published); err != nil {
+	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind, &t.ShowID, &t.Published, &t.Secret); err != nil {
 		return nil, err
 	}
 	t.Duration = time.Duration(seconds) * time.Second
 	return &t, nil
 }
 
-func ListTracks() ([]*audio.Track, error) {
-	rows, err := DB.Query(selectTrack + ` WHERE ` + libraryTracks + `;`)
+func ListTracks(v Viewer) ([]*audio.Track, error) {
+	rows, err := DB.Query(selectTrack + ` WHERE ` + libraryTracks + ` AND ` + v.trackCond("t") + `;`)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,8 @@ func ListTracks() ([]*audio.Track, error) {
 	return tracks, nil
 }
 
-func GetTrack(id string) (*audio.Track, error) {
-	t, err := scanTrack(DB.QueryRow(selectTrack+` WHERE t.uuid = ?;`, id))
+func GetTrack(v Viewer, id string) (*audio.Track, error) {
+	t, err := scanTrack(DB.QueryRow(selectTrack+` WHERE t.uuid = ? AND `+v.trackCond("t")+`;`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -136,19 +136,21 @@ type AddResult struct {
 // then the existing track is placed on the release instead, since a song
 // often comes out as a single before the album.
 // If the insert fails, the saved file is removed again.
-func AddTrack(artistIDs []string, track *audio.Track, file io.ReadSeeker, ext string, link *ReleaseLink, singleDate string) (AddResult, error) {
+// For a viewer who can't see it, a file stored as a secret track gives
+// ErrHidden: a generic failure that doesn't reveal the track exists.
+func AddTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeeker, ext string, link *ReleaseLink, singleDate string) (AddResult, error) {
 	fp, err := FingerprintOf(file)
 	if err != nil {
 		return AddResult{}, err
 	}
 	// fast path that skips writing the file; the unique index still
 	// catches two identical uploads racing each other
-	exists, err := TrackExists(fp)
+	exists, err := TrackExists(All, fp)
 	if err != nil {
 		return AddResult{}, err
 	}
 	if exists {
-		return linkOrExists(fp, link)
+		return linkOrExists(v, fp, link)
 	}
 
 	id := uuid.New().String()
@@ -161,7 +163,7 @@ func AddTrack(artistIDs []string, track *audio.Track, file io.ReadSeeker, ext st
 		// insertReleaseTrack maps its own constraint errors, so a remaining
 		// unique violation is the fingerprint index: an identical upload won the race
 		if isUniqueViolation(err) {
-			return linkOrExists(fp, link)
+			return linkOrExists(v, fp, link)
 		}
 		if isForeignKeyViolation(err) {
 			return AddResult{}, ErrBadReference
@@ -171,7 +173,17 @@ func AddTrack(artistIDs []string, track *audio.Track, file io.ReadSeeker, ext st
 	return AddResult{TrackID: id}, nil
 }
 
-func linkOrExists(fp Fingerprint, link *ReleaseLink) (AddResult, error) {
+// ErrHidden is a deliberately vague failure for an action on a secret track
+// by a viewer who can't see it.
+var ErrHidden = errors.New("upload failed")
+
+func linkOrExists(v Viewer, fp Fingerprint, link *ReleaseLink) (AddResult, error) {
+	if hidden, err := hiddenFingerprint(v, fp); err != nil || hidden {
+		if err == nil {
+			err = ErrHidden
+		}
+		return AddResult{}, err
+	}
 	if link == nil {
 		return AddResult{}, ErrExists
 	}
@@ -292,4 +304,17 @@ func nullIfEmpty(s string) any {
 		return nil
 	}
 	return s
+}
+
+// hiddenFingerprint reports whether the file with fp is a secret track v can't see.
+func hiddenFingerprint(v Viewer, fp Fingerprint) (bool, error) {
+	if v.Secret {
+		return false, nil
+	}
+	var secret bool
+	err := DB.QueryRow(`SELECT secret FROM tracks WHERE file_size = ? AND head_hash = ?;`, fp.Size, fp.HeadHash).Scan(&secret)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return secret, err
 }

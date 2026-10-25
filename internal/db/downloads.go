@@ -32,7 +32,7 @@ type Download struct {
 }
 
 // ListDownloads returns downloads with any of the given statuses, by release.
-func ListDownloads(statuses ...string) ([]*Download, error) {
+func ListDownloads(v Viewer, statuses ...string) ([]*Download, error) {
 	args := make([]any, len(statuses))
 	for i, s := range statuses {
 		args[i] = s
@@ -43,7 +43,8 @@ func ListDownloads(statuses ...string) ([]*Download, error) {
 		FROM downloads d
 		JOIN release_tracks rt ON rt.track_id = d.track_id
 		JOIN releases r ON r.uuid = rt.release_id
-		WHERE d.status IN (`+placeholders(len(statuses))+`)
+		JOIN tracks t ON t.uuid = d.track_id
+		WHERE d.status IN (`+placeholders(len(statuses))+`) AND `+v.trackCond("t")+`
 		GROUP BY d.track_id
 		ORDER BY r.title COLLATE NOCASE, r.uuid, rt.disc, rt.position;`, args...)
 	if err != nil {
@@ -68,7 +69,7 @@ func ListDownloads(statuses ...string) ([]*Download, error) {
 		return nil, err
 	}
 	for _, d := range out {
-		t, err := GetTrack(d.Track.ID.String())
+		t, err := GetTrack(v, d.Track.ID.String())
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +79,7 @@ func ListDownloads(statuses ...string) ([]*Download, error) {
 }
 
 // GetDownload returns the download of a placeholder track.
-func GetDownload(trackID string) (*Download, error) {
+func GetDownload(v Viewer, trackID string) (*Download, error) {
 	var d Download
 	err := DB.QueryRow(`
 		SELECT status, COALESCE(source, ''), COALESCE(progress, 0), COALESCE(last_error, ''), updated_at
@@ -89,7 +90,7 @@ func GetDownload(trackID string) (*Download, error) {
 	if err != nil {
 		return nil, err
 	}
-	d.Track, err = GetTrack(trackID)
+	d.Track, err = GetTrack(v, trackID)
 	if err != nil {
 		return nil, err
 	}

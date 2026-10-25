@@ -48,7 +48,7 @@ func confirmedRelease(t *testing.T, titles ...string) (*audio.Release, []string)
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, _ := db.GetRelease(relID)
+	r, _ := db.GetRelease(db.All, relID)
 	return r, ph
 }
 
@@ -60,11 +60,11 @@ func TestRunFromVideo(t *testing.T) {
 	if err := d.Run(context.Background(), ph[0], "AAAAAAAAAA1"); err != nil {
 		t.Fatal(err)
 	}
-	tr, _ := db.GetTrack(ph[0])
+	tr, _ := db.GetTrack(db.All, ph[0])
 	if !tr.HasFile || tr.Duration != 2*time.Second {
 		t.Fatalf("track = %+v", tr)
 	}
-	dl, _ := db.GetDownload(ph[0])
+	dl, _ := db.GetDownload(db.All, ph[0])
 	if dl.Status != db.DownloadDone || dl.Source != ytdlp.Name {
 		t.Fatalf("download = %+v", dl)
 	}
@@ -76,7 +76,7 @@ func TestRunFromVideo(t *testing.T) {
 	if err := d.Run(context.Background(), ph[1], "AAAAAAAAAA1"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.GetTrack(ph[1]); err == nil {
+	if _, err := db.GetTrack(db.All, ph[1]); err == nil {
 		t.Fatal("placeholder wasn't merged")
 	}
 }
@@ -90,14 +90,14 @@ func TestRunFailures(t *testing.T) {
 	if err := d.Run(context.Background(), ph[0], ""); err != nil {
 		t.Fatal(err)
 	}
-	if dl, _ := db.GetDownload(ph[0]); dl.Status != db.DownloadNotFound {
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNotFound {
 		t.Fatalf("status = %s", dl.Status)
 	}
 	// yt-dlp fails
 	if err := d.Run(context.Background(), ph[0], "failfailfai"); err == nil {
 		t.Fatal("no error")
 	}
-	if dl, _ := db.GetDownload(ph[0]); dl.Status != db.DownloadFailed || dl.LastError == "" {
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadFailed || dl.LastError == "" {
 		t.Fatalf("download = %+v", dl)
 	}
 }
@@ -114,7 +114,7 @@ func TestRunFromFolder(t *testing.T) {
 	if err := d.Run(context.Background(), ph[0], ""); err != nil {
 		t.Fatal(err)
 	}
-	dl, _ := db.GetDownload(ph[0])
+	dl, _ := db.GetDownload(db.All, ph[0])
 	if dl.Status != db.DownloadDone || dl.Source != folder.Name || !dl.Track.HasFile {
 		t.Fatalf("download = %+v", dl)
 	}
@@ -132,7 +132,7 @@ func TestImport(t *testing.T) {
 	if err := d.Import(context.Background(), imp); err != nil {
 		t.Fatal(err)
 	}
-	tracks, _ := db.ListTracks()
+	tracks, _ := db.ListTracks(db.All)
 	if len(tracks) != 1 || tracks[0].Title != "Teardrop" || len(tracks[0].Releases) != 1 {
 		t.Fatalf("tracks = %+v", tracks)
 	}
@@ -142,7 +142,7 @@ func TestImport(t *testing.T) {
 	if err := d.Import(context.Background(), imp); err != nil {
 		t.Fatal(err)
 	}
-	if tracks, _ := db.ListTracks(); len(tracks) != 1 || len(tracks[0].Releases) != 2 {
+	if tracks, _ := db.ListTracks(db.All); len(tracks) != 1 || len(tracks[0].Releases) != 2 {
 		t.Fatalf("after second import: %+v", tracks)
 	}
 }

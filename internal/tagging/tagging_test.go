@@ -62,7 +62,7 @@ func addTrack(t *testing.T, title, artist string, dur time.Duration, mbid, relea
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := db.AddTrack([]string{a.ID.String()}, &audio.Track{Title: title, Duration: dur, MBID: mbid},
+	res, err := db.AddTrack(db.All, []string{a.ID.String()}, &audio.Track{Title: title, Duration: dur, MBID: mbid},
 		bytes.NewReader([]byte(title+artist)), ".mp3", &db.ReleaseLink{ReleaseID: r.ID.String(), Disc: 1, Position: 1}, "")
 	if err != nil {
 		t.Fatal(err)
@@ -78,14 +78,14 @@ func TestTagFromEmbeddedID(t *testing.T) {
 	if err := tg.Tag(context.Background(), trackID); err != nil {
 		t.Fatal(err)
 	}
-	tr, _ := db.GetTrack(trackID)
+	tr, _ := db.GetTrack(db.All, trackID)
 	if tr.MBID != teardrop || tr.ISRC == "" {
 		t.Fatalf("track = %+v", tr)
 	}
 	if tr.Artists[0].MBID != "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8" {
 		t.Fatalf("artist mbid = %q", tr.Artists[0].MBID)
 	}
-	r, _ := db.GetRelease(releaseID)
+	r, _ := db.GetRelease(db.All, releaseID)
 	if r.MBID == "" || r.ReleaseGroupMBID == "" || r.Date == "" {
 		t.Fatalf("release = %+v", r)
 	}
@@ -97,7 +97,7 @@ func TestTagFromEmbeddedID(t *testing.T) {
 	if err := tg.FetchCover(context.Background(), releaseID); err != nil {
 		t.Fatal(err)
 	}
-	r, _ = db.GetRelease(releaseID)
+	r, _ = db.GetRelease(db.All, releaseID)
 	if !strings.HasPrefix(r.ImgURL, "/covers/") {
 		t.Fatalf("cover = %q", r.ImgURL)
 	}
@@ -107,14 +107,14 @@ func TestTagKeepsUserValues(t *testing.T) {
 	dbtest.New(t)
 	tg := testTagger(t)
 	trackID, releaseID := addTrack(t, "Teardrop", "Massive Attack", 330*time.Second, teardrop, "Mezzanine", audio.ReleaseAlbum)
-	a, _ := db.ListArtists()
+	a, _ := db.ListArtists(db.All)
 	if err := db.UpdateRelease(releaseID, "Mezzanine", audio.ReleaseAlbum, "2001", []string{a[0].ID.String()}); err != nil {
 		t.Fatal(err)
 	}
 	if err := tg.Tag(context.Background(), trackID); err != nil {
 		t.Fatal(err)
 	}
-	r, _ := db.GetRelease(releaseID)
+	r, _ := db.GetRelease(db.All, releaseID)
 	if r.Date != "2001" || r.Title != "Mezzanine" {
 		t.Fatalf("user values overwritten: %+v", r)
 	}
@@ -127,7 +127,7 @@ func TestTagFromSearch(t *testing.T) {
 	if err := tg.Tag(context.Background(), trackID); err != nil {
 		t.Fatal(err)
 	}
-	tr, _ := db.GetTrack(trackID)
+	tr, _ := db.GetTrack(db.All, trackID)
 	if tr.MBID != "a31e069b-1025-4700-971d-c6cfe937e31a" {
 		t.Fatalf("mbid = %q", tr.MBID)
 	}
@@ -141,7 +141,7 @@ func TestTagNoMatchAndReview(t *testing.T) {
 	if err := tg.Tag(context.Background(), other); err != nil {
 		t.Fatal(err)
 	}
-	if counts, _ := db.TagCounts(); counts[db.TagNone] != 1 {
+	if counts, _ := db.TagCounts(db.All); counts[db.TagNone] != 1 {
 		t.Fatalf("counts = %v", counts)
 	}
 
@@ -150,11 +150,11 @@ func TestTagNoMatchAndReview(t *testing.T) {
 	if err := tg.Tag(context.Background(), close); err != nil {
 		t.Fatal(err)
 	}
-	pending, _ := db.PendingMatches()
+	pending, _ := db.PendingMatches(db.All)
 	if len(pending) == 0 || pending[0].TrackID != close {
 		t.Fatalf("pending = %+v", pending)
 	}
-	tr, _ := db.GetTrack(close)
+	tr, _ := db.GetTrack(db.All, close)
 	if tr.MBID != "" {
 		t.Fatal("uncertain match was applied")
 	}
@@ -168,12 +168,12 @@ func TestTagNoMatchAndReview(t *testing.T) {
 	if err := tg.Tag(context.Background(), close); err != nil {
 		t.Fatal(err)
 	}
-	if pending, _ := db.PendingMatches(); len(pending) != 0 {
+	if pending, _ := db.PendingMatches(db.All); len(pending) != 0 {
 		t.Fatalf("rejected came back: %+v", pending)
 	}
 
 	// applying from review
-	if counts, _ := db.TagCounts(); counts[db.TagNone] != 2 {
+	if counts, _ := db.TagCounts(db.All); counts[db.TagNone] != 2 {
 		t.Fatalf("counts after reject = %v", counts)
 	}
 }
@@ -186,7 +186,7 @@ func TestPlaceholdersSkipped(t *testing.T) {
 	if err := tg.Tag(context.Background(), trackID); err != nil {
 		t.Fatal(err)
 	}
-	if counts, _ := db.TagCounts(); len(counts) != 0 {
+	if counts, _ := db.TagCounts(db.All); len(counts) != 0 {
 		t.Fatalf("placeholder was tagged: %v", counts)
 	}
 }

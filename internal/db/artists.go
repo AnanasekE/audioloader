@@ -12,10 +12,11 @@ import (
 // ErrArtistExists is returned when an artist with the same name (ignoring case) exists.
 var ErrArtistExists = errors.New("an artist with that name already exists")
 
-func ListArtists() ([]*audio.Artist, error) {
+func ListArtists(v Viewer) ([]*audio.Artist, error) {
 	rows, err := DB.Query(`
 		SELECT a.uuid, a.name, a.img_url, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
 		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
+		WHERE ` + v.artistCond("a") + `
 		ORDER BY a.name COLLATE NOCASE;`)
 	if err != nil {
 		return nil, err
@@ -34,12 +35,12 @@ func ListArtists() ([]*audio.Artist, error) {
 }
 
 // GetArtist returns one artist.
-func GetArtist(id string) (*audio.Artist, error) {
+func GetArtist(v Viewer, id string) (*audio.Artist, error) {
 	var a audio.Artist
 	err := DB.QueryRow(`
 		SELECT a.uuid, a.name, a.img_url, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
 		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
-		WHERE a.uuid = ?;`, id).Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed)
+		WHERE a.uuid = ? AND `+v.artistCond("a")+`;`, id).Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}

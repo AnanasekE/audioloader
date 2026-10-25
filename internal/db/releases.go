@@ -57,8 +57,8 @@ func placeholders(n int) string {
 
 // ListReleases returns all releases with their artists, newest first;
 // releases without a date come last.
-func ListReleases() ([]*audio.Release, error) {
-	rows, err := DB.Query(selectRelease + ` ORDER BY release_date IS NULL, release_date DESC, title;`)
+func ListReleases(v Viewer) ([]*audio.Release, error) {
+	rows, err := DB.Query(selectRelease + ` r WHERE ` + v.releaseCond("r") + ` ORDER BY release_date IS NULL, release_date DESC, title;`)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +79,11 @@ func ListReleases() ([]*audio.Release, error) {
 	return releases, attachReleaseArtists(releases)
 }
 
-// GetRelease returns a release with its artists and full tracklist.
-func GetRelease(id string) (*audio.Release, error) {
-	r, err := scanRelease(DB.QueryRow(selectRelease+` WHERE uuid = ?;`, id))
+// GetRelease returns a release with its artists and tracklist. For a
+// locked viewer, secret tracks are left out and the rest are numbered
+// without gaps, so their positions don't give the secret ones away.
+func GetRelease(v Viewer, id string) (*audio.Release, error) {
+	r, err := scanRelease(DB.QueryRow(selectRelease+` r WHERE uuid = ? AND `+v.releaseCond("r")+`;`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -96,7 +98,7 @@ func GetRelease(id string) (*audio.Release, error) {
 		SELECT rt.disc, rt.position, t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''), t.kind
 		FROM release_tracks rt
 		JOIN tracks t ON t.uuid = rt.track_id
-		WHERE rt.release_id = ?
+		WHERE rt.release_id = ? AND `+v.trackCond("t")+`
 		ORDER BY rt.disc, rt.position;`, id)
 	if err != nil {
 		return nil, err
@@ -120,11 +122,41 @@ func GetRelease(id string) (*audio.Release, error) {
 		return nil, err
 	}
 	rows.Close()
+	if !v.Secret {
+		renumber(r.Tracks)
+	}
 	if err := attachArtists(tracks); err != nil {
 		return nil, err
 	}
 	// lets a single's page link to the album its song is also on
 	return r, attachReleases(tracks)
+}
+
+// renumber numbers each disc's tracks 1, 2, 3, ... in their order.
+func renumber(tracks []*audio.ReleaseTrack) {
+	next := map[int]int{}
+	for _, rt := range tracks {
+		next[rt.Disc]++
+		rt.Position = next[rt.Disc]
+	}
+}
+
+// ReleasesWithSecrets returns the IDs of releases that have a secret track.
+func ReleasesWithSecrets() (map[string]bool, error) {
+	rows, err := DB.Query(`SELECT DISTINCT rt.release_id FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id WHERE t.secret = 1;`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids[id] = true
+	}
+	return ids, rows.Err()
 }
 
 func CreateRelease(title string, typ audio.ReleaseType, date string, artistIDs []string) (*audio.Release, error) {
@@ -224,22 +256,55 @@ func DeleteRelease(id string) error {
 	return nil
 }
 
-// SetReleaseTracks replaces a release's tracklist.
-func SetReleaseTracks(releaseID string, entries []ReleaseTrackInput) error {
+// SetReleaseTracks replaces a release's tracklist. A locked viewer never
+// saw the secret tracks, so they keep their places and the given tracks
+// fill the positions around them.
+func SetReleaseTracks(v Viewer, releaseID string, entries []ReleaseTrackInput) error {
 	tx, err := DB.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
+	taken := map[int]map[int]bool{} // disc -> positions kept for secret tracks
+	if !v.Secret {
+		rows, err := tx.Query(`
+			SELECT rt.disc, rt.position FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id
+			WHERE rt.release_id = ? AND t.secret = 1;`, releaseID)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var disc, pos int
+			if err := rows.Scan(&disc, &pos); err != nil {
+				rows.Close()
+				return err
+			}
+			if taken[disc] == nil {
+				taken[disc] = map[int]bool{}
+			}
+			taken[disc][pos] = true
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+	}
+
 	// rewritten as a whole: updating positions in place would collide with
 	// the (release, disc, position) primary key halfway through a reorder
-	if _, err := tx.Exec(`DELETE FROM release_tracks WHERE release_id = ?;`, releaseID); err != nil {
+	_, err = tx.Exec(`
+		DELETE FROM release_tracks WHERE release_id = ?
+		AND track_id IN (SELECT uuid FROM tracks t WHERE `+v.trackCond("t")+`);`, releaseID)
+	if err != nil {
 		return err
 	}
 	next := map[int]int{}
 	for _, e := range entries {
 		next[e.Disc]++
+		for taken[e.Disc][next[e.Disc]] {
+			next[e.Disc]++
+		}
 		err := insertReleaseTrack(tx, e.TrackID, ReleaseLink{ReleaseID: releaseID, Disc: e.Disc, Position: next[e.Disc]})
 		if err != nil {
 			return err

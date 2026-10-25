@@ -16,17 +16,17 @@ import (
 var activeDownloads = []string{db.DownloadQueued, db.DownloadSearching, db.DownloadDownloading}
 
 func getDownloadsPage(w http.ResponseWriter, r *http.Request) {
-	active, err := db.ListDownloads(activeDownloads...)
+	active, err := db.ListDownloads(viewer(r), activeDownloads...)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	failed, err := db.ListDownloads(db.DownloadFailed)
+	failed, err := db.ListDownloads(viewer(r), db.DownloadFailed)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	notFound, err := db.ListDownloads(db.DownloadNotFound)
+	notFound, err := db.ListDownloads(viewer(r), db.DownloadNotFound)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -39,7 +39,7 @@ func getDownloadsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getActiveDownloads(w http.ResponseWriter, r *http.Request) {
-	active, err := db.ListDownloads(activeDownloads...)
+	active, err := db.ListDownloads(viewer(r), activeDownloads...)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -75,7 +75,7 @@ func downloadFromYouTube(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "paste the URL of one YouTube video", http.StatusBadRequest)
 		return
 	}
-	if _, err := db.GetDownload(id.String()); errors.Is(err, db.ErrNotFound) {
+	if _, err := db.GetDownload(viewer(r), id.String()); errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
@@ -102,7 +102,7 @@ func uploadTrackFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	_, err = downloads.AttachReader(id.String(), file, filepath.Ext(header.Filename))
+	_, err = downloads.AttachReader(viewer(r), id.String(), file, filepath.Ext(header.Filename))
 	switch {
 	case errors.Is(err, db.ErrNotFound):
 		http.NotFound(w, r)
@@ -213,12 +213,12 @@ func previewYouTubeImport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't read the URL: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	releases, err := db.ListReleases()
+	releases, err := db.ListReleases(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return

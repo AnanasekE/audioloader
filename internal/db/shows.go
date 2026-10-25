@@ -19,7 +19,7 @@ func ResolveShow(title, author string) (*audio.Show, error) {
 	if title == "" {
 		return nil, errors.New("show title is required")
 	}
-	s, err := scanShow(DB.QueryRow(selectShow+` WHERE lower(s.title) = lower(?);`, title))
+	s, err := scanShow(DB.QueryRow(selectShow(All)+` AND lower(s.title) = lower(?);`, title))
 	if err == nil {
 		return s, nil
 	}
@@ -31,12 +31,15 @@ func ResolveShow(title, author string) (*audio.Show, error) {
 	return s, err
 }
 
-const selectShow = `
+// selectShow selects shows aliased s, with episode counts as v sees them.
+func selectShow(v Viewer) string {
+	return `
 	SELECT s.uuid, s.title, COALESCE(s.author, ''), s.img_url,
-		(SELECT COUNT(*) FROM tracks t WHERE t.show_id = s.uuid AND t.has_file = 1),
+		(SELECT COUNT(*) FROM tracks t WHERE t.show_id = s.uuid AND t.has_file = 1 AND ` + v.trackCond("t") + `),
 		(SELECT COUNT(*) FROM tracks t LEFT JOIN playback_positions p ON p.track_id = t.uuid
-			WHERE t.show_id = s.uuid AND t.has_file = 1 AND COALESCE(p.finished, 0) = 0)
-	FROM shows s`
+			WHERE t.show_id = s.uuid AND t.has_file = 1 AND COALESCE(p.finished, 0) = 0 AND ` + v.trackCond("t") + `)
+	FROM shows s WHERE ` + v.showCond("s")
+}
 
 func scanShow(s scanner) (*audio.Show, error) {
 	var sh audio.Show
@@ -46,8 +49,8 @@ func scanShow(s scanner) (*audio.Show, error) {
 	return &sh, nil
 }
 
-func ListShows() ([]*audio.Show, error) {
-	rows, err := DB.Query(selectShow + ` ORDER BY s.title COLLATE NOCASE;`)
+func ListShows(v Viewer) ([]*audio.Show, error) {
+	rows, err := DB.Query(selectShow(v) + ` ORDER BY s.title COLLATE NOCASE;`)
 	if err != nil {
 		return nil, err
 	}
@@ -65,15 +68,15 @@ func ListShows() ([]*audio.Show, error) {
 
 // GetShow returns a show with its episodes, newest first, and where
 // playback of each stopped.
-func GetShow(id string) (*audio.Show, error) {
-	s, err := scanShow(DB.QueryRow(selectShow+` WHERE s.uuid = ?;`, id))
+func GetShow(v Viewer, id string) (*audio.Show, error) {
+	s, err := scanShow(DB.QueryRow(selectShow(v)+` AND s.uuid = ?;`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	rows, err := DB.Query(selectTrack+` WHERE t.show_id = ? AND t.has_file = 1
+	rows, err := DB.Query(selectTrack+` WHERE t.show_id = ? AND t.has_file = 1 AND `+v.trackCond("t")+`
 		ORDER BY t.published IS NULL, t.published DESC, t.rowid DESC;`, id)
 	if err != nil {
 		return nil, err
@@ -192,9 +195,9 @@ func attachPositions(tracks []*audio.Track) error {
 
 // ContinueListening returns started, unfinished episodes, the most
 // recently played first.
-func ContinueListening(limit int) ([]*audio.Track, error) {
+func ContinueListening(v Viewer, limit int) ([]*audio.Track, error) {
 	rows, err := DB.Query(selectTrack+` JOIN playback_positions p ON p.track_id = t.uuid
-		WHERE t.kind = 'episode' AND t.has_file = 1 AND p.finished = 0 AND p.seconds > 0
+		WHERE t.kind = 'episode' AND t.has_file = 1 AND p.finished = 0 AND p.seconds > 0 AND `+v.trackCond("t")+`
 		ORDER BY p.updated_at DESC LIMIT ?;`, limit)
 	if err != nil {
 		return nil, err

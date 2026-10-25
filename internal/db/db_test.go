@@ -22,7 +22,7 @@ func newTestDB(t *testing.T) {
 // addTestTrack stores a track whose file content is body.
 func addTestTrack(t *testing.T, title string, body string, artistIDs ...string) string {
 	t.Helper()
-	res, err := AddTrack(artistIDs, &audio.Track{Title: title, Duration: time.Minute}, bytes.NewReader([]byte(body)), ".mp3", nil, "")
+	res, err := AddTrack(All, artistIDs, &audio.Track{Title: title, Duration: time.Minute}, bytes.NewReader([]byte(body)), ".mp3", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestMigrateTwice(t *testing.T) {
 func TestAddTrackDuplicate(t *testing.T) {
 	newTestDB(t)
 	addTestTrack(t, "a", "same bytes")
-	_, err := AddTrack(nil, &audio.Track{Title: "b"}, bytes.NewReader([]byte("same bytes")), ".mp3", nil, "")
+	_, err := AddTrack(All, nil, &audio.Track{Title: "b"}, bytes.NewReader([]byte("same bytes")), ".mp3", nil, "")
 	if !errors.Is(err, ErrExists) {
 		t.Fatalf("err = %v, want ErrExists", err)
 	}
@@ -83,21 +83,21 @@ func TestMergeDuplicateArtists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	artists, err := ListArtists()
+	artists, err := ListArtists(All)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(artists) != 2 {
 		t.Fatalf("got %d artists, want 2", len(artists))
 	}
-	track, err := GetTrack(tr)
+	track, err := GetTrack(All, tr)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(track.Artists) != 2 || track.Artists[0].ID.String() != ids["Foo"] {
 		t.Fatalf("track artists = %v", track.Artists)
 	}
-	rel, err := GetRelease(r.ID.String())
+	rel, err := GetRelease(All, r.ID.String())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func getPlaylistsPage(w http.ResponseWriter, r *http.Request) {
-	playlists, err := db.ListPlaylists()
+	playlists, err := db.ListPlaylists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -32,7 +32,7 @@ func getPlaylistPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	p, err := db.GetPlaylist(id)
+	p, err := db.GetPlaylist(viewer(r), id)
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -113,7 +113,7 @@ func savePlaylistTracks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err := db.SetPlaylistTracks(id, trackIDs)
+	err := db.SetPlaylistTracks(viewer(r), id, trackIDs)
 	switch {
 	case errors.Is(err, db.ErrNotFound):
 		http.NotFound(w, r)
@@ -134,7 +134,7 @@ func getPlaylistPicker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid track id", http.StatusBadRequest)
 		return
 	}
-	playlists, err := db.ListPlaylists()
+	playlists, err := db.ListPlaylists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -159,7 +159,7 @@ func addToPlaylist(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	p, err := db.GetPlaylist(id)
+	p, err := db.GetPlaylist(viewer(r), id)
 	if err != nil {
 		serverError(w, err)
 		return

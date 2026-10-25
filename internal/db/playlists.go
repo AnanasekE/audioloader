@@ -38,14 +38,14 @@ func expectRow(res sql.Result, err error) error {
 
 // ListPlaylists returns all playlists with their track count, length and
 // image, newest first.
-func ListPlaylists() ([]*audio.Playlist, error) {
+func ListPlaylists(v Viewer) ([]*audio.Playlist, error) {
 	rows, err := DB.Query(`
 		SELECT p.uuid, p.name, COUNT(t.uuid), COALESCE(SUM(t.duration_seconds), 0),
 			COALESCE((SELECT t2.img_url FROM playlist_tracks pt2 JOIN tracks t2 ON t2.uuid = pt2.track_id
-				WHERE pt2.playlist_id = p.uuid ORDER BY pt2.position LIMIT 1), ?)
+				WHERE pt2.playlist_id = p.uuid AND `+v.trackCond("t2")+` ORDER BY pt2.position LIMIT 1), ?)
 		FROM playlists p
 		LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.uuid
-		LEFT JOIN tracks t ON t.uuid = pt.track_id
+		LEFT JOIN tracks t ON t.uuid = pt.track_id AND `+v.trackCond("t")+`
 		GROUP BY p.uuid
 		ORDER BY p.created_at DESC, p.rowid DESC;`, DefaultCover)
 	if err != nil {
@@ -66,7 +66,7 @@ func ListPlaylists() ([]*audio.Playlist, error) {
 }
 
 // GetPlaylist returns a playlist with its tracks in order.
-func GetPlaylist(id string) (*audio.Playlist, error) {
+func GetPlaylist(v Viewer, id string) (*audio.Playlist, error) {
 	var p audio.Playlist
 	err := DB.QueryRow(`SELECT uuid, name FROM playlists WHERE uuid = ?;`, id).Scan(&p.ID, &p.Name)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -76,7 +76,7 @@ func GetPlaylist(id string) (*audio.Playlist, error) {
 		return nil, err
 	}
 	rows, err := DB.Query(selectTrack+` JOIN playlist_tracks pt ON pt.track_id = t.uuid
-		WHERE pt.playlist_id = ? ORDER BY pt.position;`, id)
+		WHERE pt.playlist_id = ? AND `+v.trackCond("t")+` ORDER BY pt.position;`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,8 @@ func AppendToPlaylist(playlistID, trackID string) error {
 }
 
 // SetPlaylistTracks replaces a playlist's tracks with trackIDs, in order.
-func SetPlaylistTracks(playlistID string, trackIDs []string) error {
+// Secret entries a locked viewer didn't see keep their places.
+func SetPlaylistTracks(v Viewer, playlistID string, trackIDs []string) error {
 	tx, err := DB.Begin()
 	if err != nil {
 		return err
@@ -144,11 +145,40 @@ func SetPlaylistTracks(playlistID string, trackIDs []string) error {
 	if !exists {
 		return ErrNotFound
 	}
-	if _, err := tx.Exec(`DELETE FROM playlist_tracks WHERE playlist_id = ?;`, playlistID); err != nil {
+	taken := map[int]bool{}
+	if !v.Secret {
+		rows, err := tx.Query(`
+			SELECT pt.position FROM playlist_tracks pt JOIN tracks t ON t.uuid = pt.track_id
+			WHERE pt.playlist_id = ? AND t.secret = 1;`, playlistID)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var pos int
+			if err := rows.Scan(&pos); err != nil {
+				rows.Close()
+				return err
+			}
+			taken[pos] = true
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+	}
+	_, err = tx.Exec(`
+		DELETE FROM playlist_tracks WHERE playlist_id = ?
+		AND track_id IN (SELECT uuid FROM tracks t WHERE `+v.trackCond("t")+`);`, playlistID)
+	if err != nil {
 		return err
 	}
-	for i, id := range trackIDs {
-		_, err := tx.Exec(`INSERT INTO playlist_tracks(playlist_id, position, track_id) VALUES(?, ?, ?);`, playlistID, i+1, id)
+	pos := 0
+	for _, id := range trackIDs {
+		pos++
+		for taken[pos] {
+			pos++
+		}
+		_, err := tx.Exec(`INSERT INTO playlist_tracks(playlist_id, position, track_id) VALUES(?, ?, ?);`, playlistID, pos, id)
 		if isForeignKeyViolation(err) {
 			return ErrBadReference
 		}

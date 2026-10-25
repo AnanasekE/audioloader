@@ -18,12 +18,12 @@ import (
 var releaseDate = regexp.MustCompile(`^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$`)
 
 func getReleasesPage(w http.ResponseWriter, r *http.Request) {
-	releases, err := db.ListReleases()
+	releases, err := db.ListReleases(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -44,12 +44,12 @@ func getReleaseEditPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	tracks, err := db.ListTracks()
+	tracks, err := db.ListTracks(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	artists, err := db.ListArtists()
+	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -215,7 +215,7 @@ func saveReleaseTracks(w http.ResponseWriter, r *http.Request) {
 		entries[i] = db.ReleaseTrackInput{TrackID: trackIDs[i], Disc: disc}
 	}
 
-	err := db.SetReleaseTracks(id.String(), entries)
+	err := db.SetReleaseTracks(viewer(r), id.String(), entries)
 	switch {
 	case errors.Is(err, db.ErrAlreadyOnRelease):
 		http.Error(w, "a track is listed twice", http.StatusBadRequest)
@@ -236,7 +236,7 @@ func loadRelease(w http.ResponseWriter, r *http.Request) (*audio.Release, bool) 
 	if !ok {
 		return nil, false
 	}
-	release, err := db.GetRelease(id.String())
+	release, err := db.GetRelease(viewer(r), id.String())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return nil, false

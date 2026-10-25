@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
+
+	"audioloader/internal/db"
 )
 
 // render writes c as HTML. It renders into a buffer first, so a failing
@@ -30,4 +32,9 @@ func renderStatus(w http.ResponseWriter, r *http.Request, code int, c templ.Comp
 func serverError(w http.ResponseWriter, err error) {
 	log.Println("internal error:", err)
 	http.Error(w, "internal server error", http.StatusInternalServerError)
+}
+
+// viewer is who is making the request: whether the vault is unlocked.
+func viewer(r *http.Request) db.Viewer {
+	return db.ViewerFrom(r.Context())
 }

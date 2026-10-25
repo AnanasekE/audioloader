@@ -99,11 +99,11 @@ type PendingMatch struct {
 }
 
 // PendingMatches returns the candidates waiting for review, best first per track.
-func PendingMatches() ([]PendingMatch, error) {
+func PendingMatches(v Viewer) ([]PendingMatch, error) {
 	rows, err := DB.Query(`
 		SELECT m.track_id, m.data FROM tag_matches m
 		JOIN tracks t ON t.uuid = m.track_id
-		WHERE m.status = 'pending'
+		WHERE m.status = 'pending' AND ` + v.trackCond("t") + `
 		ORDER BY t.title COLLATE NOCASE, m.track_id, m.score DESC;`)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func RejectMatch(trackID, recordingID string) error {
 // titles, types and dates the user set are kept. It returns the IDs of
 // releases that got an MBID, e.g. to fetch their covers.
 func ApplyMatch(trackID string, m Match) (releaseIDs []string, err error) {
-	t, err := GetTrack(trackID)
+	t, err := GetTrack(All, trackID)
 	if err != nil {
 		return nil, err
 	}
@@ -261,8 +261,8 @@ func UntaggedTrackIDs() ([]string, error) {
 }
 
 // TagCounts returns how many library tracks have each tag status ("" for untagged).
-func TagCounts() (map[string]int, error) {
-	rows, err := DB.Query(`SELECT COALESCE(t.tag_status, ''), COUNT(*) FROM tracks t WHERE ` + libraryTracks + ` GROUP BY 1;`)
+func TagCounts(v Viewer) (map[string]int, error) {
+	rows, err := DB.Query(`SELECT COALESCE(t.tag_status, ''), COUNT(*) FROM tracks t WHERE ` + libraryTracks + ` AND ` + v.trackCond("t") + ` GROUP BY 1;`)
 	if err != nil {
 		return nil, err
 	}

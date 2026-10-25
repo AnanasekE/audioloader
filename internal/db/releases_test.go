@@ -26,7 +26,7 @@ func TestUpdateReleaseKeepsTracklist(t *testing.T) {
 	newTestDB(t)
 	r, _ := newTestRelease(t, "old", audio.ReleaseAlbum)
 	tr := addTestTrack(t, "song", "x")
-	if err := SetReleaseTracks(r.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
+	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
 		t.Fatal(err)
 	}
 	b, err := AddArtist("other")
@@ -37,7 +37,7 @@ func TestUpdateReleaseKeepsTracklist(t *testing.T) {
 	if err := UpdateRelease(r.ID.String(), "new", audio.ReleaseEP, "2020", []string{b.ID.String()}); err != nil {
 		t.Fatal(err)
 	}
-	got, err := GetRelease(r.ID.String())
+	got, err := GetRelease(All, r.ID.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,16 +60,16 @@ func TestDeleteReleaseKeepsTracks(t *testing.T) {
 	newTestDB(t)
 	r, _ := newTestRelease(t, "rel", audio.ReleaseAlbum)
 	tr := addTestTrack(t, "song", "x")
-	if err := SetReleaseTracks(r.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
+	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := DeleteRelease(r.ID.String()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := GetRelease(r.ID.String()); !errors.Is(err, ErrNotFound) {
+	if _, err := GetRelease(All, r.ID.String()); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetRelease err = %v", err)
 	}
-	if _, err := GetTrack(tr); err != nil {
+	if _, err := GetTrack(All, tr); err != nil {
 		t.Fatalf("track gone: %v", err)
 	}
 }
@@ -78,10 +78,10 @@ func TestReleaseCoverOnTracks(t *testing.T) {
 	newTestDB(t)
 	album, _ := newTestRelease(t, "album", audio.ReleaseAlbum)
 	tr := addTestTrack(t, "song", "x") // also creates its single
-	if err := SetReleaseTracks(album.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
+	if err := SetReleaseTracks(All, album.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
 		t.Fatal(err)
 	}
-	track, _ := GetTrack(tr)
+	track, _ := GetTrack(All, tr)
 	if track.ImgURL != DefaultCover {
 		t.Fatalf("no covers yet, got %q", track.ImgURL)
 	}
@@ -93,7 +93,7 @@ func TestReleaseCoverOnTracks(t *testing.T) {
 	if err := SetReleaseCover(single.ID, strings.NewReader("png"), ".png"); err != nil {
 		t.Fatal(err)
 	}
-	track, _ = GetTrack(tr)
+	track, _ = GetTrack(All, tr)
 	if !strings.HasPrefix(track.ImgURL, "/covers/"+single.ID.String()) {
 		t.Fatalf("want the single's cover, got %q", track.ImgURL)
 	}
@@ -101,7 +101,7 @@ func TestReleaseCoverOnTracks(t *testing.T) {
 	if err := SetReleaseCover(album.ID, strings.NewReader("jpg"), ".jpg"); err != nil {
 		t.Fatal(err)
 	}
-	track, _ = GetTrack(tr)
+	track, _ = GetTrack(All, tr)
 	if !strings.HasPrefix(track.ImgURL, "/covers/"+album.ID.String()) {
 		t.Fatalf("album cover should win, got %q", track.ImgURL)
 	}

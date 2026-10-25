@@ -106,7 +106,7 @@ func Retry(trackID string) error {
 // Run downloads a placeholder track's file: from the given YouTube video,
 // or else the best candidate any source has.
 func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
-	dl, err := db.GetDownload(trackID)
+	dl, err := db.GetDownload(db.All, trackID)
 	if errors.Is(err, db.ErrNotFound) {
 		return nil // merged into another track or deleted
 	}
@@ -181,7 +181,7 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 	}
 	defer f.Cleanup()
 
-	merged, err := Attach(trackID, f.Path)
+	merged, err := Attach(db.All, trackID, f.Path)
 	if err != nil {
 		return d.fail(trackID, src.Name(), err)
 	}
@@ -207,18 +207,19 @@ func (d *Downloader) fail(trackID, source string, err error) error {
 
 // Attach stores the file at path for a placeholder track. If the library
 // already has the same file, the placeholder is merged into that track
-// and merged is true.
-func Attach(trackID, path string) (merged bool, err error) {
+// and merged is true; unless that track is secret and v can't see it,
+// which gives db.ErrHidden.
+func Attach(v db.Viewer, trackID, path string) (merged bool, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err
 	}
 	defer f.Close()
-	return AttachReader(trackID, f, filepath.Ext(path))
+	return AttachReader(v, trackID, f, filepath.Ext(path))
 }
 
 // AttachReader is Attach for an open file, e.g. an upload.
-func AttachReader(trackID string, f io.ReadSeeker, ext string) (merged bool, err error) {
+func AttachReader(v db.Viewer, trackID string, f io.ReadSeeker, ext string) (merged bool, err error) {
 	dur, err := audio.ProbeDuration(f)
 	if err != nil {
 		return false, fmt.Errorf("could not read audio duration: %w", err)
@@ -228,6 +229,9 @@ func AttachReader(trackID string, f io.ReadSeeker, ext string) (merged bool, err
 	}
 	existing, err := db.AttachFile(trackID, f, ext, dur)
 	if errors.Is(err, db.ErrExists) {
+		if t, gerr := db.GetTrack(v, existing); gerr != nil || t == nil {
+			return false, db.ErrHidden
+		}
 		return true, db.MergePlaceholder(trackID, existing)
 	}
 	if err == nil {
@@ -259,7 +263,7 @@ func Schedule(ctx context.Context) {
 		if os.Getenv("AUDIOLOADER_WATCH") == "" {
 			continue
 		}
-		missing, err := db.ListDownloads(db.DownloadNotFound)
+		missing, err := db.ListDownloads(db.All, db.DownloadNotFound)
 		if err != nil {
 			log.Println("downloads:", err)
 			continue

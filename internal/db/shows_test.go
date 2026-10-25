@@ -30,18 +30,18 @@ func TestEpisodes(t *testing.T) {
 	music := addTestTrack(t, "Song", "song")
 
 	// episodes stay out of the music library and its search
-	tracks, _ := ListTracks()
+	tracks, _ := ListTracks(All)
 	if len(tracks) != 1 || tracks[0].ID.String() != music {
 		t.Fatalf("library = %+v", tracks)
 	}
-	if res, _ := Search("ep", 10); len(res.Tracks) != 0 {
+	if res, _ := Search(All, "ep", 10); len(res.Tracks) != 0 {
 		t.Fatalf("episode in search: %+v", res.Tracks)
 	}
-	if res, _ := Search("show", 10); len(res.Shows) != 1 {
+	if res, _ := Search(All, "show", 10); len(res.Shows) != 1 {
 		t.Fatalf("show not in search: %+v", res.Shows)
 	}
 
-	s, err := GetShow(show.ID.String())
+	s, err := GetShow(All, show.ID.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,16 +56,16 @@ func TestEpisodes(t *testing.T) {
 	if err := SavePosition(ep2, 3590, true); err != nil {
 		t.Fatal(err)
 	}
-	cont, _ := ContinueListening(10)
+	cont, _ := ContinueListening(All, 10)
 	if len(cont) != 1 || cont[0].ID.String() != ep1 || cont[0].Position != 10*time.Minute {
 		t.Fatalf("continue = %+v", cont)
 	}
-	s, _ = GetShow(show.ID.String())
+	s, _ = GetShow(All, show.ID.String())
 	if s.Unplayed != 1 || !s.Episodes[0].Finished {
 		t.Fatalf("after positions: unplayed %d, %+v", s.Unplayed, s.Episodes[0])
 	}
 	ClearPosition(ep2)
-	if s, _ := GetShow(show.ID.String()); s.Unplayed != 2 {
+	if s, _ := GetShow(All, show.ID.String()); s.Unplayed != 2 {
 		t.Fatalf("after clear: %d", s.Unplayed)
 	}
 

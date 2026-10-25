@@ -39,10 +39,12 @@ const (
 )
 
 // Skip lists checks for tracks that are never auto-tagged: placeholders
-// have no file to identify, and podcast episodes aren't on MusicBrainz.
+// have no file to identify, podcast episodes aren't on MusicBrainz, and
+// secret tracks aren't sent to anyone.
 var Skip = []func(t *audio.Track) bool{
 	func(t *audio.Track) bool { return !t.HasFile },
 	func(t *audio.Track) bool { return t.IsEpisode() },
+	func(t *audio.Track) bool { return t.Secret },
 }
 
 // Tagger holds the services the pipeline uses; tests swap them.
@@ -110,7 +112,7 @@ func EnqueueCover(releaseID string) error {
 // Tag finds MusicBrainz candidates for a track, stores them and applies the
 // best one if it is good enough.
 func (tg *Tagger) Tag(ctx context.Context, trackID string) error {
-	t, err := db.GetTrack(trackID)
+	t, err := db.GetTrack(db.All, trackID)
 	if errors.Is(err, db.ErrNotFound) {
 		return nil // deleted since it was queued
 	}
@@ -423,7 +425,7 @@ func matchArtists(credits mb.Credits) []db.MatchArtist {
 // FetchCover downloads a release's front cover from the Cover Art Archive,
 // unless it already has one.
 func (tg *Tagger) FetchCover(ctx context.Context, releaseID string) error {
-	r, err := db.GetRelease(releaseID)
+	r, err := db.GetRelease(db.All, releaseID)
 	if errors.Is(err, db.ErrNotFound) {
 		return nil
 	}

@@ -18,16 +18,16 @@ func TestPlaylists(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, _ := GetPlaylist(p.ID.String())
+	got, _ := GetPlaylist(All, p.ID.String())
 	if titles(got.Tracks) != "A,B,A" {
 		t.Fatalf("tracks = %s", titles(got.Tracks))
 	}
 
 	// reorder
-	if err := SetPlaylistTracks(p.ID.String(), []string{b, a}); err != nil {
+	if err := SetPlaylistTracks(All, p.ID.String(), []string{b, a}); err != nil {
 		t.Fatal(err)
 	}
-	got, _ = GetPlaylist(p.ID.String())
+	got, _ = GetPlaylist(All, p.ID.String())
 	if titles(got.Tracks) != "B,A" {
 		t.Fatalf("after reorder = %s", titles(got.Tracks))
 	}
@@ -37,18 +37,18 @@ func TestPlaylists(t *testing.T) {
 
 	// a deleted track leaves the playlist
 	DB.Exec(`DELETE FROM tracks WHERE uuid = ?;`, b)
-	got, _ = GetPlaylist(p.ID.String())
+	got, _ = GetPlaylist(All, p.ID.String())
 	if titles(got.Tracks) != "A" {
 		t.Fatalf("after delete = %s", titles(got.Tracks))
 	}
-	list, _ := ListPlaylists()
+	list, _ := ListPlaylists(All)
 	if len(list) != 1 || list[0].Count != 1 {
 		t.Fatalf("list = %+v", list)
 	}
 	if err := DeletePlaylist(p.ID.String()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := GetPlaylist(p.ID.String()); !errors.Is(err, ErrNotFound) {
+	if _, err := GetPlaylist(All, p.ID.String()); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("deleted playlist err = %v", err)
 	}
 }

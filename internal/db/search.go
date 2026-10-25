@@ -22,7 +22,7 @@ func (r *SearchResults) Empty() bool {
 // Search finds tracks, releases and artists matching every word of q, the
 // last word as a prefix (so results show while typing). Accents and case
 // don't matter.
-func Search(q string, limit int) (*SearchResults, error) {
+func Search(v Viewer, q string, limit int) (*SearchResults, error) {
 	match := searchQuery(q)
 	res := &SearchResults{}
 	if match == "" {
@@ -35,8 +35,8 @@ func Search(q string, limit int) (*SearchResults, error) {
 	ids := map[string][]string{}
 	for _, kind := range []string{"track", "release", "artist", "show"} {
 		rows, err := DB.Query(`
-			SELECT ref FROM search WHERE search MATCH ? AND kind = ?
-			ORDER BY bm25(search, 0, 0, 10, 3) LIMIT ?;`, match, kind, limit)
+			SELECT ref FROM search WHERE search MATCH ? AND kind = ? AND (secret = 0 OR ?)
+			ORDER BY bm25(search, 0, 0, 0, 10, 3) LIMIT ?;`, match, kind, v.Secret, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func Search(q string, limit int) (*SearchResults, error) {
 	}
 
 	for _, id := range ids["track"] {
-		t, err := GetTrack(id)
+		t, err := GetTrack(v, id)
 		if err != nil {
 			return nil, err
 		}
@@ -72,14 +72,14 @@ func Search(q string, limit int) (*SearchResults, error) {
 		return nil, err
 	}
 	for _, id := range ids["artist"] {
-		a, err := GetArtist(id)
+		a, err := GetArtist(v, id)
 		if err != nil {
 			return nil, err
 		}
 		res.Artists = append(res.Artists, a)
 	}
 	for _, id := range ids["show"] {
-		s, err := GetShow(id)
+		s, err := GetShow(v, id)
 		if err != nil {
 			return nil, err
 		}
@@ -121,23 +121,23 @@ func refreshSearch() error {
 	defer tx.Rollback()
 	stmts := []string{
 		`DELETE FROM search;`,
-		`INSERT INTO search(kind, ref, title, artists)
-			SELECT 'track', t.uuid, t.title, COALESCE(group_concat(a.name, ' '), '')
+		`INSERT INTO search(kind, ref, secret, title, artists)
+			SELECT 'track', t.uuid, t.secret, t.title, COALESCE(group_concat(a.name, ' '), '')
 			FROM tracks t
 			LEFT JOIN track_artist_map m ON m.track_id = t.uuid
 			LEFT JOIN artists a ON a.uuid = m.artist_id
 			WHERE ` + libraryTracks + `
 			GROUP BY t.uuid;`,
-		`INSERT INTO search(kind, ref, title, artists)
-			SELECT 'release', r.uuid, r.title, COALESCE(group_concat(a.name, ' '), '')
+		`INSERT INTO search(kind, ref, secret, title, artists)
+			SELECT 'release', r.uuid, NOT (` + Public.releaseCond("r") + `), r.title, COALESCE(group_concat(a.name, ' '), '')
 			FROM releases r
 			LEFT JOIN release_artist_map m ON m.release_id = r.uuid
 			LEFT JOIN artists a ON a.uuid = m.artist_id
 			GROUP BY r.uuid;`,
-		`INSERT INTO search(kind, ref, title, artists)
-			SELECT 'artist', uuid, name, '' FROM artists;`,
-		`INSERT INTO search(kind, ref, title, artists)
-			SELECT 'show', uuid, title, COALESCE(author, '') FROM shows;`,
+		`INSERT INTO search(kind, ref, secret, title, artists)
+			SELECT 'artist', a.uuid, NOT (` + Public.artistCond("a") + `), a.name, '' FROM artists a;`,
+		`INSERT INTO search(kind, ref, secret, title, artists)
+			SELECT 'show', s.uuid, NOT (` + Public.showCond("s") + `), s.title, COALESCE(s.author, '') FROM shows s;`,
 		// the rebuild itself doesn't touch the watched tables, so this sticks
 		`UPDATE search_state SET dirty = 0;`,
 	}

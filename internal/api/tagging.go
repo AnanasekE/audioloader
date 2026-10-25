@@ -13,7 +13,7 @@ import (
 )
 
 func getTaggingPage(w http.ResponseWriter, r *http.Request) {
-	trackCounts, err := db.TagCounts()
+	trackCounts, err := db.TagCounts(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -23,7 +23,7 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	pending, err := db.PendingMatches()
+	pending, err := db.PendingMatches(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -35,7 +35,7 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 			reviews[n-1].Candidates = append(reviews[n-1].Candidates, p.Match)
 			continue
 		}
-		t, err := db.GetTrack(p.TrackID)
+		t, err := db.GetTrack(viewer(r), p.TrackID)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -53,7 +53,7 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTaggingBadge(w http.ResponseWriter, r *http.Request) {
-	counts, err := db.TagCounts()
+	counts, err := db.TagCounts(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return
@@ -134,7 +134,7 @@ func applyAllTagMatches(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "min must be a percentage from 50 to 100", http.StatusBadRequest)
 		return
 	}
-	pending, err := db.PendingMatches()
+	pending, err := db.PendingMatches(viewer(r))
 	if err != nil {
 		serverError(w, err)
 		return

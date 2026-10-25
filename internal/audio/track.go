@@ -24,6 +24,8 @@ type Track struct {
 	// Position is where playback of an episode stopped; Finished marks it played
 	Position time.Duration
 	Finished bool
+	// Secret tracks are only shown once the vault is unlocked
+	Secret bool
 	// false for a placeholder: the track is known (e.g. from a release's
 	// tracklist) but its file hasn't been added yet
 	HasFile bool

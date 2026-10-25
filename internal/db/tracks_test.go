@@ -27,14 +27,14 @@ func TestPlaceholderTracks(t *testing.T) {
 	r, _ := newTestRelease(t, "rel", audio.ReleaseAlbum)
 	id := addTestPlaceholder(t, r, "missing", 1)
 
-	tracks, err := ListTracks()
+	tracks, err := ListTracks(All)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(tracks) != 0 {
 		t.Fatalf("placeholder listed in library: %v", tracks)
 	}
-	rel, err := GetRelease(r.ID.String())
+	rel, err := GetRelease(All, r.ID.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestPlaceholderTracks(t *testing.T) {
 	if _, err := AttachFile(id, bytes.NewReader([]byte("audio")), ".mp3", 90*time.Second); err != nil {
 		t.Fatal(err)
 	}
-	tracks, _ = ListTracks()
+	tracks, _ = ListTracks(All)
 	if len(tracks) != 1 || !tracks[0].HasFile || tracks[0].Duration != 90*time.Second {
 		t.Fatalf("after attach: %+v", tracks)
 	}

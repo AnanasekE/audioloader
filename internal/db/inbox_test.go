@@ -16,7 +16,7 @@ func TestConfirmInboxRelease(t *testing.T) {
 	if err := SetFollow(a.ID.String(), "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", DefaultFilters()); err != nil {
 		t.Fatal(err)
 	}
-	library, _ := ListTracks()
+	library, _ := ListTracks(All)
 	credit := []MatchArtist{{ID: "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", Name: "Massive Attack"}}
 	tracks := []InboxTrack{
 		{Disc: 1, Position: 1, Title: "Angel", RecordingMBID: "r1", LengthMs: 380000, Artists: credit},
@@ -50,7 +50,7 @@ func TestConfirmInboxRelease(t *testing.T) {
 	if len(placeholders) != 2 {
 		t.Fatalf("placeholders = %v", placeholders)
 	}
-	rel, _ := GetRelease(relID)
+	rel, _ := GetRelease(All, relID)
 	if rel.MBID != "rel1" || rel.ReleaseGroupMBID != "rg1" || len(rel.Tracks) != 3 {
 		t.Fatalf("release = %+v", rel)
 	}
@@ -66,7 +66,7 @@ func TestConfirmInboxRelease(t *testing.T) {
 	if _, _, err := ConfirmInboxRelease("rg1"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("confirming twice err = %v", err)
 	}
-	downloads, err := ListDownloads(DownloadQueued)
+	downloads, err := ListDownloads(All, DownloadQueued)
 	if err != nil || len(downloads) != 2 || downloads[0].Release.Title != "Mezzanine" {
 		t.Fatalf("downloads = %+v, %v", downloads, err)
 	}
@@ -91,11 +91,11 @@ func TestMergePlaceholder(t *testing.T) {
 	if err := MergePlaceholder(ph, existing); err != nil {
 		t.Fatal(err)
 	}
-	rel, _ := GetRelease(r.ID.String())
+	rel, _ := GetRelease(All, r.ID.String())
 	if len(rel.Tracks) != 1 || rel.Tracks[0].Track.ID.String() != existing || rel.Tracks[0].Track.MBID != "rec" {
 		t.Fatalf("release tracks = %+v", rel.Tracks[0].Track)
 	}
-	if _, err := GetTrack(ph); !errors.Is(err, ErrNotFound) {
+	if _, err := GetTrack(All, ph); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("placeholder still there: %v", err)
 	}
 }
