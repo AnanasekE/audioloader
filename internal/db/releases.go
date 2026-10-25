@@ -248,6 +248,19 @@ func SetReleaseTracks(releaseID string, entries []ReleaseTrackInput) error {
 	return tx.Commit()
 }
 
+// PlaceTrack puts an existing track on a release.
+func PlaceTrack(trackID string, link ReleaseLink) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := insertReleaseTrack(tx, trackID, link); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // NextPositions returns, per release and disc, the position after the last track.
 func NextPositions() (map[string]map[int]int, error) {
 	rows, err := DB.Query(`SELECT release_id, disc, MAX(position) FROM release_tracks GROUP BY release_id, disc;`)

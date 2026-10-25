@@ -12,6 +12,7 @@ import (
 
 	"audioloader/internal/api"
 	"audioloader/internal/db"
+	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
 	"audioloader/internal/tagging"
 	"audioloader/internal/tracking"
@@ -31,6 +32,8 @@ func main() {
 	tagging.Register()
 	tracking.Register()
 	go tracking.Schedule(ctx)
+	downloads.Register()
+	go downloads.Schedule(ctx)
 	workerDone := make(chan struct{})
 	go func() {
 		jobs.Run(ctx)
