@@ -70,7 +70,7 @@ func TestEpisodes(t *testing.T) {
 	}
 
 	// chapters
-	chs := []Chapter{{0, "Intro"}, {90 * time.Second, "Main"}}
+	chs := []Chapter{{Start: 0, Title: "Intro"}, {Start: 90 * time.Second, Title: "Main"}}
 	if err := SetChapters(ep1, chs); err != nil {
 		t.Fatal(err)
 	}
