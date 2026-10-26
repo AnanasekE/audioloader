@@ -1,6 +1,7 @@
 package components
 
 import (
+	"context"
 	"encoding/json"
 
 	"audioloader/internal/audio"
@@ -11,6 +12,16 @@ const audioAccept = "audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac"
 // batchCols keeps the header and every row on the same grid.
 const batchCols = "md:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)_12rem_4rem_auto]"
 
+// secret mode has no release and disc columns
+const batchColsSecret = "md:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)_auto]"
+
+func batchColsFor(ctx context.Context) string {
+	if secretMode(ctx) {
+		return batchColsSecret
+	}
+	return batchCols
+}
+
 // BatchUploadPage uploads many tracks at once. Each row goes to a release of
 // its own choosing, or becomes a new single. release, if set, is preselected
 // for every row. nextPositions maps release ID and disc to the next free position.
@@ -19,6 +30,10 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 		if release != nil {
 			@pageHeader("Batch upload", "Into "+release.Type.Label()+": "+release.Title) {
 				<a class="btn" href={ releaseURL(release) }>Back to release</a>
+			}
+		} else if secretMode(ctx) {
+			@pageHeader("Batch upload", "Each file becomes a secret track") {
+				<a class="btn" href="/upload">Single upload</a>
 			}
 		} else {
 			@pageHeader("Batch upload", "Tracks without a release each become a single") {
@@ -52,23 +67,30 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 							}
 						</select>
 					</div>
-					<div class="flex items-center gap-2">
-						<label for="batch-default-release" class="text-sm font-medium">Release for all tracks</label>
-						@releaseSelect("batch-default-release", releases, release, "input w-auto min-w-48")
-					</div>
 					if secretMode(ctx) {
-						<label class="flex items-center gap-2 text-sm">
-							<input id="batch-secret" type="checkbox" name="secret" value="1"/>
-							All secret
-						</label>
+						// batch.js needs the release select even where there are no releases
+						@releaseSelect("batch-default-release", releases, release, "hidden")
+					} else {
+						<div class="flex items-center gap-2">
+							<label for="batch-default-release" class="text-sm font-medium">Release for all tracks</label>
+							@releaseSelect("batch-default-release", releases, release, "input w-auto min-w-48")
+						</div>
 					}
 				</div>
-				<div class={ "hidden gap-2 pb-2 text-sm font-medium text-zinc-500 md:grid dark:text-zinc-400", batchCols }>
+				<div class={ "hidden gap-2 pb-2 text-sm font-medium text-zinc-500 md:grid dark:text-zinc-400", batchColsFor(ctx) }>
 					<span>Title</span>
-					<span>Artist</span>
+					<span>
+						if secretMode(ctx) {
+							Creators
+						} else {
+							Artist
+						}
+					</span>
 					<span>File</span>
-					<span>Release</span>
-					<span>Disc</span>
+					if !secretMode(ctx) {
+						<span>Release</span>
+						<span>Disc</span>
+					}
 					<span class="sr-only">Actions</span>
 				</div>
 				<div id="batch-rows" class="divide-y divide-zinc-200 dark:divide-zinc-700"></div>
@@ -92,11 +114,10 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 // track is uploaded by its own request to the normal upload endpoint.
 templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.Release, release *audio.Release) {
 	<form
-		class={ "batch-row grid items-start gap-2 py-3", batchCols }
+		class={ "batch-row grid items-start gap-2 py-3", batchColsFor(ctx) }
 		hx-post="/ui/tracks"
 		hx-encoding="multipart/form-data"
 		hx-trigger="batch-submit"
-		hx-include="#batch-secret"
 		hx-target="find .row-status"
 		hx-swap="innerHTML"
 	>
@@ -106,13 +127,13 @@ templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.
 			<input class="hidden" type="file" name="track" accept={ audioAccept }/>
 			<span class="truncate" data-file-name></span>
 		</div>
-		<div>
+		<div hidden?={ secretMode(ctx) }>
 			@releaseSelect("", releases, release, "input")
 			// filled in by batch.js right before upload, from the row order within each release and disc
 			<input type="hidden" name="position"/>
 		</div>
 		// disabled (and so not submitted) while the row is a new single
-		<input class="input px-2 disabled:opacity-40" type="number" name="disc" min="1" value="1" aria-label="Disc" required disabled?={ release == nil }/>
+		<input class="input px-2 disabled:opacity-40" type="number" name="disc" min="1" value="1" aria-label="Disc" required disabled?={ release == nil } hidden?={ secretMode(ctx) }/>
 		<button type="button" class="btn px-2.5" data-action="remove" title="Remove from batch" aria-label="Remove from batch">✕</button>
 		<div class="row-status col-span-full text-sm empty:hidden data-[state=error]:text-red-600 data-[state=exists]:text-amber-600 data-[state=link]:text-sky-600 data-[state=pending]:text-zinc-500 dark:data-[state=error]:text-red-400 dark:data-[state=exists]:text-amber-400 dark:data-[state=link]:text-sky-400"></div>
 	</form>

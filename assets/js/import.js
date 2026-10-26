@@ -36,6 +36,9 @@
 	const AUDIO = /\.(mp3|opus|ogg|oga|flac|m4a|mp4|aac|wav)$/i;
 	const RELEASE_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 	const UPLOADS_AT_ONCE = 3;
+	// secret mode has no releases: every track is uploaded alone, and the server
+	// makes it a secret track (it never reads that from the form)
+	const SECRET = document.body.dataset.mode === "secret";
 
 	const items = new Map(); // id -> {id, file, path, tags, fp, inLibrary, dupOf, groupID, values, el, done}
 	let groups = []; // {id, key, title, type, typeSource, date, artists, itemIDs, el, releaseID}
@@ -153,6 +156,7 @@
 	// --- proposing releases ------------------------------------------------
 
 	function groupItems(added) {
+		if (SECRET) return;
 		// files without an album tag in a folder of numbered files are an album too
 		const numberedByFolder = new Map();
 		for (const it of added) {
@@ -773,7 +777,6 @@
 					fd.append("date", it.values.date);
 				}
 			}
-			if ($("import-secret")?.checked) fd.append("secret", "1");
 			// MusicBrainz tags let the auto-tagger match the track without a lookup
 			if (it.tags.mb.recording) fd.append("mbid", it.tags.mb.recording);
 			if (it.tags.isrc) fd.append("isrc", it.tags.isrc);

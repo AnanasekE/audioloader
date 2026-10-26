@@ -282,3 +282,163 @@ func TestAccentAndBadge(t *testing.T) {
 		t.Error("secret mode page lacks the mode, badge or lock")
 	}
 }
+
+// upload posts a multipart form to path as one of the modes.
+func (a *modeApp) upload(secret bool, path string, fields url.Values, file []byte) *httptest.ResponseRecorder {
+	a.t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	for k, vs := range fields {
+		for _, v := range vs {
+			mw.WriteField(k, v)
+		}
+	}
+	fw, _ := mw.CreateFormFile("track", "x.mp3")
+	fw.Write(file)
+	mw.Close()
+	req := httptest.NewRequest("POST", path, &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	if secret {
+		req.AddCookie(a.v.Cookie(time.Now(), false))
+	}
+	rec := httptest.NewRecorder()
+	a.h.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestUploadsFollowTheMode(t *testing.T) {
+	a := newModeApp(t)
+	mp3, err := os.ReadFile("../tags/testdata/tagged.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs := func() (n int) {
+		db.DB.QueryRow(`SELECT COUNT(*) FROM jobs;`).Scan(&n)
+		return n
+	}
+	find := func(v db.Viewer, title string) string {
+		tracks, _ := db.ListTracks(v)
+		for _, tr := range tracks {
+			if tr.Title == title {
+				return tr.ID.String()
+			}
+		}
+		return ""
+	}
+
+	// secret mode: a secret track, whatever the form says about releases and secrecy
+	before := jobs()
+	rec := a.upload(true, "/ui/tracks", url.Values{
+		"title": {"ZZSECRET Upload"}, "artist_id": {a.ID["secret artist"]},
+		"secret": {"0"}, "release_id": {a.ID["public release"]}, "disc": {"1"}, "position": {"9"}, "date": {"2001"},
+		"description": {"About it"}, "tags": {"one, two"},
+	}, mp3)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("secret upload = %d %s", rec.Code, rec.Body)
+	}
+	id := find(db.Secret, "ZZSECRET Upload")
+	if id == "" {
+		t.Fatal("no secret track")
+	}
+	tr, _ := db.GetTrack(db.Secret, id)
+	if !tr.Secret || len(tr.Releases) != 0 || tr.Description != "About it" || len(tr.Tags) != 2 {
+		t.Fatalf("track = %+v", tr)
+	}
+	if rel, _ := db.GetRelease(db.All, a.ID["public release"]); len(rel.Tracks) != 2 {
+		t.Fatalf("the secret track got onto a release: %d tracks", len(rel.Tracks))
+	}
+	if jobs() != before {
+		t.Error("a secret track was queued for tagging")
+	}
+
+	// normal mode: a normal track, whatever the form says
+	rec = a.upload(false, "/ui/tracks", url.Values{
+		"title": {"ZZPUBLIC Upload"}, "artist_id": {a.ID["public artist"]}, "secret": {"1"}, "description": {"x"}, "tags": {"y"},
+	}, append(mp3, 1)) // another file
+	if rec.Code != http.StatusOK {
+		t.Fatalf("normal upload = %d %s", rec.Code, rec.Body)
+	}
+	id = find(db.Normal, "ZZPUBLIC Upload")
+	if id == "" {
+		t.Fatal("no normal track")
+	}
+	if tr, _ := db.GetTrack(db.Normal, id); tr.Secret || tr.Description != "" || len(tr.Tags) != 0 || len(tr.Releases) != 1 {
+		t.Fatalf("normal track = %+v", tr)
+	}
+	if jobs() == before {
+		t.Error("a normal track wasn't queued for tagging")
+	}
+
+	// the same file from the other side is refused without saying why
+	rec = a.upload(false, "/ui/tracks", url.Values{"title": {"Again"}, "artist_id": {a.ID["public artist"]}}, mp3)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "upload failed") {
+		t.Fatalf("duplicate of a secret file = %d %s", rec.Code, rec.Body)
+	}
+}
+
+func TestSecretModeHidesReleaseControls(t *testing.T) {
+	a := newModeApp(t)
+	for _, c := range []struct {
+		path    string
+		gone    []string
+		present []string
+	}{
+		{"/upload", []string{`name="date"`, `name="secret"`, "From YouTube", "new-release-form"}, []string{`name="description"`, `name="tags"`, "Podcast episode"}},
+		{"/upload/batch", []string{`name="secret"`, "Release for all tracks", "Disc</span>"}, []string{"Creators"}},
+		{"/upload/import", []string{`import-secret`}, []string{"Each file becomes a secret track"}},
+	} {
+		secret := a.do(true, "GET", c.path, nil).Body.String()
+		normal := a.do(false, "GET", c.path, nil).Body.String()
+		for _, g := range c.gone {
+			if strings.Contains(secret, g) {
+				t.Errorf("%s in secret mode still has %q", c.path, g)
+			}
+		}
+		for _, p := range c.present {
+			if !strings.Contains(secret, p) {
+				t.Errorf("%s in secret mode lacks %q", c.path, p)
+			}
+		}
+		if strings.Contains(normal, `name="secret"`) || strings.Contains(normal, "import-secret") {
+			t.Errorf("%s in normal mode has a secret checkbox", c.path)
+		}
+	}
+}
+
+func TestEpisodeUploadFollowsTheMode(t *testing.T) {
+	a := newModeApp(t)
+	mp3, err := os.ReadFile("../tags/testdata/tagged.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// a new show named in secret mode is secret; the form's flag is not read
+	rec := a.upload(true, "/ui/episodes", url.Values{"title": {"ZZSECRET Ep"}, "show_name": {"ZZSECRET New Show"}, "secret": {"0"}}, mp3)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("secret episode = %d %s", rec.Code, rec.Body)
+	}
+	shows, _ := db.ListShows(db.Secret)
+	found := false
+	for _, s := range shows {
+		found = found || (s.Title == "ZZSECRET New Show" && s.Count == 1)
+	}
+	if !found {
+		t.Fatal("the secret show doesn't list its episode")
+	}
+	for _, s := range must(db.ListShows(db.Normal)) {
+		if strings.Contains(s.Title, "ZZSECRET") {
+			t.Fatal("normal mode lists the secret show")
+		}
+	}
+	// the same file from normal mode is refused without saying why
+	rec = a.upload(false, "/ui/episodes", url.Values{"title": {"Again"}, "show_name": {"Some Show"}}, mp3)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "upload failed") {
+		t.Fatalf("duplicate = %d %s", rec.Code, rec.Body)
+	}
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}

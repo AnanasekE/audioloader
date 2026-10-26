@@ -1,12 +1,16 @@
 package components
 
-import "audioloader/internal/audio"
+import (
+	"context"
+
+	"audioloader/internal/audio"
+)
 
 // ImportPage imports a whole folder: import.js reads the files' tags in the
 // browser, proposes releases, and uploads only after the review is confirmed.
 templ ImportPage(artists []*audio.Artist) {
 	@layout("Import library", PageUpload) {
-		@pageHeader("Import library", "Releases are recognised from the files' tags; nothing uploads until you confirm") {
+		@pageHeader("Import library", importSubtitle(ctx)) {
 			<a class="btn" href="/upload">Single upload</a>
 		}
 		<section id="import" class="card">
@@ -16,12 +20,6 @@ templ ImportPage(artists []*audio.Artist) {
 				<div>
 					<label for="import-creator" class="mb-1 block text-sm font-medium">Creator <span class="font-normal text-zinc-500">(used where the tags name no artist)</span></label>
 					<input id="import-creator" class="input" type="text" list="import-artist-list" placeholder="e.g. CerberVT" autocomplete="off"/>
-					if secretMode(ctx) {
-						<label class="mt-2 flex items-center gap-2 text-sm">
-							<input id="import-secret" type="checkbox"/>
-							Import everything as secret
-						</label>
-					}
 					<datalist id="import-artist-list">
 						for _, a := range artists {
 							<option value={ a.Name }></option>
@@ -38,11 +36,14 @@ templ ImportPage(artists []*audio.Artist) {
 				<p id="import-summary" class="mb-4 text-sm"></p>
 				<div class="sticky top-0 z-10 -mx-5 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-5 py-3 dark:border-zinc-700 dark:bg-zinc-800">
 					<span id="import-selected" class="text-sm text-zinc-500 dark:text-zinc-400">Select tracks to regroup them</span>
-					<button type="button" class="btn" data-action="group-selected" disabled>Group into release</button>
-					<select id="import-move" class="input w-auto max-w-64" aria-label="Move selected tracks to a release" disabled>
-						<option value="">Move to release…</option>
-					</select>
-					<button type="button" class="btn" data-action="singles-selected" disabled>Make singles</button>
+					// secret mode has no releases to group into; import.js still wants the controls
+					<span class={ templ.KV("contents", !secretMode(ctx)), templ.KV("hidden", secretMode(ctx)) }>
+						<button type="button" class="btn" data-action="group-selected" disabled>Group into release</button>
+						<select id="import-move" class="input w-auto max-w-64" aria-label="Move selected tracks to a release" disabled>
+							<option value="">Move to release…</option>
+						</select>
+						<button type="button" class="btn" data-action="singles-selected" disabled>Make singles</button>
+					</span>
 					<button type="button" class="btn" data-action="remove-selected" disabled>Remove</button>
 				</div>
 				<section class="mb-6 rounded-lg border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
@@ -63,8 +64,17 @@ templ ImportPage(artists []*audio.Artist) {
 				</section>
 				<div id="import-groups"></div>
 				<section id="import-singles-section">
-					<h2 class="mt-6 mb-2 text-lg font-semibold">Singles <span id="import-singles-count" class="text-sm font-normal text-zinc-500"></span></h2>
-					<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Each track here becomes its own single.</p>
+					<h2 class="mt-6 mb-2 text-lg font-semibold">
+						if secretMode(ctx) {
+							Tracks
+						} else {
+							Singles
+						}
+						<span id="import-singles-count" class="text-sm font-normal text-zinc-500"></span>
+					</h2>
+					if !secretMode(ctx) {
+						<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Each track here becomes its own single.</p>
+					}
 					<ol id="import-singles" class="divide-y divide-zinc-200 dark:divide-zinc-700"></ol>
 				</section>
 				<section id="import-episodes-section" hidden>
@@ -196,14 +206,32 @@ templ importArtistOption() {
 
 const importSingleCols = "grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)_minmax(0,14rem)_7rem_minmax(0,12rem)]"
 
+// no date column in secret mode
+const importSingleColsSecret = "grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)_minmax(0,14rem)_minmax(0,12rem)]"
+
+func importSingleColsFor(ctx context.Context) string {
+	if secretMode(ctx) {
+		return importSingleColsSecret
+	}
+	return importSingleCols
+}
+
 // importSingle is a track that becomes its own single.
 templ importSingle() {
-	<li class={ "import-row grid items-center gap-2 py-1.5", importSingleCols }>
+	<li class={ "import-row grid items-center gap-2 py-1.5", importSingleColsFor(ctx) }>
 		<input type="checkbox" data-select aria-label="Select track"/>
 		<input class="input" type="text" data-field="title" aria-label="Title" required/>
 		@importArtistPicker()
-		<input class="input" type="text" data-field="date" aria-label="Release date" placeholder="YYYY" pattern="\d{4}(-\d{2}(-\d{2})?)?"/>
+		// the single's release date; secret tracks have no release
+		<input class={ "input", templ.KV("hidden", secretMode(ctx)) } type="text" data-field="date" aria-label="Release date" placeholder="YYYY" pattern="\d{4}(-\d{2}(-\d{2})?)?"/>
 		<span class="truncate text-xs text-zinc-500 dark:text-zinc-400" data-file></span>
 		<span class="col-span-full text-sm empty:hidden data-[state=done]:text-emerald-600 data-[state=error]:text-red-600 data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=error]:text-red-400 dark:data-[state=exists]:text-amber-400" data-status></span>
 	</li>
+}
+
+func importSubtitle(ctx context.Context) string {
+	if secretMode(ctx) {
+		return "Each file becomes a secret track; nothing uploads until you confirm"
+	}
+	return "Releases are recognised from the files' tags; nothing uploads until you confirm"
 }

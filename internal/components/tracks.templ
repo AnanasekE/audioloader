@@ -123,12 +123,21 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 			<fieldset class="mb-4">
 				<legend class="mb-2 text-sm font-medium">What are you uploading?</legend>
 				<div class="flex flex-wrap gap-2">
-					for _, typ := range audio.ReleaseTypes {
+					if secretMode(ctx) {
+						// secret tracks have no releases
 						<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
-							// form= ties the choice to the release form, which needs the type
-							<input id={ "kind-" + string(typ) } class="sr-only" type="radio" name="type" value={ string(typ) } form="new-release-form" checked?={ typ == audio.ReleaseSingle }/>
-							{ typ.Label() }
+							<input id="kind-single" class="sr-only" type="radio" name="type" value="single" form="episode-form" checked/>
+							Track
 						</label>
+					}
+					for _, typ := range audio.ReleaseTypes {
+						if !secretMode(ctx) {
+							<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+								// form= ties the choice to the release form, which needs the type
+								<input id={ "kind-" + string(typ) } class="sr-only" type="radio" name="type" value={ string(typ) } form="new-release-form" checked?={ typ == audio.ReleaseSingle }/>
+								{ typ.Label() }
+							</label>
+						}
 					}
 					<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
 						// not part of the release form: an episode isn't a release
@@ -140,9 +149,11 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 			<div class="hidden group-has-[#kind-single:checked]:block">
 				@AddTrackForm(artists)
 			</div>
-			<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
-				@NewReleaseForm(artists, true)
-			</div>
+			if !secretMode(ctx) {
+				<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
+					@NewReleaseForm(artists, true)
+				</div>
+			}
 			<div class="hidden group-has-[#kind-episode:checked]:block">
 				@EpisodeForm(shows)
 			</div>
@@ -168,24 +179,34 @@ templ AddTrackForm(artists []*audio.Artist) {
 				<input id="track-title" class="input" type="text" name="title" placeholder="Track name" required/>
 			</div>
 			<div>
-				<span class="mb-1 block text-sm font-medium">Artists</span>
+				<span class="mb-1 block text-sm font-medium">
+					if secretMode(ctx) {
+						Creators
+					} else {
+						Artists
+					}
+				</span>
 				@artistPicker(artists, nil)
 				if len(artists) == 0 {
 					<small class="mt-1 block text-zinc-500">No artists yet. <a href="/artists">Add one first</a>.</small>
 				}
 			</div>
-			<div>
-				<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-zinc-500">(optional)</span></label>
-				<input
-					id="track-date"
-					class="input"
-					type="text"
-					name="date"
-					placeholder="YYYY or YYYY-MM-DD"
-					pattern="\d{4}(-\d{2}(-\d{2})?)?"
-					title="YYYY, YYYY-MM or YYYY-MM-DD"
-				/>
-			</div>
+			if secretMode(ctx) {
+				@secretTrackFields("", nil)
+			} else {
+				<div>
+					<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-zinc-500">(optional)</span></label>
+					<input
+						id="track-date"
+						class="input"
+						type="text"
+						name="date"
+						placeholder="YYYY or YYYY-MM-DD"
+						pattern="\d{4}(-\d{2}(-\d{2})?)?"
+						title="YYYY, YYYY-MM or YYYY-MM-DD"
+					/>
+				</div>
+			}
 			<div>
 				<label for="track-file" class="mb-1 block text-sm font-medium">Audio file</label>
 				<input
@@ -198,12 +219,6 @@ templ AddTrackForm(artists []*audio.Artist) {
 				/>
 				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=exists]:text-amber-400" aria-live="polite"></small>
 			</div>
-			if secretMode(ctx) {
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" name="secret" value="1"/>
-					Secret: only shown while the vault is unlocked
-				</label>
-			}
 			<div>
 				<button class="btn disabled:cursor-not-allowed disabled:opacity-50" type="submit">Upload</button>
 			</div>

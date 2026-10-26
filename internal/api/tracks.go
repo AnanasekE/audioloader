@@ -252,15 +252,24 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	link, ok := releaseLinkFromForm(w, r)
-	if !ok {
-		return
-	}
-	// without a release the track becomes its own single, on this date
-	singleDate := strings.TrimSpace(r.FormValue("date"))
-	if link == nil && singleDate != "" && !releaseDate.MatchString(singleDate) {
-		http.Error(w, "date must be YYYY, YYYY-MM or YYYY-MM-DD", http.StatusBadRequest)
-		return
+	// secret mode uploads create secret tracks, which are on no release:
+	// the form's release fields are ignored, and the server (never the form)
+	// decides that the track is secret
+	secret := viewer(r).IsSecret()
+	var link *db.ReleaseLink
+	singleDate := ""
+	if !secret {
+		var ok bool
+		link, ok = releaseLinkFromForm(w, r)
+		if !ok {
+			return
+		}
+		// without a release the track becomes its own single, on this date
+		singleDate = strings.TrimSpace(r.FormValue("date"))
+		if link == nil && singleDate != "" && !releaseDate.MatchString(singleDate) {
+			http.Error(w, "date must be YYYY, YYYY-MM or YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
 	}
 
 	track := &audio.Track{
@@ -269,6 +278,15 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 		// optional, from the file's tags; invalid values are dropped, not rejected
 		MBID: validMBID(r.FormValue("mbid")),
 		ISRC: validISRC(r.FormValue("isrc")),
+	}
+	if secret {
+		track.MBID, track.ISRC = "", "" // secret tracks are never matched
+		track.Description = strings.TrimSpace(r.FormValue("description"))
+		if len(track.Description) > maxDescription {
+			http.Error(w, "the description is too long", http.StatusBadRequest)
+			return
+		}
+		track.Tags = db.NormalizeTags(strings.Split(r.FormValue("tags"), ","))
 	}
 	ext := filepath.Ext(header.Filename)
 	res, err := db.AddTrack(viewer(r), artistIDs, track, file, ext, link, singleDate)
@@ -295,6 +313,10 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 
 	if res.Linked {
 		render(w, r, components.Notice("Already in the library, added to the release."))
+		return
+	}
+	if secret {
+		render(w, r, components.Notice("Uploaded "+track.Title+"."))
 		return
 	}
 	// a failed enqueue only means the track isn't auto-tagged; the upload worked
