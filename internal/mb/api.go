@@ -11,11 +11,20 @@ import (
 // inc values are space-separated here: url.Values encodes a space as "+",
 // the separator MusicBrainz expects.
 
-// GetRecording looks up a recording with its artists, releases and ISRCs.
+// GetRecording looks up a recording with its artists, releases, ISRCs and
+// the works it performs (which tell a cover from an original).
 func (c *Client) GetRecording(ctx context.Context, id string) (*Recording, error) {
 	var r Recording
-	q := url.Values{"inc": {"artists releases isrcs release-groups"}}
+	q := url.Values{"inc": {"artists releases isrcs release-groups work-rels"}}
 	return &r, c.getJSON(ctx, "musicbrainz", c.mbURL("recording/"+url.PathEscape(id), q), &r)
+}
+
+// GetWork looks up a work with the recordings that perform it and its
+// artist relations (writers, composers).
+func (c *Client) GetWork(ctx context.Context, id string) (*Work, error) {
+	var w Work
+	q := url.Values{"inc": {"artist-rels recording-rels"}}
+	return &w, c.getJSON(ctx, "musicbrainz", c.mbURL("work/"+url.PathEscape(id), q), &w)
 }
 
 // GetRelease looks up a release with its tracklist, credits and release group.

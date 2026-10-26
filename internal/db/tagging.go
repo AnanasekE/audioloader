@@ -28,6 +28,9 @@ type Match struct {
 	ReleaseType    string        `json:"release_type,omitempty"` // our type: album, ep, single, compilation
 	ReleaseDate    string        `json:"release_date,omitempty"`
 	ReleaseArtists []MatchArtist `json:"release_artists,omitempty"`
+
+	// CoverWorkID is the MusicBrainz work the recording covers, "" if it isn't a cover
+	CoverWorkID string `json:"cover_work_id,omitempty"`
 }
 
 type MatchArtist struct {

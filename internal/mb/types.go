@@ -73,12 +73,35 @@ type Release struct {
 	Relations    []Relation   `json:"relations"`
 }
 
-// Relation is a link from an entity to something else; we only read URLs.
+// Relation is a link from an entity to something else: a URL, or (for
+// covers) a work or a recording.
 type Relation struct {
-	Type string `json:"type"` // e.g. "free streaming", "purchase for download"
-	URL  struct {
+	Type       string   `json:"type"`        // e.g. "free streaming", "purchase for download", "performance"
+	TargetType string   `json:"target-type"` // "url", "work", "recording", ...
+	Direction  string   `json:"direction"`   // "forward" or "backward", relative to the entity it hangs on
+	Attributes []string `json:"attributes"`  // e.g. "cover", "live"
+	URL        struct {
 		Resource string `json:"resource"`
 	} `json:"url"`
+	Work      *Work      `json:"work"`      // set when TargetType is "work"
+	Recording *Recording `json:"recording"` // set when TargetType is "recording"
+}
+
+// HasAttribute reports whether the relation carries the attribute, e.g. "cover".
+func (r Relation) HasAttribute(name string) bool {
+	for _, a := range r.Attributes {
+		if strings.EqualFold(a, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// Work is a composition. Recordings that perform it hang on it as relations.
+type Work struct {
+	ID        string     `json:"id"`
+	Title     string     `json:"title"`
+	Relations []Relation `json:"relations"`
 }
 
 type Medium struct {
@@ -122,4 +145,44 @@ func RecordingID(s string) (id string, ok bool) {
 		return strings.ToLower(s), true
 	}
 	return "", false
+}
+
+// CoverWork returns the work this recording is a cover of: the target of a
+// "performance" relation with the "cover" attribute. nil if it isn't a cover
+// (or the lookup didn't include work-rels).
+func (r *Recording) CoverWork() *Work {
+	for _, rel := range r.Relations {
+		if rel.Type == "performance" && rel.TargetType == "work" && rel.Work != nil && rel.HasAttribute("cover") {
+			return rel.Work
+		}
+	}
+	return nil
+}
+
+// notOriginal are performance attributes of recordings that can't stand for the
+// original song: other covers and partial, live, medley or karaoke versions.
+var notOriginal = []string{"cover", "live", "partial", "medley", "karaoke"}
+
+// Original picks the original among the recordings that perform the work: the
+// one released first that isn't one of notOriginal, and isn't excludeID (the
+// cover being looked up). Recordings without a date come last. nil if none.
+func (w *Work) Original(excludeID string) *Recording {
+	var best *Recording
+	for _, rel := range w.Relations {
+		if rel.Type != "performance" || rel.TargetType != "recording" || rel.Recording == nil || rel.Recording.ID == excludeID {
+			continue
+		}
+		skip := false
+		for _, a := range notOriginal {
+			skip = skip || rel.HasAttribute(a)
+		}
+		if skip {
+			continue
+		}
+		rec := rel.Recording
+		if best == nil || rec.FirstReleaseDate != "" && (best.FirstReleaseDate == "" || rec.FirstReleaseDate < best.FirstReleaseDate) {
+			best = rec
+		}
+	}
+	return best
 }

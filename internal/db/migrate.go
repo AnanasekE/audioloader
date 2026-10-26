@@ -267,6 +267,19 @@ var migrations = []func(tx *sql.Tx) error{
 			UPDATE search_state SET dirty = 1;`)
 		return err
 	},
+	// 17: a cover found by auto-tagging: the original MusicBrainz names for the
+	// work a matched recording covers, waiting for the user to accept it
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE cover_suggestions (
+				track_id TEXT PRIMARY KEY REFERENCES tracks(uuid) ON DELETE CASCADE,
+				title TEXT NOT NULL,
+				artists TEXT NOT NULL DEFAULT '',
+				mbid TEXT, -- the original recording
+				status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'applied', 'rejected'))
+			);`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

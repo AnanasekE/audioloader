@@ -2,6 +2,7 @@ package mb
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -62,7 +63,7 @@ func TestDecodeFixtures(t *testing.T) {
 	if rec.Title != "Teardrop" || len(rec.ISRCs) == 0 || len(rec.Releases) == 0 || rec.ArtistCredit.String() != "Massive Attack" {
 		t.Fatalf("recording = %+v", rec)
 	}
-	if got := (*reqs)[0].URL.Query().Get("inc"); got != "artists releases isrcs release-groups" {
+	if got := (*reqs)[0].URL.Query().Get("inc"); got != "artists releases isrcs release-groups work-rels" {
 		t.Fatalf("inc = %q", got)
 	}
 	if ua := (*reqs)[0].Header.Get("User-Agent"); !strings.HasPrefix(ua, "audioloader/") {
@@ -206,5 +207,43 @@ func TestRecordingID(t *testing.T) {
 		if gotOK != ok || ok && got != id {
 			t.Errorf("RecordingID(%q) = %q, %v", in, got, gotOK)
 		}
+	}
+}
+
+func readFixture(t *testing.T, name string, v any) {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, v); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCoverWorkAndOriginal(t *testing.T) {
+	var cover, original Recording
+	readFixture(t, "recording_cover.json", &cover)
+	readFixture(t, "recording_original.json", &original)
+	work := cover.CoverWork()
+	if work == nil || work.ID != "e0e0e0e0-0000-4000-8000-000000000001" {
+		t.Fatalf("cover work = %+v", work)
+	}
+	if original.CoverWork() != nil {
+		t.Error("the original is not a cover")
+	}
+
+	var w Work
+	readFixture(t, "work_cover.json", &w)
+	got := w.Original(cover.ID)
+	// the cover, the live version and the later remaster are all passed over
+	if got == nil || got.ID != "c0c0c0c0-0000-4000-8000-000000000002" || got.ArtistCredit.String() != "Nine Inch Nails" {
+		t.Fatalf("original = %+v", got)
+	}
+	if got := w.Original("c0c0c0c0-0000-4000-8000-000000000002"); got == nil || got.ID != "c0c0c0c0-0000-4000-8000-000000000004" {
+		t.Errorf("without the first, original = %+v", got)
+	}
+	if (&Work{}).Original("x") != nil {
+		t.Error("an empty work has no original")
 	}
 }

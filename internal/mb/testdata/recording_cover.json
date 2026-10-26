@@ -1,0 +1,7 @@
+{"id":"c0c0c0c0-0000-4000-8000-000000000001","title":"Hurt","length":218000,"video":false,"disambiguation":"","first-release-date":"2002-11-19",
+"artist-credit":[{"name":"Johnny Cash","joinphrase":"","artist":{"id":"d0d0d0d0-0000-4000-8000-000000000001","name":"Johnny Cash","sort-name":"Cash, Johnny","disambiguation":""}}],
+"relations":[
+{"type":"performance","type-id":"a3005666-a872-32c3-ad06-98af558e99b0","target-type":"work","direction":"forward","attributes":["cover"],"attribute-ids":{"cover":"1e8536bf-5dc4-4aa9-9f5e-d16d6bd5c9d3"},"target-credit":"","source-credit":"","begin":null,"end":null,"ended":false,
+ "work":{"id":"e0e0e0e0-0000-4000-8000-000000000001","title":"Hurt","type":"Song","type-id":"f061270a-2fd6-32f1-a641-f0f8676d14e6","language":"eng","languages":["eng"],"disambiguation":"","iswcs":[],"attributes":[]}}
+],
+"releases":[]}

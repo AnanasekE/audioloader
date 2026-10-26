@@ -18,7 +18,7 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	jobCounts, err := jobs.Counts(tagging.JobTag, tagging.JobCover)
+	jobCounts, err := jobs.Counts(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -49,13 +49,19 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	covers, err := db.PendingCoverSuggestions(viewer(r))
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
 	tg := tagging.Default()
 	status := components.TaggingStatus{
 		Tracks:   trackCounts,
 		Jobs:     jobCounts,
 		AcoustID: tg.FPCalc != "" && tg.MB.AcoustIDKey != "",
 	}
-	render(w, r, components.TaggingPage(status, reviews, suggestions))
+	render(w, r, components.TaggingPage(status, reviews, suggestions, covers))
 }
 
 func getTaggingBadge(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +90,7 @@ func runTagging(w http.ResponseWriter, r *http.Request) {
 }
 
 func retryTagging(w http.ResponseWriter, r *http.Request) {
-	if err := jobs.RetryFailed(tagging.JobTag, tagging.JobCover); err != nil {
+	if err := jobs.RetryFailed(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf); err != nil {
 		serverError(w, err)
 		return
 	}
@@ -158,6 +164,43 @@ func applyAllTagMatches(w http.ResponseWriter, r *http.Request) {
 		if err := tagging.Apply(p.TrackID, p.RecordingID); err != nil {
 			log.Println("apply tag match:", err)
 		}
+	}
+	hxLocation(w, "/tagging")
+}
+
+func applyCoverSuggestion(w http.ResponseWriter, r *http.Request) {
+	trackID, ok := pathUUID(w, r, "track_id")
+	if !ok {
+		return
+	}
+	err := db.ApplyCoverSuggestion(viewer(r), trackID.String())
+	switch {
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case errors.Is(err, db.ErrCoverSet):
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tagging")
+}
+
+func rejectCoverSuggestion(w http.ResponseWriter, r *http.Request) {
+	trackID, ok := pathUUID(w, r, "track_id")
+	if !ok {
+		return
+	}
+	err := db.RejectCoverSuggestion(viewer(r), trackID.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
 	}
 	hxLocation(w, "/tagging")
 }

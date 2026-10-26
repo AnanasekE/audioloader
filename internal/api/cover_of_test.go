@@ -115,3 +115,38 @@ func TestCoverOfForm(t *testing.T) {
 		t.Errorf("picker leaks: %s", body)
 	}
 }
+
+func TestCoverSuggestionRoutes(t *testing.T) {
+	dbtest.New(t)
+	ids := secretLibrary(t)
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	h := WithViewer(mux)
+	post := func(path string) int {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("POST", path, nil))
+		return rec.Code
+	}
+	// a locked viewer can neither apply nor reject a hidden track's suggestion
+	for _, action := range []string{"apply", "reject"} {
+		if code := post("/ui/tagging/" + ids["secret track"] + "/cover-of/" + action); code != http.StatusNotFound {
+			t.Errorf("%s hidden = %d", action, code)
+		}
+	}
+	id := ids["public track"]
+	db.SaveCoverSuggestion(id, db.CoverSuggestion{Title: "Orig", Artists: "Band"})
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/tagging", nil))
+	if !strings.Contains(rec.Body.String(), "Orig") || strings.Contains(rec.Body.String(), "ZZSECRET") {
+		t.Fatalf("tagging page = %s", rec.Body)
+	}
+	if code := post("/ui/tagging/" + id + "/cover-of/apply"); code != http.StatusNoContent {
+		t.Fatalf("apply = %d", code)
+	}
+	if tr, _ := db.GetTrack(db.Public, id); tr.CoverOf == nil || tr.CoverOf.Title != "Orig" {
+		t.Fatalf("cover of = %+v", tr.CoverOf)
+	}
+	if code := post("/ui/tagging/" + id + "/cover-of/apply"); code != http.StatusNotFound {
+		t.Fatalf("second apply = %d", code)
+	}
+}

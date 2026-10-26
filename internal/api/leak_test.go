@@ -75,6 +75,10 @@ func secretLibrary(t *testing.T) map[string]string {
 		t.Fatal(err)
 	}
 
+	if err := db.SaveCoverSuggestion(ids["secret track"], db.CoverSuggestion{Title: "ZZSECRET Original", Artists: "ZZSECRET Band"}); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, id := range []string{ids["secret track"], ep} {
 		if err := db.SetSecret(id, true); err != nil {
 			t.Fatal(err)

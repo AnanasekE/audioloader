@@ -99,6 +99,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /ui/tagging/run", runTagging)
 	handle(mux, "POST /ui/tagging/retry", retryTagging)
 	handle(mux, "POST /ui/tagging/apply-all", applyAllTagMatches)
+	handle(mux, "POST /ui/tagging/{track_id}/cover-of/apply", applyCoverSuggestion)
+	handle(mux, "POST /ui/tagging/{track_id}/cover-of/reject", rejectCoverSuggestion)
 	handle(mux, "POST /ui/tagging/{track_id}/{recording_id}/apply", applyTagMatch)
 	handle(mux, "POST /ui/tagging/{track_id}/{recording_id}/reject", rejectTagMatch)
 

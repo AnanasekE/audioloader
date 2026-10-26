@@ -29,6 +29,8 @@ import (
 const (
 	JobTag   = "tag_track"
 	JobCover = "fetch_cover"
+	// JobCoverOf looks up the original of a track whose match is a cover
+	JobCoverOf = "suggest_cover_of"
 )
 
 // Score thresholds: at or above AutoApply a match is applied without asking;
@@ -96,6 +98,13 @@ func Register() {
 			return jobs.Permanent(err)
 		}
 		return Default().FetchCover(ctx, p.ReleaseID)
+	})
+	jobs.Register(JobCoverOf, func(ctx context.Context, payload json.RawMessage) error {
+		var p struct{ TrackID, WorkID, RecordingID string }
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return jobs.Permanent(err)
+		}
+		return Default().SuggestCoverOf(ctx, p.TrackID, p.WorkID, p.RecordingID)
 	})
 }
 
@@ -169,6 +178,12 @@ func (tg *Tagger) apply(trackID string, m db.Match) error {
 	releaseIDs, err := db.ApplyMatch(trackID, m)
 	if err != nil {
 		return err
+	}
+	if m.CoverWorkID != "" {
+		payload := map[string]string{"TrackID": trackID, "WorkID": m.CoverWorkID, "RecordingID": m.RecordingID}
+		if err := jobs.EnqueueAt(JobCoverOf, trackID, payload, time.Time{}); err != nil {
+			return err
+		}
 	}
 	for _, id := range releaseIDs {
 		if err := EnqueueCover(id); err != nil {
@@ -333,6 +348,9 @@ func fromRecording(rec *mb.Recording, t *audio.Track, hintReleaseID, source stri
 		LengthMs:    rec.Length,
 		Artists:     matchArtists(rec.ArtistCredit),
 	}
+	if w := rec.CoverWork(); w != nil {
+		m.CoverWorkID = w.ID
+	}
 	if len(rec.ISRCs) > 0 {
 		m.ISRC = rec.ISRCs[0]
 	}
@@ -447,6 +465,55 @@ func (tg *Tagger) FetchCover(ctx context.Context, releaseID string) error {
 	}
 	defer body.Close()
 	return db.SaveCoverImage(r.ID, body)
+}
+
+// SuggestCoverOf stores the original of the work a matched recording covers
+// as a suggestion for the review page. It names the earliest recording of
+// the work that isn't a cover itself. Nothing is stored when the track
+// already has an original, was suggested one before, or the work has none.
+func (tg *Tagger) SuggestCoverOf(ctx context.Context, trackID, workID, recordingID string) error {
+	t, err := db.GetTrack(db.All, trackID)
+	if errors.Is(err, db.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, skip := range Skip {
+		if skip(t) {
+			return nil
+		}
+	}
+	if t.CoverOf != nil {
+		return nil
+	}
+	if seen, err := db.HasCoverSuggestion(trackID); err != nil || seen {
+		return err
+	}
+
+	work, err := tg.MB.GetWork(ctx, workID)
+	if errors.Is(err, mb.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	orig := work.Original(recordingID)
+	if orig == nil {
+		return nil
+	}
+	credit := orig.ArtistCredit
+	if len(credit) == 0 {
+		// the work's relations may leave out the credits; the recording has them
+		full, err := tg.MB.GetRecording(ctx, orig.ID)
+		if err != nil && !errors.Is(err, mb.ErrNotFound) {
+			return err
+		}
+		if err == nil {
+			credit = full.ArtistCredit
+		}
+	}
+	return db.SaveCoverSuggestion(trackID, db.CoverSuggestion{Title: orig.Title, Artists: credit.String(), MBID: orig.ID})
 }
 
 func best(ms []db.Match) float64 {

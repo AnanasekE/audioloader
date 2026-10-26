@@ -23,7 +23,7 @@ type TaggingStatus struct {
 	AcoustID bool           // fingerprint lookups available
 }
 
-templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion) {
+templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion, covers []db.CoverSuggestion) {
 	@layout("Tagging", PageTagging) {
 		@pageHeader("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
 			status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])) {
@@ -48,6 +48,9 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 		</section>
 		if len(suggestions) > 0 {
 			@artistSuggestions(suggestions)
+		}
+		if len(covers) > 0 {
+			@coverSuggestions(covers)
 		}
 		if len(reviews) == 0 {
 			@emptyState() {
@@ -88,6 +91,39 @@ templ artistSuggestions(suggestions []db.ArtistSuggestion) {
 						<span class="text-zinc-500 dark:text-zinc-400">{ " · credited as “" + s.CreditedName + "”" }</span>
 					</p>
 					@artistLinkButton(s.Artist, "/tagging")
+				</li>
+			}
+		</ul>
+	</section>
+}
+
+// coverSuggestions asks about originals MusicBrainz names for matched covers.
+// Nothing is set unless the user applies it.
+templ coverSuggestions(covers []db.CoverSuggestion) {
+	<section class="card mb-6">
+		<h2 class="font-semibold">Cover songs?</h2>
+		<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+			MusicBrainz lists these tracks as covers. Applying only adds a reference; the credits stay.
+		</p>
+		<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			for _, c := range covers {
+				<li class="flex flex-wrap items-center justify-between gap-3 py-2">
+					<p class="min-w-0 text-sm">
+						<strong>{ c.Track.Title }</strong>
+						{ " by " + artistNames(c.Track.Artists) + " · cover of " }
+						if c.MBID != "" {
+							<a href={ templ.SafeURL("https://musicbrainz.org/recording/" + c.MBID) } target="_blank" rel="noopener">{ c.Title }</a>
+						} else {
+							{ c.Title }
+						}
+						if c.Artists != "" {
+							{ " by " + c.Artists }
+						}
+					</p>
+					<div class="flex items-center gap-2">
+						<button class="btn" hx-post={ "/ui/tagging/" + c.Track.ID.String() + "/cover-of/apply" }>Apply</button>
+						<button class="btn" hx-post={ "/ui/tagging/" + c.Track.ID.String() + "/cover-of/reject" }>Reject</button>
+					</div>
 				</li>
 			}
 		</ul>

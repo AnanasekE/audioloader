@@ -1,0 +1,6 @@
+{"id":"c0c0c0c0-0000-4000-8000-000000000002","title":"Hurt","length":373000,"video":false,"disambiguation":"","first-release-date":"1994-03-08",
+"artist-credit":[{"name":"Nine Inch Nails","joinphrase":"","artist":{"id":"d0d0d0d0-0000-4000-8000-000000000002","name":"Nine Inch Nails","sort-name":"Nine Inch Nails","disambiguation":""}}],
+"relations":[
+{"type":"performance","target-type":"work","direction":"forward","attributes":[],"work":{"id":"e0e0e0e0-0000-4000-8000-000000000001","title":"Hurt","type":"Song"}}
+],
+"releases":[]}
