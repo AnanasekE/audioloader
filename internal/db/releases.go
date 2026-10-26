@@ -402,7 +402,7 @@ func attachReleaseArtists(releases []*audio.Release) error {
 	}
 
 	rows, err := DB.Query(`
-		SELECT m.release_id, a.uuid, a.name, a.img_url, COALESCE(a.mbid, '')
+		SELECT m.release_id, a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, '')
 		FROM release_artist_map m
 		JOIN artists a ON a.uuid = m.artist_id
 		WHERE m.release_id IN (`+placeholders(len(releases))+`)

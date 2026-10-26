@@ -234,6 +234,12 @@ var migrations = []func(tx *sql.Tx) error{
 			ALTER TABLE tracks ADD COLUMN spotify_url TEXT;   -- track link, from url-rels or the album mapping`)
 		return err
 	},
+	// 13: artist profile pictures; image is the file name in the artist
+	// images directory, NULL for the default picture
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`ALTER TABLE artists ADD COLUMN image TEXT;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

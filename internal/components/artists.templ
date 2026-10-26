@@ -131,6 +131,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				</p>
 			</div>
 		</div>
+		@artistImageForm(a)
 		if len(releases) == 0 && len(tracks) == 0 {
 			@emptyState() {
 				Nothing by this artist yet.
@@ -155,4 +156,30 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			</section>
 		}
 	}
+}
+
+templ artistImageForm(a *audio.Artist) {
+	<details class="mb-8">
+		<summary class="cursor-pointer text-sm font-medium">Change picture</summary>
+		<form
+			class="card mt-2 grid max-w-lg gap-2"
+			hx-post={ "/ui/artists/" + a.ID.String() + "/image" }
+			hx-encoding="multipart/form-data"
+			hx-target="#artist-image-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'"
+		>
+			<label for="artist-image" class="text-sm font-medium">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
+			<input id="artist-image" type="file" name="image" accept="image/jpeg,image/png,image/webp" required/>
+			<div class="flex flex-wrap items-center gap-4">
+				<button class="btn" type="submit">Upload picture</button>
+				<button
+					type="button"
+					class="btn"
+					hx-post={ "/ui/artists/" + a.ID.String() + "/image/remove" }
+					hx-confirm="Go back to the default picture?"
+				>Remove picture</button>
+				<span id="artist-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
+		</form>
+	</details>
 }

@@ -78,7 +78,7 @@ func Unfollow(artistID string) error {
 }
 
 const selectFollow = `
-	SELECT a.uuid, a.name, a.img_url, COALESCE(a.mbid, ''), f.filters, COALESCE(f.last_checked, '')
+	SELECT a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, ''), f.filters, COALESCE(f.last_checked, '')
 	FROM artist_follows f JOIN artists a ON a.uuid = f.artist_id`
 
 func scanFollow(s scanner) (*Follow, error) {

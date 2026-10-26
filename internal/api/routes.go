@@ -16,6 +16,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	))
 
 	handle(mux, "GET /covers/{release_id}", getCover)
+	handle(mux, "GET /artist-images/{artist_id}", getArtistImage)
 	handle(mux, "GET /{$}", getIndex)
 	handle(mux, "GET /vault", getVaultPage)
 	handle(mux, "POST /vault", unlockVault)
@@ -69,6 +70,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /ui/badges/tagging", getTaggingBadge)
 	handle(mux, "GET /ui/badges/inbox", getInboxBadge)
 	handle(mux, "GET /ui/badges/downloads", getDownloadsBadge)
+	handle(mux, "POST /ui/artists/{artist_id}/image", uploadArtistImage)
+	handle(mux, "POST /ui/artists/{artist_id}/image/remove", removeArtistImage)
 	handle(mux, "POST /ui/artists/{artist_id}/follow", followArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/unfollow", unfollowArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/check", checkArtistNow)

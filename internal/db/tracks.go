@@ -98,7 +98,7 @@ func attachArtists(tracks []*audio.Track) error {
 	}
 	// ordered by rowid so artists show in the order they were picked
 	rows, err := DB.Query(`
-		SELECT m.track_id, a.uuid, a.name, a.img_url, COALESCE(a.mbid, '')
+		SELECT m.track_id, a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, '')
 		FROM track_artist_map m
 		JOIN artists a ON a.uuid = m.artist_id
 		WHERE m.track_id IN (`+placeholders(len(tracks))+`)

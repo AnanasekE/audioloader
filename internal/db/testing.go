@@ -2,7 +2,7 @@ package db
 
 import "path/filepath"
 
-// UseTemp points DB, TracksDir and CoversDir at a fresh, migrated database
+// UseTemp points DB, TracksDir, CoversDir and ArtistImagesDir at a fresh, migrated database
 // in dir, for tests. restore puts the previous values back.
 func UseTemp(dir string) (restore func(), err error) {
 	d, err := Open(filepath.Join(dir, "test.db"))
@@ -13,10 +13,10 @@ func UseTemp(dir string) (restore func(), err error) {
 		d.Close()
 		return nil, err
 	}
-	oldDB, oldTracks, oldCovers := DB, TracksDir, CoversDir
-	DB, TracksDir, CoversDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers")
+	oldDB, oldTracks, oldCovers, oldArtists := DB, TracksDir, CoversDir, ArtistImagesDir
+	DB, TracksDir, CoversDir, ArtistImagesDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers"), filepath.Join(dir, "artists")
 	return func() {
 		d.Close()
-		DB, TracksDir, CoversDir = oldDB, oldTracks, oldCovers
+		DB, TracksDir, CoversDir, ArtistImagesDir = oldDB, oldTracks, oldCovers, oldArtists
 	}, nil
 }
