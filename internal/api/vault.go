@@ -21,7 +21,8 @@ func WithViewer(next http.Handler) http.Handler {
 		if theVault.Valid(r, time.Now()) {
 			v = db.Secret
 		}
-		next.ServeHTTP(w, r.WithContext(db.WithViewer(r.Context(), v)))
+		ctx := components.WithVaultEnabled(db.WithViewer(r.Context(), v), theVault != nil)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

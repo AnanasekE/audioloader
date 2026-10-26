@@ -20,6 +20,9 @@ import (
 	"audioloader/internal/tagging"
 )
 
+// maxDescription caps the description of a secret track, in bytes.
+const maxDescription = 10000
+
 func getTracks(w http.ResponseWriter, r *http.Request) {
 	tracks, err := db.ListTracks(viewer(r))
 	if err != nil {
@@ -102,6 +105,21 @@ func updateTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	edit.Cover = cover
+	// a description and tags are for secret tracks only
+	if viewer(r).IsSecret() {
+		if r.Form.Has("description") {
+			d := strings.TrimSpace(r.FormValue("description"))
+			if len(d) > maxDescription {
+				http.Error(w, "the description is too long", http.StatusBadRequest)
+				return
+			}
+			edit.Description = &d
+		}
+		if r.Form.Has("tags") {
+			tags := db.NormalizeTags(strings.Split(r.FormValue("tags"), ","))
+			edit.Tags = &tags
+		}
+	}
 
 	err := db.UpdateTrack(viewer(r), id.String(), edit)
 	switch {

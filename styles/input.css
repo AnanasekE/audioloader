@@ -8,8 +8,21 @@
 		@apply bg-white text-zinc-800 antialiased dark:bg-zinc-900 dark:text-zinc-100;
 	}
 
+	/* the accent: links and focus rings. Secret mode swaps it, see data-mode on body */
+	:root {
+		--accent: var(--color-sky-600);
+		--accent-dark: var(--color-sky-400);
+		--accent-ring: var(--color-sky-500);
+	}
+
+	body[data-mode="secret"] {
+		--accent: var(--color-violet-600);
+		--accent-dark: var(--color-violet-400);
+		--accent-ring: var(--color-violet-500);
+	}
+
 	a {
-		@apply text-sky-600 hover:underline dark:text-sky-400;
+		@apply text-(--accent) hover:underline dark:text-(--accent-dark);
 	}
 }
 
@@ -18,8 +31,12 @@
 		@apply inline-flex cursor-pointer items-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white no-underline hover:bg-zinc-700 hover:no-underline dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-zinc-900 dark:disabled:hover:bg-zinc-100;
 	}
 
+	[data-mode="secret"] .btn {
+		@apply bg-violet-700 hover:bg-violet-600 dark:bg-violet-300 dark:text-violet-950 dark:hover:bg-violet-200;
+	}
+
 	.input {
-		@apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800;
+		@apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-(--accent-ring) focus:ring-2 focus:ring-(--accent-ring)/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800;
 	}
 
 	.card {

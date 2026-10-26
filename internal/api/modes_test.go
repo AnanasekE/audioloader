@@ -1,9 +1,13 @@
 package api
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -137,5 +141,144 @@ func TestNavHidesNormalOnlyPages(t *testing.T) {
 		if strings.Contains(body, c.link) != c.want {
 			t.Errorf("secret=%v: %s present = %v, want %v", c.secret, c.link, !c.want, c.want)
 		}
+	}
+}
+
+func TestMovingTracksBetweenModes(t *testing.T) {
+	a := newModeApp(t)
+	// the question names the releases the track would leave
+	b := a.do(false, "GET", "/tracks", nil).Body.String()
+	if !strings.Contains(b, "It will leave ZZPUBLIC Album") {
+		t.Error("the confirm text doesn't name the release")
+	}
+	id := a.ID["public track"]
+	if rec := a.do(false, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNoContent {
+		t.Fatalf("make secret = %d", rec.Code)
+	}
+	tr, err := db.GetTrack(db.Secret, id)
+	if err != nil || len(tr.Releases) != 0 {
+		t.Fatalf("moved track = %+v, %v", tr, err)
+	}
+	// the same request from normal mode no longer finds it
+	if rec := a.do(false, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNotFound {
+		t.Errorf("second move = %d", rec.Code)
+	}
+	if rec := a.do(true, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNoContent {
+		t.Fatalf("make public = %d", rec.Code)
+	}
+	if _, err := db.GetTrack(db.Normal, id); err != nil {
+		t.Fatalf("back in normal mode: %v", err)
+	}
+}
+
+func TestSecretTrackEditForm(t *testing.T) {
+	a := newModeApp(t)
+	id := a.ID["secret track"]
+	form := func(extra url.Values) url.Values {
+		f := url.Values{"title": {"ZZSECRET Song"}, "kind": {"music"}, "artist_id": {a.ID["secret artist"]}}
+		for k, v := range extra {
+			f[k] = v
+		}
+		return f
+	}
+	if rec := a.do(true, "POST", "/ui/tracks/"+id, form(url.Values{"description": {" Line one\nLine two "}, "tags": {"Rain, asmr, rain,  "}})); rec.Code != http.StatusNoContent {
+		t.Fatalf("save = %d", rec.Code)
+	}
+	tr, _ := db.GetTrack(db.Secret, id)
+	if tr.Description != "Line one\nLine two" || strings.Join(tr.Tags, "|") != "asmr|Rain" {
+		t.Fatalf("saved %q %v", tr.Description, tr.Tags)
+	}
+	// a save without the fields leaves them alone
+	a.do(true, "POST", "/ui/tracks/"+id, form(nil))
+	if tr, _ := db.GetTrack(db.Secret, id); tr.Description == "" || len(tr.Tags) != 2 {
+		t.Fatal("a save without the fields cleared them")
+	}
+	// and a normal track takes neither
+	pid := a.ID["public track"]
+	a.do(false, "POST", "/ui/tracks/"+pid, url.Values{"title": {"ZZPUBLIC Song 1"}, "kind": {"music"}, "artist_id": {a.ID["public artist"]}, "description": {"x"}, "tags": {"y"}})
+	if tr, _ := db.GetTrack(db.Normal, pid); tr.Description != "" || len(tr.Tags) != 0 {
+		t.Fatalf("normal track got %q %v", tr.Description, tr.Tags)
+	}
+	// the edit page of a secret track has no release or cover-of parts
+	b := a.do(true, "GET", "/tracks/"+id+"/edit", nil).Body.String()
+	for _, want := range []string{`name="description"`, `name="tags"`, `name="image"`} {
+		if !strings.Contains(b, want) {
+			t.Errorf("edit page lacks %s", want)
+		}
+	}
+	if strings.Contains(b, "cover_mode") {
+		t.Error("a secret track can't be a cover")
+	}
+	// the list shows them
+	b = a.do(true, "GET", "/tracks", nil).Body.String()
+	if !strings.Contains(b, "Line one") || !strings.Contains(b, ">Rain<") {
+		t.Error("the list lacks the description or tags")
+	}
+}
+
+func TestSecretTrackPicture(t *testing.T) {
+	a := newModeApp(t)
+	id := a.ID["secret track"]
+	png, err := os.ReadFile("../../assets/img/default_secret.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	upload := func(secret bool, data []byte) *httptest.ResponseRecorder {
+		var body bytes.Buffer
+		mw := multipart.NewWriter(&body)
+		fw, _ := mw.CreateFormFile("image", "x.png")
+		fw.Write(data)
+		mw.Close()
+		req := httptest.NewRequest("POST", "/ui/tracks/"+id+"/image", &body)
+		req.Header.Set("Content-Type", mw.FormDataContentType())
+		if secret {
+			req.AddCookie(a.v.Cookie(time.Now(), false))
+		}
+		rec := httptest.NewRecorder()
+		a.h.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := upload(false, png); rec.Code != http.StatusNotFound {
+		t.Fatalf("upload from normal mode = %d", rec.Code)
+	}
+	if rec := upload(true, []byte("not an image")); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad image = %d", rec.Code)
+	}
+	if rec := upload(true, png); rec.Code != http.StatusNoContent {
+		t.Fatalf("upload = %d", rec.Code)
+	}
+	tr, _ := db.GetTrack(db.Secret, id)
+	if !strings.HasPrefix(tr.ImgURL, "/track-images/"+id) {
+		t.Fatalf("img = %s", tr.ImgURL)
+	}
+	rec := a.do(true, "GET", tr.ImgURL, nil)
+	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "private, no-store" || !bytes.Equal(rec.Body.Bytes(), png) {
+		t.Fatalf("picture = %d %q", rec.Code, rec.Header().Get("Cache-Control"))
+	}
+	if rec := a.do(false, "GET", tr.ImgURL, nil); rec.Code != http.StatusNotFound {
+		t.Fatalf("picture in normal mode = %d", rec.Code)
+	}
+	// deleting the track removes the file
+	files, _ := filepath.Glob(filepath.Join(db.TrackImagesDir, id+"-*"))
+	if len(files) != 1 {
+		t.Fatalf("files = %v", files)
+	}
+	if rec := a.do(true, "POST", "/ui/tracks/"+id+"/delete", url.Values{}); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d", rec.Code)
+	}
+	if files, _ := filepath.Glob(filepath.Join(db.TrackImagesDir, id+"-*")); len(files) != 0 {
+		t.Fatalf("picture left behind: %v", files)
+	}
+}
+
+func TestAccentAndBadge(t *testing.T) {
+	a := newModeApp(t)
+	n := a.do(false, "GET", "/tracks", nil).Body.String()
+	s := a.do(true, "GET", "/tracks", nil).Body.String()
+	if !strings.Contains(n, `data-mode="normal"`) || strings.Contains(n, ">Secret<") {
+		t.Error("normal mode page marks itself secret")
+	}
+	if !strings.Contains(s, `data-mode="secret"`) || !strings.Contains(s, ">Secret<") || !strings.Contains(s, ">Lock<") {
+		t.Error("secret mode page lacks the mode, badge or lock")
 	}
 }

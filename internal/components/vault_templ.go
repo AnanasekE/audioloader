@@ -94,4 +94,25 @@ func secretMode(ctx context.Context) bool {
 	return db.ViewerFrom(ctx).IsSecret()
 }
 
+type vaultEnabledKey struct{}
+
+// WithVaultEnabled says whether the vault is configured, so pages know
+// whether to offer moving tracks between the modes.
+func WithVaultEnabled(ctx context.Context, on bool) context.Context {
+	return context.WithValue(ctx, vaultEnabledKey{}, on)
+}
+
+func vaultEnabled(ctx context.Context) bool {
+	on, _ := ctx.Value(vaultEnabledKey{}).(bool)
+	return on
+}
+
+// modeName is "secret" or "normal", for the body's data-mode.
+func modeName(ctx context.Context) string {
+	if secretMode(ctx) {
+		return "secret"
+	}
+	return "normal"
+}
+
 var _ = templruntime.GeneratedTemplate

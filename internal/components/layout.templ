@@ -25,8 +25,9 @@ templ layout(title string, active string) {
 		</head>
 		// hx-boost turns links into htmx swaps of the body, so the page never
 		// reloads while browsing and the hx-preserve'd player keeps playing
-		// data-vault tells player.js whether secret tracks may stay in its state
-		<body hx-boost="true" data-vault={ boolAttr(secretMode(ctx)) }>
+		// data-mode switches the accent color (styles/input.css) and tells
+		// player.js which mode its saved state belongs to
+		<body hx-boost="true" data-mode={ modeName(ctx) } data-vault={ boolAttr(secretMode(ctx)) }>
 			<div class="mx-auto max-w-4xl px-4 pb-28">
 				@nav(active)
 				<main>
@@ -118,7 +119,8 @@ templ nav(active string) {
 					@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
 				}
 				if secretMode(ctx) {
-					<li>
+					<li class="flex items-center gap-3">
+						<span class="rounded bg-violet-100 px-2 py-0.5 text-xs font-semibold tracking-wide text-violet-800 uppercase dark:bg-violet-900/60 dark:text-violet-200">Secret</span>
 						<form method="post" action="/vault/lock" hx-boost="false">
 							<button type="submit" class="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">Lock</button>
 						</form>

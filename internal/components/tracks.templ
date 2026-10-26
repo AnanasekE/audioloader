@@ -231,6 +231,9 @@ templ Track(t *audio.Track) {
 				@trackReleaseLabel(t)
 			</span>
 			@coverOfLine(t)
+			if t.Secret {
+				@secretTrackDetails(t)
+			}
 		</div>
 		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(t.Duration) }</span>
 		@trackMenu(t)
@@ -253,7 +256,7 @@ templ trackMenu(t *audio.Track) {
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
 				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
-				if !t.IsEpisode() {
+				if !t.IsEpisode() && !t.Secret {
 					<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
 				}
 				<button
@@ -262,12 +265,12 @@ templ trackMenu(t *audio.Track) {
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
-				if secretMode(ctx) {
+				if vaultEnabled(ctx) {
 					<button
 						type="button"
 						class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
 						hx-post={ "/ui/tracks/" + t.ID.String() + "/secret" }
-						hx-vals={ secretToggle(t) }
+						hx-confirm={ secretConfirm(t) }
 					>
 						if t.Secret {
 							Make public
@@ -428,11 +431,35 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%d:%02d", s/60, s%60)
 }
 
-func secretToggle(t *audio.Track) string {
+// secretConfirm is the question before a track moves to the other mode.
+// Moving it to secret mode takes it off its releases, which it names.
+func secretConfirm(t *audio.Track) string {
 	if t.Secret {
-		return `{"secret": "0"}`
+		return "Make " + t.Title + " public? It will be on no release."
 	}
-	return `{"secret": "1"}`
+	if len(t.Releases) == 0 {
+		return "Make " + t.Title + " secret?"
+	}
+	titles := make([]string, len(t.Releases))
+	for i, r := range t.Releases {
+		titles[i] = r.Title
+	}
+	return "Make " + t.Title + " secret? It will leave " + strings.Join(titles, ", ") + ", and a release left with no tracks is deleted."
+}
+
+// secretTrackDetails shows what a secret track has instead of releases: its
+// description, cut to a line, and its tags.
+templ secretTrackDetails(t *audio.Track) {
+	if t.Description != "" {
+		<span class="block truncate text-xs text-zinc-500 dark:text-zinc-400">{ t.Description }</span>
+	}
+	if len(t.Tags) > 0 {
+		<span class="flex flex-wrap gap-1 pt-0.5">
+			for _, tag := range t.Tags {
+				<span class="rounded bg-violet-100 px-1.5 text-xs text-violet-800 dark:bg-violet-900/50 dark:text-violet-200">{ tag }</span>
+			}
+		</span>
+	}
 }
 
 // TrackEditPage edits a track's title, artists and secret flag. Only an
@@ -453,9 +480,18 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 				<input id="track-title" class="input" type="text" name="title" value={ t.Title } required/>
 			</div>
 			<div>
-				<span class="mb-1 block text-sm font-medium">Artists</span>
+				<span class="mb-1 block text-sm font-medium">
+					if t.Secret {
+						Creators
+					} else {
+						Artists
+					}
+				</span>
 				@artistPicker(artists, artistIDs(t.Artists))
 			</div>
+			if t.Secret {
+				@secretTrackFields(t.Description, t.Tags)
+			}
 			if t.IsEpisode() {
 				<div>
 					<label for="track-kind" class="mb-1 block text-sm font-medium">Kind</label>
@@ -467,7 +503,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 			} else {
 				<input type="hidden" name="kind" value="music"/>
 			}
-			if !t.IsEpisode() {
+			if !t.IsEpisode() && !t.Secret {
 				@coverOfFields(t)
 			}
 			<div class="flex items-center gap-4">
@@ -475,8 +511,49 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 				<span id="track-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
 			</div>
 		</form>
+		if t.Secret {
+			@trackImageForm(t)
+		}
 		<script src="/assets/js/artist-picker.js" defer></script>
 	}
+}
+
+// secretTrackFields are the fields a secret track has in place of releases
+// and a cover: a description and comma separated tags.
+templ secretTrackFields(description string, tags []string) {
+	<div>
+		<label for="track-description" class="mb-1 block text-sm font-medium">Description <span class="font-normal text-zinc-500">(optional)</span></label>
+		<textarea id="track-description" class="input" name="description" rows="4">{ description }</textarea>
+	</div>
+	<div>
+		<label for="track-tags" class="mb-1 block text-sm font-medium">Tags <span class="font-normal text-zinc-500">(optional, separated by commas)</span></label>
+		<input id="track-tags" class="input" type="text" name="tags" value={ strings.Join(tags, ", ") } maxlength="800"/>
+	</div>
+}
+
+// trackImageForm sets the picture of a secret track.
+templ trackImageForm(t *audio.Track) {
+	<form
+		class="card mt-6 grid max-w-lg gap-2"
+		hx-post={ "/ui/tracks/" + t.ID.String() + "/image" }
+		hx-encoding="multipart/form-data"
+		hx-target="#track-image-result"
+		hx-on::after-request="if (!event.detail.successful) document.getElementById('track-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'"
+	>
+		<img class="pixelated size-24 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
+		<label for="track-image" class="text-sm font-medium">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
+		<input id="track-image" type="file" name="image" accept="image/jpeg,image/png,image/webp" required/>
+		<div class="flex flex-wrap items-center gap-4">
+			<button class="btn" type="submit">Upload picture</button>
+			<button
+				type="button"
+				class="btn"
+				hx-post={ "/ui/tracks/" + t.ID.String() + "/image/remove" }
+				hx-confirm="Go back to the placeholder picture?"
+			>Remove picture</button>
+			<span id="track-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+		</div>
+	</form>
 }
 
 // coverOfFields is the "Cover of" part of the edit form. cover_mode picks
