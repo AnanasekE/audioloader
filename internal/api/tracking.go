@@ -168,7 +168,16 @@ func checkArtistNow(w http.ResponseWriter, r *http.Request) {
 }
 
 func getInboxPage(w http.ResponseWriter, r *http.Request) {
-	releases, err := db.ListInbox("new")
+	tab := "new"
+	if r.URL.Query().Get("tab") == "ignored" {
+		tab = "ignored"
+	}
+	releases, err := db.ListInbox(tab)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	newCount, ignored, err := db.InboxCounts()
 	if err != nil {
 		serverError(w, err)
 		return
@@ -178,7 +187,7 @@ func getInboxPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.InboxPage(releases, follows))
+	render(w, r, components.InboxPage(tab, releases, newCount, ignored, follows))
 }
 
 func getInboxDetails(w http.ResponseWriter, r *http.Request) {
@@ -254,4 +263,21 @@ func ignoreInboxRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hxLocation(w, "/inbox")
+}
+
+func restoreInboxRelease(w http.ResponseWriter, r *http.Request) {
+	rg, ok := pathUUID(w, r, "release_group")
+	if !ok {
+		return
+	}
+	err := db.RestoreInboxRelease(rg.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/inbox?tab=ignored")
 }

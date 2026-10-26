@@ -98,25 +98,33 @@ templ followFilters(follow *db.Follow) {
 	</fieldset>
 }
 
-templ InboxPage(releases []*db.InboxRelease, follows []*db.Follow) {
+templ InboxPage(tab string, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
 	@layout("Inbox", PageInbox) {
-		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(len(releases), "new release"), plural(len(follows), "followed artist"))) {
-			if len(releases) > 1 {
+		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))) {
+			if tab == "new" && len(releases) > 1 {
 				<button class="btn" hx-post="/ui/inbox/confirm-all" hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
 			}
 		}
+		<nav class="mb-4 flex gap-4 text-sm" aria-label="Inbox tabs">
+			@inboxTab("/inbox", "New", newCount, tab == "new")
+			@inboxTab("/inbox?tab=ignored", "Ignored", ignoredCount, tab == "ignored")
+		</nav>
 		if len(follows) == 0 {
 			@emptyState() {
 				Follow artists on the Artists page to get their new releases here.
 			}
 		} else if len(releases) == 0 {
 			@emptyState() {
-				Nothing new.
+				if tab == "ignored" {
+					Nothing ignored.
+				} else {
+					Nothing new.
+				}
 			}
 		}
 		<div class="grid gap-4">
 			for _, r := range releases {
-				@inboxRelease(r)
+				@inboxRelease(r, tab)
 			}
 		</div>
 		if len(follows) > 0 {
@@ -133,7 +141,17 @@ templ InboxPage(releases []*db.InboxRelease, follows []*db.Follow) {
 	}
 }
 
-templ inboxRelease(r *db.InboxRelease) {
+templ inboxTab(href, label string, n int, active bool) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={ "border-b-2 pb-1 no-underline", templ.KV("border-zinc-900 font-semibold dark:border-zinc-100", active), templ.KV("border-transparent text-zinc-500", !active) }
+		if active {
+			aria-current="page"
+		}
+	>{ fmt.Sprintf("%s (%d)", label, n) }</a>
+}
+
+templ inboxRelease(r *db.InboxRelease, tab string) {
 	<article class="card py-2" id={ "inbox-" + r.ReleaseGroupMBID }>
 		<div class="flex flex-wrap items-center gap-3">
 			<img
@@ -157,8 +175,12 @@ templ inboxRelease(r *db.InboxRelease) {
 			</div>
 			<div class="flex gap-2">
 				<button class="btn" type="button" hx-get={ "/ui/inbox/" + r.ReleaseGroupMBID } hx-target="next .inbox-details" hx-swap="innerHTML">Show tracklist</button>
-				<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/confirm" }>Confirm</button>
-				<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/ignore" }>Don't ask again</button>
+				if tab == "ignored" {
+					<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/restore" }>Move back to New</button>
+				} else {
+					<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/confirm" }>Confirm</button>
+					<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/ignore" }>Don't ask again</button>
+				}
 			</div>
 		</div>
 		<div class="inbox-details"></div>

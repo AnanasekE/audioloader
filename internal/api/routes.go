@@ -97,6 +97,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /ui/inbox/confirm-all", confirmAllInbox)
 	handle(mux, "POST /ui/inbox/{release_group}/confirm", confirmInboxRelease)
 	handle(mux, "POST /ui/inbox/{release_group}/ignore", ignoreInboxRelease)
+	handle(mux, "POST /ui/inbox/{release_group}/restore", restoreInboxRelease)
 	handle(mux, "POST /ui/tagging/run", runTagging)
 	handle(mux, "POST /ui/tagging/retry", retryTagging)
 	handle(mux, "POST /ui/tagging/apply-all", applyAllTagMatches)

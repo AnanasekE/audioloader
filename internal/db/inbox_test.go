@@ -171,3 +171,34 @@ func TestInboxOwnedCounts(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreInboxRelease(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Artist")
+	r := InboxRelease{ReleaseGroupMBID: "rg", ArtistID: a.ID.String(), Title: "Album", Type: "album"}
+	if err := AddInboxRelease(r); err != nil {
+		t.Fatal(err)
+	}
+	if err := RestoreInboxRelease("rg"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("restoring a new release err = %v", err)
+	}
+	if err := IgnoreInboxRelease("rg"); err != nil {
+		t.Fatal(err)
+	}
+	if n, ig, _ := InboxCounts(); n != 0 || ig != 1 {
+		t.Fatalf("counts = %d, %d", n, ig)
+	}
+	if err := RestoreInboxRelease("rg"); err != nil {
+		t.Fatal(err)
+	}
+	// the daily check finds it again: still one row, and it knows it
+	if known, _ := InboxKnows("rg"); !known {
+		t.Fatal("inbox forgot the release")
+	}
+	if err := AddInboxRelease(r); err != nil {
+		t.Fatal(err)
+	}
+	if n, ig, _ := InboxCounts(); n != 1 || ig != 0 {
+		t.Fatalf("counts after restore = %d, %d", n, ig)
+	}
+}

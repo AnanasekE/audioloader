@@ -138,6 +138,25 @@ func IgnoreInboxRelease(releaseGroupMBID string) error {
 	return nil
 }
 
+// RestoreInboxRelease moves an ignored release back to the new ones.
+func RestoreInboxRelease(releaseGroupMBID string) error {
+	res, err := DB.Exec(`UPDATE inbox_releases SET status = 'new' WHERE release_group_mbid = ? AND status = 'ignored';`, releaseGroupMBID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// InboxCounts returns how many releases are new and how many are ignored.
+func InboxCounts() (newCount, ignored int, err error) {
+	err = DB.QueryRow(`
+		SELECT COALESCE(SUM(status = 'new'), 0), COALESCE(SUM(status = 'ignored'), 0) FROM inbox_releases;`).Scan(&newCount, &ignored)
+	return
+}
+
 // ConfirmInboxRelease creates the release with its artists and tracklist.
 // Tracks the library has are linked; the others become placeholder tracks
 // with a queued download each. It returns the new release's ID and the
