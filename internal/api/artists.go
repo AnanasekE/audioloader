@@ -176,3 +176,77 @@ func getCandidateReleases(w http.ResponseWriter, r *http.Request) {
 	}
 	render(w, r, components.CandidateReleases(groups, err != nil))
 }
+
+// getArtistLink searches MusicBrainz for candidates for an artist without a MusicBrainz ID.
+func getArtistLink(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "artist_id")
+	if !ok || !visibleArtist(w, r, id.String()) {
+		return
+	}
+	a, err := db.GetArtist(viewer(r), id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if a.MBID != "" {
+		http.Error(w, a.Name+" is already linked.", http.StatusConflict)
+		return
+	}
+	candidates, err := mb.Default().SearchArtists(r.Context(), a.Name, 5)
+	searchErr := ""
+	if err != nil {
+		log.Println("search artists:", err)
+		searchErr = "Couldn't search MusicBrainz; paste the artist's ID or URL below instead."
+	}
+	render(w, r, components.ArtistLinkCandidates(a, candidates, searchErr))
+}
+
+// linkArtist sets the artist's MusicBrainz ID from a pick ("mbid") or a
+// pasted ID or URL ("mbid_manual"). If another artist has it, it offers a
+// merge instead.
+func linkArtist(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "artist_id")
+	if !ok || !visibleArtist(w, r, id.String()) {
+		return
+	}
+	a, err := db.GetArtist(viewer(r), id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if a.MBID != "" {
+		http.Error(w, a.Name+" is already linked.", http.StatusConflict)
+		return
+	}
+	mbid := strings.ToLower(validMBID(r.FormValue("mbid")))
+	if manual := r.FormValue("mbid_manual"); strings.TrimSpace(manual) != "" {
+		if mbid = parseArtistMBID(manual); mbid == "" {
+			http.Error(w, "that isn't a MusicBrainz artist ID or URL", http.StatusBadRequest)
+			return
+		}
+	}
+	if mbid == "" {
+		http.Error(w, "pick the artist on MusicBrainz", http.StatusBadRequest)
+		return
+	}
+
+	err = db.SetArtistMBID(id.String(), mbid)
+	if errors.Is(err, db.ErrMBIDTaken) {
+		other, err := db.ArtistByMBID(viewer(r), mbid)
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
+			serverError(w, err)
+			return
+		}
+		render(w, r, components.ArtistLinkTaken(a, other))
+		return
+	}
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/artists/"+id.String())
+}

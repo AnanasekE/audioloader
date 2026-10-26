@@ -237,6 +237,30 @@ func MergeArtists(from, into string) error {
 	return nil
 }
 
+// SetArtistMBID links an artist to a MusicBrainz artist. ErrMBIDTaken means
+// another artist already has that ID.
+func SetArtistMBID(id, mbid string) error {
+	err := expectRow(DB.Exec(`UPDATE artists SET mbid = ? WHERE uuid = ?;`, mbid, id))
+	if isUniqueViolation(err) {
+		return ErrMBIDTaken
+	}
+	return err
+}
+
+// ArtistByMBID returns the artist the viewer can see that has the
+// MusicBrainz ID, or ErrNotFound.
+func ArtistByMBID(v Viewer, mbid string) (*audio.Artist, error) {
+	var id string
+	err := DB.QueryRow(`SELECT a.uuid FROM artists a WHERE a.mbid = ? AND `+v.artistCond("a")+`;`, mbid).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return GetArtist(v, id)
+}
+
 // ListArtistReleases returns the releases credited to an artist, newest
 // first, as ListReleases orders them.
 func ListArtistReleases(v Viewer, artistID string) ([]*audio.Release, error) {

@@ -133,6 +133,9 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			</div>
 		</div>
 		@artistImageForm(a)
+		if a.MBID == "" {
+			@artistLinkSection(a)
+		}
 		@artistManageForm(a, others)
 		if len(releases) == 0 && len(tracks) == 0 {
 			@emptyState() {
@@ -307,4 +310,85 @@ func joinNonEmpty(sep string, parts ...string) string {
 		s += p
 	}
 	return s
+}
+
+// artistLinkSection links an artist without a MusicBrainz ID. The
+// MusicBrainz search only runs when the user asks for it.
+templ artistLinkSection(a *audio.Artist) {
+	<details class="mb-8">
+		<summary class="cursor-pointer text-sm font-medium">Link to MusicBrainz</summary>
+		<div class="mt-2 max-w-lg">
+			<button
+				type="button"
+				class="btn"
+				hx-get={ "/ui/artists/" + a.ID.String() + "/link" }
+				hx-target="#artist-link-panel"
+				hx-disabled-elt="this"
+			>Find on MusicBrainz</button>
+			<div id="artist-link-panel" class="mt-2" aria-live="polite"></div>
+			<span id="artist-link-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+		</div>
+	</details>
+}
+
+// ArtistLinkCandidates is the panel of MusicBrainz candidates for an
+// artist: pick one, paste an ID or URL, or give up.
+templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr string) {
+	<div
+		class="card grid gap-3"
+		hx-target="#artist-link-panel"
+		hx-on::after-request="document.getElementById('artist-link-result').textContent = event.detail.successful ? '' : (event.detail.xhr.responseText || 'Could not link.')"
+	>
+		for _, c := range candidates {
+			@artistCandidate(c) {
+				<button
+					type="button"
+					class="btn shrink-0"
+					hx-post={ "/ui/artists/" + a.ID.String() + "/link" }
+					hx-vals={ templ.JSONString(map[string]string{"mbid": c.ID}) }
+				>Use this</button>
+			}
+		}
+		if searchErr != "" {
+			<p class="text-sm text-red-600 dark:text-red-400">{ searchErr }</p>
+		} else if len(candidates) == 0 {
+			<p class="text-sm text-zinc-500">MusicBrainz found no artist with that name.</p>
+		}
+		<form class="flex gap-2" hx-post={ "/ui/artists/" + a.ID.String() + "/link" }>
+			<label for="artist-link-manual" class="sr-only">MusicBrainz artist ID or URL</label>
+			<input id="artist-link-manual" class="input flex-1" type="text" name="mbid_manual" placeholder="Or paste https://musicbrainz.org/artist/…" required/>
+			<button class="btn shrink-0" type="submit">Use</button>
+		</form>
+		<div>
+			<button
+				type="button"
+				class="btn"
+				onclick="document.getElementById('artist-link-panel').innerHTML = ''; this.closest('details').open = false"
+			>None of these</button>
+		</div>
+	</div>
+}
+
+// ArtistLinkTaken answers a link to an ID that another artist has: merge
+// into them instead. other is nil when the viewer can't see that artist.
+templ ArtistLinkTaken(a *audio.Artist, other *audio.Artist) {
+	<div class="card grid gap-3 text-sm">
+		if other == nil {
+			<p>Another artist already has that MusicBrainz ID.</p>
+		} else {
+			<p>
+				<a href={ artistURL(other) }>{ other.Name }</a> already has that MusicBrainz ID.
+				Merging moves { a.Name }'s tracks and releases to them.
+			</p>
+			<form
+				hx-post={ "/ui/artists/" + a.ID.String() + "/merge" }
+				hx-target="#artist-link-result"
+				hx-confirm={ "Merge " + a.Name + " into " + other.Name + "? Their tracks and releases move over and " + a.Name + " is deleted." }
+				hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-link-result').textContent = event.detail.xhr.responseText || 'Could not merge.'"
+			>
+				<input type="hidden" name="into" value={ other.ID.String() }/>
+				<button class="btn" type="submit">Merge into { other.Name }</button>
+			</form>
+		}
+	</div>
 }

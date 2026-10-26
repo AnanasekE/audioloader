@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"regexp"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -16,7 +16,30 @@ import (
 	"audioloader/internal/tracking"
 )
 
-var mbidInText = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+// parseArtistMBID reads a MusicBrainz artist ID from text that is either
+// the ID itself or a musicbrainz.org/artist/<id> URL; "" if it is neither.
+// Other pages' IDs, e.g. a release's, are refused: they'd link the wrong thing.
+func parseArtistMBID(text string) string {
+	text = strings.TrimSpace(text)
+	if id := validMBID(text); id != "" {
+		return strings.ToLower(id)
+	}
+	if !strings.Contains(text, "://") {
+		text = "https://" + text
+	}
+	u, err := url.Parse(text)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+		return ""
+	}
+	if h := strings.ToLower(u.Hostname()); h != "musicbrainz.org" && h != "www.musicbrainz.org" && h != "beta.musicbrainz.org" {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 2 || parts[0] != "artist" {
+		return ""
+	}
+	return strings.ToLower(validMBID(parts[1]))
+}
 
 func getFollowPage(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "artist_id")
@@ -66,7 +89,7 @@ func followArtist(w http.ResponseWriter, r *http.Request) {
 	}
 	mbid := r.PostForm.Get("mbid")
 	if manual := strings.TrimSpace(r.PostForm.Get("mbid_manual")); manual != "" {
-		mbid = mbidInText.FindString(manual)
+		mbid = parseArtistMBID(manual)
 		if mbid == "" {
 			http.Error(w, "that isn't a MusicBrainz artist ID or URL", http.StatusBadRequest)
 			return

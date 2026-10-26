@@ -73,6 +73,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /ui/badges/downloads", getDownloadsBadge)
 	handle(mux, "POST /ui/artists/{artist_id}/rename", renameArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/merge", mergeArtist)
+	handle(mux, "GET /ui/artists/{artist_id}/link", getArtistLink)
+	handle(mux, "POST /ui/artists/{artist_id}/link", linkArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/image", uploadArtistImage)
 	handle(mux, "POST /ui/artists/{artist_id}/image/remove", removeArtistImage)
 	handle(mux, "POST /ui/artists/{artist_id}/follow", followArtist)
