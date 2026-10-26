@@ -36,7 +36,7 @@ func TestCoverOfForm(t *testing.T) {
 		return rec
 	}
 	coverOf := func() string {
-		tr, err := db.GetTrack(db.Public, id)
+		tr, err := db.GetTrack(db.Normal, id)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,7 +59,7 @@ func TestCoverOfForm(t *testing.T) {
 	if got := coverOf(); got != "Teardrop by Massive Attack" {
 		t.Fatalf("mbid cover = %q", got)
 	}
-	tr, _ := db.GetTrack(db.Public, id)
+	tr, _ := db.GetTrack(db.Normal, id)
 	if tr.CoverOf.MBID != "f3bba4cd-8018-468b-902e-bc8f029593e5" {
 		t.Fatalf("mbid = %q", tr.CoverOf.MBID)
 	}
@@ -143,7 +143,7 @@ func TestCoverSuggestionRoutes(t *testing.T) {
 	if code := post("/ui/tagging/" + id + "/cover-of/apply"); code != http.StatusNoContent {
 		t.Fatalf("apply = %d", code)
 	}
-	if tr, _ := db.GetTrack(db.Public, id); tr.CoverOf == nil || tr.CoverOf.Title != "Orig" {
+	if tr, _ := db.GetTrack(db.Normal, id); tr.CoverOf == nil || tr.CoverOf.Title != "Orig" {
 		t.Fatalf("cover of = %+v", tr.CoverOf)
 	}
 	if code := post("/ui/tagging/" + id + "/cover-of/apply"); code != http.StatusNotFound {

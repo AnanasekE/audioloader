@@ -28,9 +28,6 @@ type YouTubeImport struct {
 	Disc      int
 	Position  int
 	Date      string
-	// Secret is set when the vault was unlocked for the import, so it
-	// may place a secret track that has the same file
-	Secret bool
 }
 
 // EnqueueImport queues a YouTube import.
@@ -53,7 +50,7 @@ func (d *Downloader) Import(ctx context.Context, imp YouTubeImport) error {
 		return err
 	}
 	if existing != "" {
-		if _, err := db.GetTrack(db.Viewer{Secret: imp.Secret}, existing); err != nil {
+		if _, err := db.GetTrack(db.Normal, existing); err != nil {
 			return jobs.Permanent(db.ErrHidden)
 		}
 		// downloaded before: place that track instead of downloading again
@@ -91,7 +88,7 @@ func (d *Downloader) Import(ctx context.Context, imp YouTubeImport) error {
 	if _, err := f.Seek(0, 0); err != nil {
 		return err
 	}
-	res, err := db.AddTrack(db.Viewer{Secret: imp.Secret}, imp.ArtistIDs, &audio.Track{Title: imp.Title, Duration: dur.Round(time.Second)}, f, ".opus", link, imp.Date)
+	res, err := db.AddTrack(db.Normal, imp.ArtistIDs, &audio.Track{Title: imp.Title, Duration: dur.Round(time.Second)}, f, ".opus", link, imp.Date)
 	if err != nil {
 		return permanentIfBad(err)
 	}

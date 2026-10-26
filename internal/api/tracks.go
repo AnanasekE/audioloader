@@ -102,10 +102,6 @@ func updateTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	edit.Cover = cover
-	if viewer(r).Secret {
-		secret := r.FormValue("secret") == "1"
-		edit.Secret = &secret
-	}
 
 	err := db.UpdateTrack(viewer(r), id.String(), edit)
 	switch {
@@ -277,12 +273,6 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		serverError(w, err)
 		return
-	}
-	if r.FormValue("secret") == "1" && viewer(r).Secret && !res.Linked {
-		if err := db.SetSecret(res.TrackID, true); err != nil {
-			serverError(w, err)
-			return
-		}
 	}
 
 	if res.Linked {

@@ -19,7 +19,7 @@ import (
 // placeholder confirms a one-track release and returns the placeholder's ID.
 func placeholder(t *testing.T) string {
 	t.Helper()
-	a, _ := db.AddArtist("Massive Attack")
+	a, _ := db.AddArtist(db.All, "Massive Attack")
 	err := db.AddInboxRelease(db.InboxRelease{ReleaseGroupMBID: "rg", ArtistID: a.ID.String(), Title: "Mezzanine", Type: "album",
 		Data: db.InboxData{Artists: []db.MatchArtist{{Name: "Massive Attack"}}, Tracks: []db.InboxTrack{
 			{Disc: 1, Position: 1, Title: "Teardrop", LengthMs: 331000, Artists: []db.MatchArtist{{Name: "Massive Attack"}}}}}})

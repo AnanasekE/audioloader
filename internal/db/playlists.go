@@ -134,7 +134,7 @@ func AppendToPlaylist(playlistID, trackID string) error {
 }
 
 // SetPlaylistTracks replaces a playlist's tracks with trackIDs, in order.
-// Secret entries a locked viewer didn't see keep their places.
+// Entries the viewer can't see keep their places.
 func SetPlaylistTracks(v Viewer, playlistID string, trackIDs []string) error {
 	tx, err := DB.Begin()
 	if err != nil {
@@ -149,10 +149,10 @@ func SetPlaylistTracks(v Viewer, playlistID string, trackIDs []string) error {
 		return ErrNotFound
 	}
 	taken := map[int]bool{}
-	if !v.Secret {
+	if !v.SeesAll() {
 		rows, err := tx.Query(`
 			SELECT pt.position FROM playlist_tracks pt JOIN tracks t ON t.uuid = pt.track_id
-			WHERE pt.playlist_id = ? AND t.secret = 1;`, playlistID)
+			WHERE pt.playlist_id = ? AND NOT (`+v.trackCond("t")+`);`, playlistID)
 		if err != nil {
 			return err
 		}

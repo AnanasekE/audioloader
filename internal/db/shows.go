@@ -13,8 +13,10 @@ import (
 )
 
 // ResolveShow returns the show with title (ignoring case), creating it
-// with author if there is none.
-func ResolveShow(title, author string) (*audio.Show, error) {
+// with author if there is none. A show of the other mode with that title is
+// used too, since titles are unique: it is then on both sides. A show made
+// in secret mode stays hidden from normal mode until it has an episode.
+func ResolveShow(v Viewer, title, author string) (*audio.Show, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return nil, errors.New("show title is required")
@@ -27,7 +29,7 @@ func ResolveShow(title, author string) (*audio.Show, error) {
 		return nil, err
 	}
 	s = &audio.Show{ID: uuid.New(), Title: title, Author: author, ImgURL: DefaultCover}
-	_, err = DB.Exec(`INSERT INTO shows(uuid, title, author) VALUES(?, ?, ?);`, s.ID.String(), title, nullIfEmpty(author))
+	_, err = DB.Exec(`INSERT INTO shows(uuid, title, author, secret) VALUES(?, ?, ?, ?);`, s.ID.String(), title, nullIfEmpty(author), v.IsSecret())
 	return s, err
 }
 
@@ -108,9 +110,10 @@ func showCover(t *audio.Track, s *audio.Show) string {
 	return t.ImgURL
 }
 
-// AddEpisode stores an episode of a show. It returns ErrExists if the file
-// is already stored.
-func AddEpisode(showID string, track *audio.Track, file io.ReadSeeker, ext string) (string, error) {
+// AddEpisode stores an episode of a show, a secret one for a secret mode
+// viewer. It returns ErrExists if the file is already stored, and ErrHidden
+// if it is stored on the other side.
+func AddEpisode(v Viewer, showID string, track *audio.Track, file io.ReadSeeker, ext string) (string, error) {
 	fp, err := FingerprintOf(file)
 	if err != nil {
 		return "", err
@@ -118,6 +121,11 @@ func AddEpisode(showID string, track *audio.Track, file io.ReadSeeker, ext strin
 	if existing, err := trackByFingerprint(fp); err != nil || existing != "" {
 		if err == nil {
 			err = ErrExists
+			if hidden, herr := hiddenFingerprint(v, fp); herr != nil {
+				err = herr
+			} else if hidden {
+				err = ErrHidden
+			}
 		}
 		return existing, err
 	}
@@ -127,9 +135,9 @@ func AddEpisode(showID string, track *audio.Track, file io.ReadSeeker, ext strin
 		return "", err
 	}
 	_, err = DB.Exec(`
-		INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, kind, show_id, published)
-		VALUES(?, ?, ?, ?, ?, 'episode', ?, ?);`,
-		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, showID, nullIfEmpty(track.Published))
+		INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, kind, show_id, published, secret)
+		VALUES(?, ?, ?, ?, ?, 'episode', ?, ?, ?);`,
+		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, showID, nullIfEmpty(track.Published), v.IsSecret())
 	if err != nil {
 		os.Remove(path)
 		if isForeignKeyViolation(err) {

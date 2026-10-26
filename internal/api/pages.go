@@ -138,7 +138,7 @@ func getSearchSuggest(w http.ResponseWriter, r *http.Request) {
 // position would give the hidden tracks away.
 func uploadTargets(r *http.Request) ([]*audio.Release, error) {
 	releases, err := db.ListReleases(viewer(r))
-	if err != nil || viewer(r).Secret {
+	if err != nil || viewer(r).IsSecret() {
 		return releases, err
 	}
 	withSecrets, err := db.ReleasesWithSecrets()

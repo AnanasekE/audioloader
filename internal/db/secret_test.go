@@ -8,100 +8,273 @@ import (
 	"audioloader/internal/audio"
 )
 
-func TestSecretTracks(t *testing.T) {
+// modeSeed is a library with a side for each mode and one thing in between.
+type modeSeed struct {
+	normalTrack, secretTrack, sharedNormal, sharedSecret string
+	normalArtist, secretArtist, sharedArtist             string
+	waitingNormal, waitingSecret                         string // artists without tracks
+	mixedRelease, emptyRelease                           string
+	normalShow, secretShow                               string
+}
+
+func seedModes(t *testing.T) modeSeed {
+	t.Helper()
+	var m modeSeed
+	pa, _ := AddArtist(Normal, "Normal Artist")
+	sa, _ := AddArtist(Secret, "Secret Artist")
+	sh, _ := AddArtist(Normal, "Shared Artist")
+	m.normalArtist, m.secretArtist, m.sharedArtist = pa.ID.String(), sa.ID.String(), sh.ID.String()
+	wn, _ := AddArtist(Normal, "Waiting Normal")
+	ws, _ := AddArtist(Secret, "Waiting Secret")
+	m.waitingNormal, m.waitingSecret = wn.ID.String(), ws.ID.String()
+
+	m.normalTrack = addTestTrack(t, "ZZPUBLIC", "n1", m.normalArtist)
+	m.sharedNormal = addTestTrack(t, "Shared Normal", "n2", m.sharedArtist)
+	for _, c := range []struct {
+		dst  *string
+		name string
+		body string
+		a    string
+	}{{&m.secretTrack, "ZZSECRET", "s1", m.secretArtist}, {&m.sharedSecret, "Shared Secret", "s2", m.sharedArtist}} {
+		res, err := AddTrack(Secret, []string{c.a}, &audio.Track{Title: c.name}, bytes.NewReader([]byte(c.body)), ".mp3", nil, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		*c.dst = res.TrackID
+	}
+
+	r, _ := CreateRelease("Mixed", audio.ReleaseAlbum, "", []string{m.normalArtist})
+	m.mixedRelease = r.ID.String()
+	if err := SetReleaseTracks(All, m.mixedRelease, []ReleaseTrackInput{{m.normalTrack, 1}}); err != nil {
+		t.Fatal(err)
+	}
+	e, _ := CreateRelease("Empty", audio.ReleaseEP, "", []string{m.normalArtist})
+	m.emptyRelease = e.ID.String()
+
+	ns, _ := ResolveShow(Normal, "Normal Show", "")
+	ss, _ := ResolveShow(Secret, "Secret Show", "")
+	m.normalShow, m.secretShow = ns.ID.String(), ss.ID.String()
+	if _, err := AddEpisode(Normal, m.normalShow, &audio.Track{Title: "Normal Episode"}, bytes.NewReader([]byte("e1")), ".mp3"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AddEpisode(Secret, m.secretShow, &audio.Track{Title: "Secret Episode"}, bytes.NewReader([]byte("e2")), ".mp3"); err != nil {
+		t.Fatal(err)
+	}
+	return m
+}
+
+func names(as []*audio.Artist) []string {
+	out := []string{}
+	for _, a := range as {
+		out = append(out, a.Name)
+	}
+	return out
+}
+
+func TestModesSeeOnlyTheirSide(t *testing.T) {
 	newTestDB(t)
-	pub, _ := AddArtist("Public Artist")
-	hid, _ := AddArtist("Hidden Artist")
-	r, _ := CreateRelease("Mixed", audio.ReleaseAlbum, "", []string{pub.ID.String()})
-	only, _ := CreateRelease("Only Secret", audio.ReleaseSingle, "", []string{hid.ID.String()})
-	empty, _ := CreateRelease("Empty", audio.ReleaseEP, "", []string{pub.ID.String()})
+	m := seedModes(t)
 
-	a := addTestTrack(t, "One", "one", pub.ID.String())
-	s := addTestTrack(t, "ZZSECRET", "secret", hid.ID.String())
-	b := addTestTrack(t, "Three", "three", pub.ID.String())
-	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{a, 1}, {s, 1}, {b, 1}}); err != nil {
-		t.Fatal(err)
+	tracks := func(v Viewer) string { return titles(must(ListTracks(v))) }
+	// order isn't promised
+	hasAll := func(got string, want ...string) bool {
+		n := 0
+		for _, w := range want {
+			if bytes.Contains([]byte(got), []byte(w)) {
+				n++
+			}
+		}
+		return n == len(want) && len(bytes.Split([]byte(got), []byte(","))) == len(want)
 	}
-	if err := SetReleaseTracks(All, only.ID.String(), []ReleaseTrackInput{{s, 1}}); err != nil {
-		t.Fatal(err)
+	if got := tracks(Normal); !hasAll(got, "ZZPUBLIC", "Shared Normal") {
+		t.Fatalf("normal tracks = %s", got)
 	}
-	if err := SetSecret(s, true); err != nil {
-		t.Fatal(err)
+	if got := tracks(Secret); !hasAll(got, "ZZSECRET", "Shared Secret") {
+		t.Fatalf("secret tracks = %s", got)
+	}
+	if got := tracks(All); len(bytes.Split([]byte(got), []byte(","))) != 4 {
+		t.Fatalf("all tracks = %s", got)
 	}
 
-	// the track itself
-	if _, err := GetTrack(Public, s); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetTrack = %v", err)
+	if _, err := GetTrack(Normal, m.secretTrack); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("normal sees a secret track: %v", err)
 	}
-	if tr, err := GetTrack(All, s); err != nil || !tr.Secret {
-		t.Fatalf("unlocked GetTrack = %+v, %v", tr, err)
+	if _, err := GetTrack(Secret, m.normalTrack); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("secret sees a normal track: %v", err)
 	}
-	for _, tr := range must(ListTracks(Public)) {
-		if tr.Title == "ZZSECRET" {
-			t.Fatal("listed")
+
+	// artists: the shared one is on both sides, one made in secret mode waits there
+	if got := names(must(ListArtists(Normal))); len(got) != 3 {
+		t.Fatalf("normal artists = %v", got)
+	}
+	if got := names(must(ListArtists(Secret))); len(got) != 3 {
+		t.Fatalf("secret artists = %v", got)
+	}
+	for _, c := range []struct {
+		v    Viewer
+		id   string
+		want bool
+	}{
+		{Normal, m.normalArtist, true}, {Normal, m.secretArtist, false}, {Normal, m.sharedArtist, true},
+		{Normal, m.waitingNormal, true}, {Normal, m.waitingSecret, false},
+		{Secret, m.normalArtist, false}, {Secret, m.secretArtist, true}, {Secret, m.sharedArtist, true},
+		{Secret, m.waitingNormal, false}, {Secret, m.waitingSecret, true},
+	} {
+		_, err := GetArtist(c.v, c.id)
+		if (err == nil) != c.want {
+			t.Errorf("GetArtist(mode %d, %s) = %v, want visible %v", c.v.Mode, c.id, err, c.want)
 		}
 	}
 
-	// a mixed release hides it and numbers the rest without a gap
-	rel, _ := GetRelease(Public, r.ID.String())
-	if len(rel.Tracks) != 2 || rel.Tracks[1].Position != 2 || rel.Tracks[1].Track.Title != "Three" {
-		t.Fatalf("mixed release = %+v", rel.Tracks)
+	// releases: secret mode has none; normal mode keeps empty ones
+	if n := len(must(ListReleases(Secret))); n != 0 {
+		t.Fatalf("secret releases = %d", n)
 	}
-	if rel, _ := GetRelease(All, r.ID.String()); len(rel.Tracks) != 3 || rel.Tracks[2].Position != 3 {
-		t.Fatalf("unlocked release = %+v", rel.Tracks)
+	if _, err := GetRelease(Secret, m.mixedRelease); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("secret mode sees a release: %v", err)
+	}
+	if _, err := GetRelease(Normal, m.emptyRelease); err != nil {
+		t.Fatalf("empty release hidden in normal mode: %v", err)
+	}
+	if _, err := GetRelease(Secret, m.emptyRelease); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("empty release shown in secret mode: %v", err)
 	}
 
-	// what only secret tracks make up is hidden; empty things stay
-	if _, err := GetRelease(Public, only.ID.String()); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("secret-only release = %v", err)
+	// shows
+	if got := must(ListShows(Normal)); len(got) != 1 || got[0].Title != "Normal Show" {
+		t.Fatalf("normal shows = %+v", got)
 	}
-	if _, err := GetRelease(Public, empty.ID.String()); err != nil {
-		t.Fatalf("empty release hidden: %v", err)
+	if got := must(ListShows(Secret)); len(got) != 1 || got[0].Title != "Secret Show" {
+		t.Fatalf("secret shows = %+v", got)
 	}
-	if _, err := GetArtist(Public, hid.ID.String()); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("secret-only artist = %v", err)
+	if _, err := GetShow(Normal, m.secretShow); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("normal sees a secret show: %v", err)
 	}
-	// Mixed, Empty and the singles of One and Three; not ZZSECRET's single
-	for _, rel := range must(ListReleases(Public)) {
-		if rel.Title == "ZZSECRET" || rel.Title == "Only Secret" {
-			t.Fatalf("listed %q", rel.Title)
+
+	// search, which has its own index
+	for _, c := range []struct {
+		v    Viewer
+		q    string
+		want int
+	}{
+		{Normal, "zzsecret", 0}, {Secret, "zzpublic", 0}, {Secret, "zzsecret", 1}, {Normal, "zzpublic", 1},
+		{Normal, "secret", 0}, {Secret, "normal", 0}, {All, "zzsecret", 1},
+		{Normal, "shared", 3}, {Secret, "shared", 3}, // two tracks on the side and the artist
+	} {
+		res, _ := Search(c.v, c.q, 10)
+		n := len(res.Tracks) + len(res.Artists) + len(res.Shows)
+		if c.q == "shared" {
+			c.want = 2
+		}
+		if n != c.want {
+			t.Errorf("Search(mode %d, %q) found %d, want %d", c.v.Mode, c.q, n, c.want)
 		}
 	}
-	if n := len(must(ListReleases(Public))); n != 4 {
-		t.Fatalf("releases = %d", n)
+	if res, _ := Search(Normal, "waiting", 10); len(res.Artists) != 1 || res.Artists[0].Name != "Waiting Normal" {
+		t.Errorf("normal search for waiting = %v", names(res.Artists))
 	}
-	if n := len(must(ListArtists(Public))); n != 1 {
-		t.Fatalf("artists = %d", n)
-	}
+}
 
-	// search
-	if res, _ := Search(Public, "zzsecret", 10); !res.Empty() {
-		t.Fatalf("search found it: %+v", res)
+func TestSecretUploadHasNoRelease(t *testing.T) {
+	newTestDB(t)
+	m := seedModes(t)
+	tr, _ := GetTrack(Secret, m.secretTrack)
+	if !tr.Secret || len(tr.Releases) != 0 {
+		t.Fatalf("secret upload = %+v", tr)
 	}
-	if res, _ := Search(Public, "hidden", 10); !res.Empty() {
-		t.Fatalf("search found the artist: %+v", res.Artists)
-	}
-	if res, _ := Search(All, "zzsecret", 10); len(res.Tracks) != 1 {
-		t.Fatal("unlocked search misses it")
-	}
-
-	// saving the tracklist while locked keeps the secret track's slot
-	if err := SetReleaseTracks(Public, r.ID.String(), []ReleaseTrackInput{{b, 1}, {a, 1}}); err != nil {
+	// even when asked to place it on a release
+	res, err := AddTrack(Secret, []string{m.secretArtist}, &audio.Track{Title: "Linked"}, bytes.NewReader([]byte("l")), ".mp3",
+		&ReleaseLink{ReleaseID: m.mixedRelease, Disc: 1, Position: 5}, "")
+	if err != nil {
 		t.Fatal(err)
 	}
-	rel, _ = GetRelease(All, r.ID.String())
-	if len(rel.Tracks) != 3 || rel.Tracks[1].Track.Title != "ZZSECRET" || rel.Tracks[0].Track.Title != "Three" {
-		t.Fatalf("after locked save = %s", titlesOf(rel.Tracks))
+	if tr, _ := GetTrack(Secret, res.TrackID); len(tr.Releases) != 0 {
+		t.Fatalf("placed on %v", tr.Releases)
+	}
+}
+
+func TestSetSecretMovesTrack(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist(Normal, "A")
+	one := addTestTrack(t, "One", "one", a.ID.String()) // on its own single
+	two := addTestTrack(t, "Two", "two", a.ID.String())
+	album, _ := CreateRelease("Album", audio.ReleaseAlbum, "", []string{a.ID.String()})
+	SetReleaseTracks(All, album.ID.String(), []ReleaseTrackInput{{one, 1}, {two, 1}})
+	p, _ := CreatePlaylist("p")
+	SetPlaylistTracks(All, p.ID.String(), []string{one, two})
+
+	releases, _ := ReleasesOfTrack(one)
+	if len(releases) != 2 {
+		t.Fatalf("releases of one = %d", len(releases))
+	}
+	if err := SetSecret(one, true); err != nil {
+		t.Fatal(err)
+	}
+	if tr, _ := GetTrack(Secret, one); tr == nil || len(tr.Releases) != 0 {
+		t.Fatalf("moved track = %+v", tr)
+	}
+	// its single is gone, the album stays with the other track
+	for _, r := range must(ListReleases(All)) {
+		if r.Title == "One" {
+			t.Fatal("empty single kept")
+		}
+	}
+	if rel, _ := GetRelease(All, album.ID.String()); len(rel.Tracks) != 1 || rel.Tracks[0].Position != 2 {
+		t.Fatalf("album = %+v", rel.Tracks)
+	}
+	// the normal playlist lost it
+	if pl, _ := GetPlaylist(All, p.ID.String()); titles(pl.Tracks) != "Two" {
+		t.Fatalf("playlist = %s", titles(pl.Tracks))
 	}
 
-	// duplicate checks don't give it away
-	fp, _ := FingerprintOf(bytes.NewReader([]byte("secret")))
-	if exists, _ := TrackExists(Public, fp); exists {
-		t.Fatal("TrackExists reveals it")
+	// back to normal: no release again
+	if err := SetSecret(one, false); err != nil {
+		t.Fatal(err)
 	}
-	_, err := AddTrack(Public, []string{pub.ID.String()}, &audio.Track{Title: "x"}, bytes.NewReader([]byte("secret")), ".mp3", nil, "")
-	if !errors.Is(err, ErrHidden) {
-		t.Fatalf("AddTrack err = %v", err)
+	if tr, _ := GetTrack(Normal, one); tr == nil || len(tr.Releases) != 0 {
+		t.Fatalf("back track = %+v", tr)
+	}
+	if err := SetSecret("nope", true); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing track = %v", err)
+	}
+}
+
+func TestHiddenDuplicates(t *testing.T) {
+	newTestDB(t)
+	seedModes(t)
+	fp, _ := FingerprintOf(bytes.NewReader([]byte("s1"))) // the secret track's file
+	if exists, _ := TrackExists(Normal, fp); exists {
+		t.Fatal("normal mode: TrackExists reveals a secret track")
+	}
+	if exists, _ := TrackExists(Secret, fp); !exists {
+		t.Fatal("secret mode misses its own track")
+	}
+	fp, _ = FingerprintOf(bytes.NewReader([]byte("n1")))
+	if exists, _ := TrackExists(Secret, fp); exists {
+		t.Fatal("secret mode: TrackExists reveals a normal track")
+	}
+	for _, c := range []struct {
+		v    Viewer
+		body string
+		want error
+	}{{Normal, "s1", ErrHidden}, {Secret, "n1", ErrHidden}, {Normal, "n1", ErrExists}, {Secret, "s1", ErrExists}} {
+		_, err := AddTrack(c.v, nil, &audio.Track{Title: "x"}, bytes.NewReader([]byte(c.body)), ".mp3", nil, "")
+		if !errors.Is(err, c.want) {
+			t.Errorf("AddTrack(mode %d, %q) = %v, want %v", c.v.Mode, c.body, err, c.want)
+		}
+	}
+}
+
+func TestAddArtistAdoptsHiddenName(t *testing.T) {
+	newTestDB(t)
+	m := seedModes(t)
+	if _, err := AddArtist(Normal, "Normal Artist"); !errors.Is(err, ErrArtistExists) {
+		t.Fatalf("visible duplicate = %v", err)
+	}
+	// a name only the other mode can see doesn't say so
+	got, err := AddArtist(Normal, "secret artist")
+	if err != nil || got.ID.String() != m.secretArtist {
+		t.Fatalf("adopt = %+v, %v", got, err)
 	}
 }
 
@@ -110,21 +283,22 @@ func TestSecretPlaylistSlots(t *testing.T) {
 	a := addTestTrack(t, "A", "a")
 	s := addTestTrack(t, "S", "s")
 	b := addTestTrack(t, "B", "b")
+	SetSecret(s, true)
+	// a playlist from before the modes can mix both sides
 	p, _ := CreatePlaylist("p")
 	SetPlaylistTracks(All, p.ID.String(), []string{a, s, b})
-	SetSecret(s, true)
 
-	pl, _ := GetPlaylist(Public, p.ID.String())
+	pl, _ := GetPlaylist(Normal, p.ID.String())
 	if titles(pl.Tracks) != "A,B" {
-		t.Fatalf("locked playlist = %s", titles(pl.Tracks))
+		t.Fatalf("normal playlist = %s", titles(pl.Tracks))
 	}
-	if list, _ := ListPlaylists(Public); list[0].Count != 2 {
+	if list, _ := ListPlaylists(Normal); list[0].Count != 2 {
 		t.Fatalf("count = %d", list[0].Count)
 	}
-	SetPlaylistTracks(Public, p.ID.String(), []string{b, a})
+	SetPlaylistTracks(Normal, p.ID.String(), []string{b, a})
 	pl, _ = GetPlaylist(All, p.ID.String())
 	if titles(pl.Tracks) != "B,S,A" {
-		t.Fatalf("after locked save = %s", titles(pl.Tracks))
+		t.Fatalf("after normal save = %s", titles(pl.Tracks))
 	}
 }
 

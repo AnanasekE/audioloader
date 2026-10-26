@@ -142,7 +142,8 @@ type AddResult struct {
 // then the existing track is placed on the release instead, since a song
 // often comes out as a single before the album.
 // If the insert fails, the saved file is removed again.
-// For a viewer who can't see it, a file stored as a secret track gives
+// A secret mode upload creates a secret track and no release, whatever link
+// says. For a viewer who can't see it, a file stored on the other side gives
 // ErrHidden: a generic failure that doesn't reveal the track exists.
 func AddTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeeker, ext string, link *ReleaseLink, singleDate string) (AddResult, error) {
 	fp, err := FingerprintOf(file)
@@ -164,7 +165,7 @@ func AddTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeek
 	if err != nil {
 		return AddResult{}, err
 	}
-	if err := insertTrack(id, artistIDs, track, fp, link, singleDate); err != nil {
+	if err := insertTrack(id, v.IsSecret(), artistIDs, track, fp, link, singleDate); err != nil {
 		os.Remove(path)
 		// insertReleaseTrack maps its own constraint errors, so a remaining
 		// unique violation is the fingerprint index: an identical upload won the race
@@ -202,7 +203,7 @@ func linkOrExists(v Viewer, fp Fingerprint, link *ReleaseLink) (AddResult, error
 
 // insertTrack inserts the track row, its artist mappings and its release
 // placement (the given release, or a new single) in one transaction.
-func insertTrack(id string, artistIDs []string, track *audio.Track, fp Fingerprint, link *ReleaseLink, singleDate string) error {
+func insertTrack(id string, secret bool, artistIDs []string, track *audio.Track, fp Fingerprint, link *ReleaseLink, singleDate string) error {
 	tx, err := DB.Begin()
 	if err != nil {
 		return err
@@ -211,8 +212,8 @@ func insertTrack(id string, artistIDs []string, track *audio.Track, fp Fingerpri
 	defer tx.Rollback()
 
 	_, err = tx.Exec(
-		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, mbid, isrc) VALUES(?, ?, ?, ?, ?, ?, ?);`,
-		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, nullIfEmpty(track.MBID), nullIfEmpty(track.ISRC),
+		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, mbid, isrc, secret) VALUES(?, ?, ?, ?, ?, ?, ?, ?);`,
+		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, nullIfEmpty(track.MBID), nullIfEmpty(track.ISRC), secret,
 	)
 	if err != nil {
 		return err
@@ -226,6 +227,10 @@ func insertTrack(id string, artistIDs []string, track *audio.Track, fp Fingerpri
 		if _, err := stmt.Exec(id, artistID); err != nil {
 			return err
 		}
+	}
+	if secret {
+		// secret tracks are on no release
+		return tx.Commit()
 	}
 	if link == nil {
 		single := &audio.Release{ID: uuid.New(), Title: track.Title, Type: audio.ReleaseSingle, Date: singleDate}
@@ -312,9 +317,10 @@ func nullIfEmpty(s string) any {
 	return s
 }
 
-// hiddenFingerprint reports whether the file with fp is a secret track v can't see.
+// hiddenFingerprint reports whether the file with fp is a track on the other
+// side, which v can't see.
 func hiddenFingerprint(v Viewer, fp Fingerprint) (bool, error) {
-	if v.Secret {
+	if v.SeesAll() {
 		return false, nil
 	}
 	var secret bool
@@ -322,7 +328,7 @@ func hiddenFingerprint(v Viewer, fp Fingerprint) (bool, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
-	return secret, err
+	return secret != v.IsSecret(), err
 }
 
 // ErrBadEdit is returned for a track edit that isn't allowed, e.g. turning a
@@ -335,7 +341,7 @@ type TrackEdit struct {
 	Title     string
 	Kind      string // KindMusic or KindEpisode; an episode can become a song
 	ArtistIDs []string
-	// Secret is applied only for a viewer who unlocked the vault; nil leaves it
+	// Secret moves the track to the other mode (see SetSecret); nil leaves it
 	Secret *bool
 	// Cover sets or removes the original song; nil leaves it as it is
 	Cover *CoverEdit
@@ -372,8 +378,8 @@ func UpdateTrack(v Viewer, id string, e TrackEdit) error {
 			return err
 		}
 	}
-	if e.Secret != nil && v.Secret {
-		if _, err := tx.Exec(`UPDATE tracks SET secret = ? WHERE uuid = ?;`, *e.Secret, id); err != nil {
+	if e.Secret != nil && !v.SeesAll() {
+		if err := setSecret(tx, id, *e.Secret); err != nil {
 			return err
 		}
 	}

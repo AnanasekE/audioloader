@@ -381,12 +381,6 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 			if !t.IsEpisode() {
 				@coverOfFields(t)
 			}
-			if vaultOpen(ctx) {
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" name="secret" value="1" checked?={ t.Secret }/>
-					Secret: only shown while the vault is unlocked
-				</label>
-			}
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Save</button>
 				<span id="track-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>

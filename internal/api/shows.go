@@ -71,7 +71,7 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 
 	showID := r.FormValue("show_id")
 	if showID == "" {
-		show, err := db.ResolveShow(r.FormValue("show_name"), "")
+		show, err := db.ResolveShow(viewer(r), r.FormValue("show_name"), "")
 		if err != nil {
 			http.Error(w, "pick a show or name a new one", http.StatusBadRequest)
 			return
@@ -86,10 +86,13 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t := &audio.Track{Title: title, Duration: duration.Round(time.Second), Published: published}
-	id, err := db.AddEpisode(showID, t, file, filepath.Ext(header.Filename))
+	id, err := db.AddEpisode(viewer(r), showID, t, file, filepath.Ext(header.Filename))
 	switch {
 	case errors.Is(err, db.ErrExists):
 		http.Error(w, "already exists", http.StatusConflict)
+		return
+	case errors.Is(err, db.ErrHidden):
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	case errors.Is(err, db.ErrBadReference):
 		http.Error(w, "unknown show", http.StatusBadRequest)
@@ -97,12 +100,6 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		serverError(w, err)
 		return
-	}
-	if r.FormValue("secret") == "1" && viewer(r).Secret {
-		if err := db.SetSecret(id, true); err != nil {
-			serverError(w, err)
-			return
-		}
 	}
 	// chapters are a bonus: a file we can't read them from still uploads
 	if chapters, err := audio.ReadChapters(file); err != nil {

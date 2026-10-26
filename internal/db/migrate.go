@@ -3,6 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
+	"uuid"
 )
 
 // querier is implemented by both *sql.DB and *sql.Tx.
@@ -280,15 +283,95 @@ var migrations = []func(tx *sql.Tx) error{
 			);`)
 		return err
 	},
+	// 18: secret tracks leave their releases, and releases made only of
+	// secret tracks are deleted (the tracks stay). This can't be undone:
+	// Init copies the database to database.db.bak-18 before it runs.
+	func(tx *sql.Tx) error { return removeSecretFromReleases(tx) },
+	// 19: secret mode. Secret tracks get a description, a picture and tags;
+	// a playlist, and an artist or show that has no tracks yet, belong to
+	// the mode they were created in (0 normal, 1 secret). The search index
+	// gets a modes column (bit 1 normal, bit 2 secret) in place of secret.
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			ALTER TABLE tracks ADD COLUMN description TEXT;
+			ALTER TABLE tracks ADD COLUMN image TEXT; -- per-track picture in data/, secret tracks only
+			CREATE TABLE track_tags (
+				track_id TEXT NOT NULL REFERENCES tracks(uuid) ON DELETE CASCADE,
+				tag TEXT NOT NULL COLLATE NOCASE,
+				PRIMARY KEY (track_id, tag)
+			);
+			ALTER TABLE playlists ADD COLUMN secret INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE artists ADD COLUMN secret INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE shows ADD COLUMN secret INTEGER NOT NULL DEFAULT 0;
+			DROP TABLE search;
+			CREATE VIRTUAL TABLE search USING fts5(
+				kind UNINDEXED, ref UNINDEXED, modes UNINDEXED, title, artists, original,
+				tokenize = 'unicode61 remove_diacritics 2'
+			);
+			UPDATE search_state SET dirty = 1;`)
+		return err
+	},
+}
+
+// destructive lists the migrations (by number) that delete data. Init
+// backs the database up before running one.
+var destructive = map[int]bool{18: true}
+
+// removedReleases are the releases the last cleanup migration deleted; their
+// cover files go once the migration has committed.
+var removedReleases []string
+
+// removeSecretFromReleases is migration 18.
+func removeSecretFromReleases(tx *sql.Tx) error {
+	rows, err := tx.Query(`
+		SELECT r.uuid, r.title FROM releases r
+		WHERE EXISTS (SELECT 1 FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id WHERE rt.release_id = r.uuid AND t.secret = 1)
+		AND NOT EXISTS (SELECT 1 FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id WHERE rt.release_id = r.uuid AND t.secret = 0);`)
+	if err != nil {
+		return err
+	}
+	type gone struct{ id, title string }
+	var list []gone
+	for rows.Next() {
+		var g gone
+		if err := rows.Scan(&g.id, &g.title); err != nil {
+			rows.Close()
+			return err
+		}
+		list = append(list, g)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, g := range list {
+		log.Printf("migration 18: removing release %q (%s), it only has secret tracks", g.title, g.id)
+		// the foreign keys cascade to its slots and artist credits
+		if _, err := tx.Exec(`DELETE FROM releases WHERE uuid = ?;`, g.id); err != nil {
+			return err
+		}
+		removedReleases = append(removedReleases, g.id)
+	}
+	_, err = tx.Exec(`DELETE FROM release_tracks WHERE track_id IN (SELECT uuid FROM tracks WHERE secret = 1);`)
+	return err
 }
 
 // Migrate brings db up to the latest schema version.
-func Migrate(db *sql.DB) error {
+func Migrate(db *sql.DB) error { return migrate(db, nil) }
+
+// migrate is Migrate with an optional backup, called before each destructive
+// migration with its number.
+func migrate(db *sql.DB, backup func(version int) error) error {
 	var version int
 	if err := db.QueryRow(`PRAGMA user_version;`).Scan(&version); err != nil {
 		return err
 	}
 	for i := version; i < len(migrations); i++ {
+		if backup != nil && destructive[i+1] {
+			if err := backup(i + 1); err != nil {
+				return fmt.Errorf("backup before migration %d: %w", i+1, err)
+			}
+		}
 		if err := runMigration(db, i); err != nil {
 			return fmt.Errorf("migration %d: %w", i+1, err)
 		}
@@ -297,6 +380,7 @@ func Migrate(db *sql.DB) error {
 }
 
 func runMigration(db *sql.DB, i int) error {
+	removedReleases = nil
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -310,5 +394,40 @@ func runMigration(db *sql.DB, i int) error {
 	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d;`, i+1)); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	for _, id := range removedReleases {
+		if rid, err := uuid.Parse(id); err == nil {
+			removeCover(rid)
+		}
+	}
+	removedReleases = nil
+	return nil
+}
+
+// backupBeforeMigration copies the database file at path to
+// path.bak-<version> with VACUUM INTO, which also takes what is still in the
+// write-ahead log. An existing backup is kept, and an empty library has
+// nothing to lose.
+func backupBeforeMigration(db *sql.DB, path string) func(version int) error {
+	return func(version int) error {
+		dest := fmt.Sprintf("%s.bak-%d", path, version)
+		if _, err := os.Stat(dest); err == nil {
+			log.Printf("migration %d: keeping the earlier backup %s", version, dest)
+			return nil
+		}
+		var n int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM tracks;`).Scan(&n); err != nil {
+			return err
+		}
+		if n == 0 {
+			return nil
+		}
+		if _, err := db.Exec(`VACUUM INTO ?;`, dest); err != nil {
+			return err
+		}
+		log.Printf("migration %d: copied the database to %s", version, dest)
+		return nil
+	}
 }

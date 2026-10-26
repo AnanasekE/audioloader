@@ -19,7 +19,7 @@ func createArtist(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name is required", http.StatusBadRequest)
 		return
 	}
-	artist, err := db.AddArtist(name)
+	artist, err := db.AddArtist(viewer(r), name)
 	if errors.Is(err, db.ErrArtistExists) {
 		renderStatus(w, r, http.StatusConflict, components.Notice(name+" is already in the library."))
 		return
@@ -158,7 +158,7 @@ func resolveArtists(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ids, err := db.ResolveArtists(names)
+	ids, err := db.ResolveArtists(viewer(r), names)
 	if err != nil {
 		serverError(w, err)
 		return

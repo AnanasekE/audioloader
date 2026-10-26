@@ -11,20 +11,20 @@ import (
 
 func TestEpisodes(t *testing.T) {
 	newTestDB(t)
-	show, err := ResolveShow("The Show", "Host")
+	show, err := ResolveShow(All, "The Show", "Host")
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, _ := ResolveShow("the show", "")
+	again, _ := ResolveShow(All, "the show", "")
 	if again.ID != show.ID {
 		t.Fatal("ResolveShow made a second show")
 	}
-	ep1, err := AddEpisode(show.ID.String(), &audio.Track{Title: "Ep 1", Duration: time.Hour, Published: "2026-01-01"}, bytes.NewReader([]byte("ep1")), ".mp3")
+	ep1, err := AddEpisode(All, show.ID.String(), &audio.Track{Title: "Ep 1", Duration: time.Hour, Published: "2026-01-01"}, bytes.NewReader([]byte("ep1")), ".mp3")
 	if err != nil {
 		t.Fatal(err)
 	}
-	ep2, _ := AddEpisode(show.ID.String(), &audio.Track{Title: "Ep 2", Duration: time.Hour, Published: "2026-02-01"}, bytes.NewReader([]byte("ep2")), ".mp3")
-	if _, err := AddEpisode(show.ID.String(), &audio.Track{Title: "dup"}, bytes.NewReader([]byte("ep1")), ".mp3"); !errors.Is(err, ErrExists) {
+	ep2, _ := AddEpisode(All, show.ID.String(), &audio.Track{Title: "Ep 2", Duration: time.Hour, Published: "2026-02-01"}, bytes.NewReader([]byte("ep2")), ".mp3")
+	if _, err := AddEpisode(All, show.ID.String(), &audio.Track{Title: "dup"}, bytes.NewReader([]byte("ep1")), ".mp3"); !errors.Is(err, ErrExists) {
 		t.Fatalf("duplicate err = %v", err)
 	}
 	music := addTestTrack(t, "Song", "song")

@@ -74,8 +74,8 @@ func TestLinkArtist(t *testing.T) {
 	Register(mux, nil)
 	h := WithViewer(mux)
 
-	a, _ := db.AddArtist("Massive Attack")
-	b, _ := db.AddArtist("Massive Attak")
+	a, _ := db.AddArtist(db.All, "Massive Attack")
+	b, _ := db.AddArtist(db.All, "Massive Attak")
 	const mbid = "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"
 
 	rec := httptest.NewRecorder()

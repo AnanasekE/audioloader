@@ -13,8 +13,8 @@ import (
 
 func TestArtistPageLists(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Main")
-	b, _ := AddArtist("Other")
+	a, _ := AddArtist(All, "Main")
+	b, _ := AddArtist(All, "Other")
 	own, _ := CreateRelease("Own Album", audio.ReleaseAlbum, "2020", []string{a.ID.String()})
 	theirs, _ := CreateRelease("Their Album", audio.ReleaseAlbum, "2021", []string{b.ID.String()})
 	onOwn := addTestTrack(t, "On Own", "1", a.ID.String())
@@ -45,7 +45,7 @@ func TestArtistPageLists(t *testing.T) {
 
 func TestArtistImage(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Pic")
+	a, _ := AddArtist(All, "Pic")
 	png := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 32)...)
 	jpg := append([]byte("\xff\xd8\xff\xe0"), make([]byte, 32)...)
 
@@ -101,8 +101,8 @@ func TestArtistImage(t *testing.T) {
 
 func TestRenameAndMergeArtists(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Alpha")
-	b, _ := AddArtist("Beta")
+	a, _ := AddArtist(All, "Alpha")
+	b, _ := AddArtist(All, "Beta")
 	if err := RenameArtist(a.ID.String(), "beta"); !errors.Is(err, ErrArtistExists) {
 		t.Fatalf("rename to a taken name = %v", err)
 	}

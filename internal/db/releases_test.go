@@ -11,7 +11,7 @@ import (
 
 func newTestRelease(t *testing.T, title string, typ audio.ReleaseType) (*audio.Release, string) {
 	t.Helper()
-	a, err := AddArtist("artist " + title)
+	a, err := AddArtist(All, "artist " + title)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestUpdateReleaseKeepsTracklist(t *testing.T) {
 	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{TrackID: tr, Disc: 1}}); err != nil {
 		t.Fatal(err)
 	}
-	b, err := AddArtist("other")
+	b, err := AddArtist(All, "other")
 	if err != nil {
 		t.Fatal(err)
 	}

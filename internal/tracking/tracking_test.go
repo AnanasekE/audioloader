@@ -52,7 +52,7 @@ func testClient(t *testing.T) *mb.Client {
 func TestCheck(t *testing.T) {
 	dbtest.New(t)
 	c := testClient(t)
-	a, _ := db.AddArtist("Massive Attack")
+	a, _ := db.AddArtist(db.All, "Massive Attack")
 	if _, err := db.CreateRelease("Mezzanine", audio.ReleaseAlbum, "1998", []string{a.ID.String()}); err != nil {
 		t.Fatal(err)
 	}

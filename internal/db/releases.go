@@ -79,9 +79,9 @@ func ListReleases(v Viewer) ([]*audio.Release, error) {
 	return releases, attachReleaseArtists(releases)
 }
 
-// GetRelease returns a release with its artists and tracklist. For a
-// locked viewer, secret tracks are left out and the rest are numbered
-// without gaps, so their positions don't give the secret ones away.
+// GetRelease returns a release with its artists and tracklist. Secret
+// tracks are on no release, but if one is still there, a normal mode viewer
+// gets the rest numbered without gaps, so positions don't give it away.
 func GetRelease(v Viewer, id string) (*audio.Release, error) {
 	r, err := scanRelease(DB.QueryRow(selectRelease+` r WHERE uuid = ? AND `+v.releaseCond("r")+`;`, id))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -122,7 +122,7 @@ func GetRelease(v Viewer, id string) (*audio.Release, error) {
 		return nil, err
 	}
 	rows.Close()
-	if !v.Secret {
+	if v.Mode == ModeNormal {
 		renumber(r.Tracks)
 	}
 	if err := attachArtists(tracks); err != nil {
@@ -259,9 +259,9 @@ func DeleteRelease(id string) error {
 	return nil
 }
 
-// SetReleaseTracks replaces a release's tracklist. A locked viewer never
-// saw the secret tracks, so they keep their places and the given tracks
-// fill the positions around them.
+// SetReleaseTracks replaces a release's tracklist. A viewer who can't see
+// some of its tracks (secret ones that are still there) leaves them in
+// their places, and the given tracks fill the positions around them.
 func SetReleaseTracks(v Viewer, releaseID string, entries []ReleaseTrackInput) error {
 	tx, err := DB.Begin()
 	if err != nil {
@@ -270,10 +270,10 @@ func SetReleaseTracks(v Viewer, releaseID string, entries []ReleaseTrackInput) e
 	defer tx.Rollback()
 
 	taken := map[int]map[int]bool{} // disc -> positions kept for secret tracks
-	if !v.Secret {
+	if !v.SeesAll() {
 		rows, err := tx.Query(`
 			SELECT rt.disc, rt.position FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id
-			WHERE rt.release_id = ? AND t.secret = 1;`, releaseID)
+			WHERE rt.release_id = ? AND NOT (`+v.trackCond("t")+`);`, releaseID)
 		if err != nil {
 			return err
 		}

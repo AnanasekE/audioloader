@@ -49,14 +49,25 @@ func GetArtist(v Viewer, id string) (*audio.Artist, error) {
 	return &a, err
 }
 
-func AddArtist(name string) (*audio.Artist, error) {
+// AddArtist creates an artist. One made in secret mode stays hidden from
+// normal mode until it has a track. If the name belongs to an artist v can't
+// see, that artist is returned as if it had just been created: it is then
+// shared by both modes, and an error would reveal that it exists.
+func AddArtist(v Viewer, name string) (*audio.Artist, error) {
 	a := &audio.Artist{ID: uuid.New(), Name: name}
 	_, err := DB.Exec(
-		`INSERT INTO artists(uuid, name) VALUES(?, ?);`,
-		a.ID.String(), a.Name,
+		`INSERT INTO artists(uuid, name, secret) VALUES(?, ?, ?);`,
+		a.ID.String(), a.Name, v.IsSecret(),
 	)
 	if isUniqueViolation(err) {
-		return nil, ErrArtistExists
+		var id string
+		if err := DB.QueryRow(`SELECT uuid FROM artists WHERE lower(name) = lower(?);`, name).Scan(&id); err != nil {
+			return nil, err
+		}
+		if _, err := GetArtist(v, id); err == nil {
+			return nil, ErrArtistExists
+		}
+		return GetArtist(All, id)
 	}
 	if err != nil {
 		return nil, err
@@ -65,8 +76,9 @@ func AddArtist(name string) (*audio.Artist, error) {
 }
 
 // ResolveArtists maps each name to an artist ID, matching existing artists
-// case-insensitively and creating the missing ones, all in one transaction.
-func ResolveArtists(names []string) (map[string]string, error) {
+// case-insensitively and creating the missing ones (hidden from the other
+// mode until they have a track), all in one transaction.
+func ResolveArtists(v Viewer, names []string) (map[string]string, error) {
 	tx, err := DB.Begin()
 	if err != nil {
 		return nil, err
@@ -82,7 +94,7 @@ func ResolveArtists(names []string) (map[string]string, error) {
 		err := tx.QueryRow(`SELECT uuid FROM artists WHERE lower(name) = lower(?) LIMIT 1;`, name).Scan(&id)
 		if errors.Is(err, sql.ErrNoRows) {
 			id = uuid.New().String()
-			_, err = tx.Exec(`INSERT INTO artists(uuid, name) VALUES(?, ?);`, id, name)
+			_, err = tx.Exec(`INSERT INTO artists(uuid, name, secret) VALUES(?, ?, ?);`, id, name, v.IsSecret())
 		}
 		if err != nil {
 			return nil, err

@@ -22,8 +22,8 @@ import (
 func secretLibrary(t *testing.T) map[string]string {
 	t.Helper()
 	ids := map[string]string{}
-	pub, _ := db.AddArtist("Public Artist")
-	hid, _ := db.AddArtist("ZZSECRET Artist")
+	pub, _ := db.AddArtist(db.All, "Public Artist")
+	hid, _ := db.AddArtist(db.All, "ZZSECRET Artist")
 	ids["public artist"], ids["hidden artist"] = pub.ID.String(), hid.ID.String()
 
 	add := func(title, body string, artist string, link *db.ReleaseLink) string {
@@ -64,9 +64,9 @@ func secretLibrary(t *testing.T) map[string]string {
 		t.Fatal(err)
 	}
 
-	show, _ := db.ResolveShow("ZZSECRET Show", "")
+	show, _ := db.ResolveShow(db.All, "ZZSECRET Show", "")
 	ids["secret show"] = show.ID.String()
-	ep, err := db.AddEpisode(show.ID.String(), &audio.Track{Title: "ZZSECRET Episode", Duration: time.Hour}, bytes.NewReader([]byte("episode")), ".mp3")
+	ep, err := db.AddEpisode(db.All, show.ID.String(), &audio.Track{Title: "ZZSECRET Episode", Duration: time.Hour}, bytes.NewReader([]byte("episode")), ".mp3")
 	if err != nil {
 		t.Fatal(err)
 	}

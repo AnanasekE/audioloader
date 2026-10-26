@@ -91,7 +91,7 @@ func Check(ctx context.Context, c *mb.Client, artistID string) error {
 	}
 
 	// secret tracks aren't matched: the inbox would mark them as owned
-	library, err := db.ListTracks(db.Public)
+	library, err := db.ListTracks(db.Normal)
 	if err != nil {
 		return err
 	}

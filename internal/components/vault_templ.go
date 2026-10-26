@@ -91,7 +91,7 @@ func VaultPage(wrong bool) templ.Component {
 
 // vaultOpen reports whether the request rendering this page unlocked the vault.
 func vaultOpen(ctx context.Context) bool {
-	return db.ViewerFrom(ctx).Secret
+	return db.ViewerFrom(ctx).IsSecret()
 }
 
 var _ = templruntime.GeneratedTemplate

@@ -378,7 +378,7 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "every video needs a title", http.StatusBadRequest)
 			return
 		}
-		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs, Secret: viewer(r).Secret}
+		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs}
 		if releaseID != "" {
 			imp.ReleaseID, imp.Disc, imp.Position = releaseID, 1, next
 			next++

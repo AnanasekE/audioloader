@@ -17,9 +17,9 @@ var theVault *vault.Vault
 // carries a valid vault cookie.
 func WithViewer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v := db.Public
+		v := db.Normal
 		if theVault.Valid(r, time.Now()) {
-			v = db.All
+			v = db.Secret
 		}
 		next.ServeHTTP(w, r.WithContext(db.WithViewer(r.Context(), v)))
 	})
@@ -54,17 +54,21 @@ func lockVault(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/tracks", http.StatusSeeOther)
 }
 
-// setTrackSecret makes a track secret or public; only an unlocked viewer can.
+// setTrackSecret moves a track to the other mode, see db.SetSecret. A viewer
+// moves only tracks of the mode they are in, so a missing vault, or a track
+// that is already there, is a 404.
 func setTrackSecret(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
 	if !ok {
 		return
 	}
-	if !viewer(r).Secret {
-		http.NotFound(w, r)
+	if theVault == nil || !visibleTrack(w, r, id.String()) {
+		if theVault == nil {
+			http.NotFound(w, r)
+		}
 		return
 	}
-	err := db.SetSecret(id.String(), r.FormValue("secret") == "1")
+	err := db.SetSecret(id.String(), !viewer(r).IsSecret())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return

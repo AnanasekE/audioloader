@@ -35,8 +35,8 @@ func Search(v Viewer, q string, limit int) (*SearchResults, error) {
 	ids := map[string][]string{}
 	for _, kind := range []string{"track", "release", "artist", "show"} {
 		rows, err := DB.Query(`
-			SELECT ref FROM search WHERE search MATCH ? AND kind = ? AND (secret = 0 OR ?)
-			ORDER BY bm25(search, 0, 0, 0, 10, 3, 1) LIMIT ?;`, match, kind, v.Secret, limit)
+			SELECT ref FROM search WHERE search MATCH ? AND kind = ? AND (modes & ?) != 0
+			ORDER BY bm25(search, 0, 0, 0, 10, 3, 1) LIMIT ?;`, match, kind, v.modeMask(), limit)
 		if err != nil {
 			return nil, err
 		}
@@ -121,29 +121,31 @@ func refreshSearch() error {
 	defer tx.Rollback()
 	stmts := []string{
 		`DELETE FROM search;`,
-		// original: what a cover is of, so searching the original finds covers. A
-		// secret original in the library is left out, or its name would find the cover.
-		`INSERT INTO search(kind, ref, secret, title, artists, original)
-			SELECT 'track', t.uuid, t.secret, t.title, COALESCE(group_concat(a.name, ' '), ''),
+		// modes: which sides may find the row, 1 for normal mode and 2 for secret
+		// mode. original: what a cover is of, so searching the original finds
+		// covers. An original on the other side is left out, or its name would
+		// find the cover.
+		`INSERT INTO search(kind, ref, modes, title, artists, original)
+			SELECT 'track', t.uuid, CASE WHEN t.secret THEN 2 ELSE 1 END, t.title, COALESCE(group_concat(a.name, ' '), ''),
 				CASE WHEN t.original_track_id IS NOT NULL THEN COALESCE((
 					SELECT o.title || ' ' || COALESCE((SELECT group_concat(oa.name, ' ') FROM track_artist_map om JOIN artists oa ON oa.uuid = om.artist_id WHERE om.track_id = o.uuid), '')
-					FROM tracks o WHERE o.uuid = t.original_track_id AND o.secret = 0), '')
+					FROM tracks o WHERE o.uuid = t.original_track_id AND o.secret = t.secret), '')
 				ELSE trim(COALESCE(t.original_title, '') || ' ' || COALESCE(t.original_artists, '')) END
 			FROM tracks t
 			LEFT JOIN track_artist_map m ON m.track_id = t.uuid
 			LEFT JOIN artists a ON a.uuid = m.artist_id
 			WHERE ` + libraryTracks + `
 			GROUP BY t.uuid;`,
-		`INSERT INTO search(kind, ref, secret, title, artists)
-			SELECT 'release', r.uuid, NOT (` + Public.releaseCond("r") + `), r.title, COALESCE(group_concat(a.name, ' '), '')
+		`INSERT INTO search(kind, ref, modes, title, artists)
+			SELECT 'release', r.uuid, ` + modesOf(Viewer.releaseCond, "r") + `, r.title, COALESCE(group_concat(a.name, ' '), '')
 			FROM releases r
 			LEFT JOIN release_artist_map m ON m.release_id = r.uuid
 			LEFT JOIN artists a ON a.uuid = m.artist_id
 			GROUP BY r.uuid;`,
-		`INSERT INTO search(kind, ref, secret, title, artists)
-			SELECT 'artist', a.uuid, NOT (` + Public.artistCond("a") + `), a.name, '' FROM artists a;`,
-		`INSERT INTO search(kind, ref, secret, title, artists)
-			SELECT 'show', s.uuid, NOT (` + Public.showCond("s") + `), s.title, COALESCE(s.author, '') FROM shows s;`,
+		`INSERT INTO search(kind, ref, modes, title, artists)
+			SELECT 'artist', a.uuid, ` + modesOf(Viewer.artistCond, "a") + `, a.name, '' FROM artists a;`,
+		`INSERT INTO search(kind, ref, modes, title, artists)
+			SELECT 'show', s.uuid, ` + modesOf(Viewer.showCond, "s") + `, s.title, COALESCE(s.author, '') FROM shows s;`,
 		// the rebuild itself doesn't touch the watched tables, so this sticks
 		`UPDATE search_state SET dirty = 0;`,
 	}
@@ -153,4 +155,10 @@ func refreshSearch() error {
 		}
 	}
 	return tx.Commit()
+}
+
+// modesOf is the SQL for a search row's modes: the bits of the sides for
+// which cond (a Viewer method) is true on a table aliased alias.
+func modesOf(cond func(Viewer, string) string, alias string) string {
+	return `(CASE WHEN ` + cond(Normal, alias) + ` THEN 1 ELSE 0 END + CASE WHEN ` + cond(Secret, alias) + ` THEN 2 ELSE 0 END)`
 }

@@ -77,7 +77,7 @@ func TestArtistTwitch(t *testing.T) {
 	Register(mux, nil)
 	h := WithViewer(mux)
 
-	a, _ := db.AddArtist("Cottontail")
+	a, _ := db.AddArtist(db.All, "Cottontail")
 	path := "/ui/artists/" + a.ID.String() + "/twitch"
 	current := func() *struct{ login, img string } {
 		got, _ := db.GetArtist(db.All, a.ID.String())
@@ -150,7 +150,7 @@ func TestArtistTwitchWithoutClient(t *testing.T) {
 	Register(mux, nil)
 	h := WithViewer(mux)
 
-	a, _ := db.AddArtist("Cottontail")
+	a, _ := db.AddArtist(db.All, "Cottontail")
 	// the field can still be saved
 	if rec := postForm(h, "/ui/artists/"+a.ID.String()+"/twitch", "twitch=known"); rec.Code != http.StatusNoContent {
 		t.Fatalf("save = %d %s", rec.Code, rec.Body.String())

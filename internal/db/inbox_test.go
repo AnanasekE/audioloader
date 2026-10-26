@@ -12,7 +12,7 @@ import (
 
 func TestConfirmInboxRelease(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Massive Attack")
+	a, _ := AddArtist(All, "Massive Attack")
 	owned := addTestTrack(t, "Teardrop", "teardrop bytes", a.ID.String())
 	if err := SetFollow(a.ID.String(), "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", DefaultFilters()); err != nil {
 		t.Fatal(err)
@@ -111,8 +111,8 @@ func TestMergePlaceholder(t *testing.T) {
 
 func TestFollows(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("A")
-	b, _ := AddArtist("B")
+	a, _ := AddArtist(All, "A")
+	b, _ := AddArtist(All, "B")
 	if err := SetFollow(a.ID.String(), "mb-a", DefaultFilters()); err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestFollows(t *testing.T) {
 
 func TestInboxOwnedCounts(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Artist")
+	a, _ := AddArtist(All, "Artist")
 	if err := SetFollow(a.ID.String(), "mb-a", DefaultFilters()); err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func TestInboxOwnedCounts(t *testing.T) {
 
 func TestRestoreInboxRelease(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Artist")
+	a, _ := AddArtist(All, "Artist")
 	r := InboxRelease{ReleaseGroupMBID: "rg", ArtistID: a.ID.String(), Title: "Album", Type: "album"}
 	if err := AddInboxRelease(r); err != nil {
 		t.Fatal(err)
@@ -205,8 +205,8 @@ func TestRestoreInboxRelease(t *testing.T) {
 
 func TestListInboxFilter(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Massive Attack")
-	b, _ := AddArtist("Portishead")
+	a, _ := AddArtist(All, "Massive Attack")
+	b, _ := AddArtist(All, "Portishead")
 	for _, id := range []string{a.ID.String(), b.ID.String()} {
 		if err := SetFollow(id, "mb-"+id, DefaultFilters()); err != nil {
 			t.Fatal(err)

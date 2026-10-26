@@ -8,7 +8,7 @@ import (
 
 func TestSearch(t *testing.T) {
 	newTestDB(t)
-	a, _ := AddArtist("Björk")
+	a, _ := AddArtist(All, "Björk")
 	addTestTrack(t, "Jóga", "joga", a.ID.String())
 	addTestTrack(t, "Hunter", "hunter", a.ID.String())
 	if _, err := CreateRelease("Homogenic", audio.ReleaseAlbum, "1997", []string{a.ID.String()}); err != nil {
@@ -35,7 +35,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	// changes show up without an explicit reindex
-	a2, _ := AddArtist("Massive Attack")
+	a2, _ := AddArtist(All, "Massive Attack")
 	if res, _ := Search(All, "massive", 10); len(res.Artists) != 1 || res.Artists[0].ID != a2.ID {
 		t.Fatalf("new artist not found: %+v", res.Artists)
 	}

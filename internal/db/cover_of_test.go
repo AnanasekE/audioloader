@@ -10,8 +10,8 @@ import (
 
 func TestCoverOfLoads(t *testing.T) {
 	newTestDB(t)
-	orig, _ := AddArtist("Original Artist")
-	cov, _ := AddArtist("Cover Artist")
+	orig, _ := AddArtist(All, "Original Artist")
+	cov, _ := AddArtist(All, "Cover Artist")
 	original := addTestTrack(t, "Song", "orig", orig.ID.String())
 	linked := addTestTrack(t, "Cover A", "a", cov.ID.String())
 	text := addTestTrack(t, "Cover B", "b", cov.ID.String())
@@ -24,7 +24,7 @@ func TestCoverOfLoads(t *testing.T) {
 	}
 
 	got := map[string]*audio.Track{}
-	tracks, err := ListTracks(Public)
+	tracks, err := ListTracks(Normal)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestCoverOfLoads(t *testing.T) {
 	if err := SetSecret(original, true); err != nil {
 		t.Fatal(err)
 	}
-	tr, err := GetTrack(Public, linked)
+	tr, err := GetTrack(Normal, linked)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,8 +62,8 @@ func TestCoverOfLoads(t *testing.T) {
 
 func TestSetCover(t *testing.T) {
 	newTestDB(t)
-	orig, _ := AddArtist("Original Artist")
-	cov, _ := AddArtist("Cover Artist")
+	orig, _ := AddArtist(All, "Original Artist")
+	cov, _ := AddArtist(All, "Cover Artist")
 	original := addTestTrack(t, "Song", "orig", orig.ID.String())
 	cover := addTestTrack(t, "Cover", "cov", cov.ID.String())
 	edit := func(c CoverEdit) error {
@@ -130,7 +130,7 @@ func TestSetCover(t *testing.T) {
 
 	// a locked viewer can't link a secret original
 	SetSecret(original, true)
-	err := UpdateTrack(Public, cover, TrackEdit{Title: "Cover", Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}, Cover: &CoverEdit{TrackID: original}})
+	err := UpdateTrack(Normal, cover, TrackEdit{Title: "Cover", Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}, Cover: &CoverEdit{TrackID: original}})
 	if !errors.Is(err, ErrBadReference) {
 		t.Fatalf("secret original = %v", err)
 	}
@@ -152,8 +152,8 @@ func TestSetCover(t *testing.T) {
 
 func TestCoverSearchAndCoveredBy(t *testing.T) {
 	newTestDB(t)
-	orig, _ := AddArtist("Massive Attack")
-	cov, _ := AddArtist("Cover Artist")
+	orig, _ := AddArtist(All, "Massive Attack")
+	cov, _ := AddArtist(All, "Cover Artist")
 	original := addTestTrack(t, "Teardrop", "orig", orig.ID.String())
 	linked := addTestTrack(t, "Linked Cover", "a", cov.ID.String())
 	text := addTestTrack(t, "Text Cover", "b", cov.ID.String())
@@ -171,7 +171,7 @@ func TestCoverSearchAndCoveredBy(t *testing.T) {
 	}
 
 	found := func(q string) string {
-		res, err := Search(Public, q, 10)
+		res, err := Search(Normal, q, 10)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,11 +188,11 @@ func TestCoverSearchAndCoveredBy(t *testing.T) {
 		t.Errorf("search linked original = %q", got)
 	}
 
-	covers, err := ListCoveredBy(Public, orig.ID.String())
+	covers, err := ListCoveredBy(Normal, orig.ID.String())
 	if err != nil || len(covers) != 1 || covers[0].Title != "Linked Cover" || covers[0].CoverOf == nil {
 		t.Fatalf("covered by = %v, %v", titles(covers), err)
 	}
-	if covers, _ := ListCoveredBy(Public, cov.ID.String()); len(covers) != 0 {
+	if covers, _ := ListCoveredBy(Normal, cov.ID.String()); len(covers) != 0 {
 		t.Errorf("covered by the cover artist = %v", titles(covers))
 	}
 
@@ -201,7 +201,7 @@ func TestCoverSearchAndCoveredBy(t *testing.T) {
 	if got := found("teardrop"); got != "" {
 		t.Errorf("secret original found: %q", got)
 	}
-	if covers, _ := ListCoveredBy(Public, orig.ID.String()); len(covers) != 0 {
+	if covers, _ := ListCoveredBy(Normal, orig.ID.String()); len(covers) != 0 {
 		t.Errorf("secret original covered by %v", titles(covers))
 	}
 }

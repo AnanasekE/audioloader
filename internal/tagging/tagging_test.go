@@ -54,7 +54,7 @@ func testTagger(t *testing.T) *Tagger {
 // addTrack uploads a track by artist on a new release of the given title and type.
 func addTrack(t *testing.T, title, artist string, dur time.Duration, mbid, releaseTitle string, typ audio.ReleaseType) (string, string) {
 	t.Helper()
-	a, err := db.AddArtist(artist)
+	a, err := db.AddArtist(db.All, artist)
 	if err != nil {
 		t.Fatal(err)
 	}

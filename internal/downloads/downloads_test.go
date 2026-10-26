@@ -40,7 +40,7 @@ func fakeDownloader(t *testing.T, extra ...sources.Source) *Downloader {
 // an inbox release does, and returns the placeholders' IDs.
 func confirmedRelease(t *testing.T, titles ...string) (*audio.Release, []string) {
 	t.Helper()
-	a, _ := db.AddArtist("Massive Attack")
+	a, _ := db.AddArtist(db.All, "Massive Attack")
 	var tracks []db.InboxTrack
 	for i, title := range titles {
 		tracks = append(tracks, db.InboxTrack{Disc: 1, Position: i + 1, Title: title, LengthMs: 2000,
@@ -275,7 +275,7 @@ func TestRunMapsSpotifyAlbum(t *testing.T) {
 func TestImport(t *testing.T) {
 	dbtest.New(t)
 	d := fakeDownloader(t)
-	a, _ := db.AddArtist("Massive Attack")
+	a, _ := db.AddArtist(db.All, "Massive Attack")
 	imp := YouTubeImport{VideoID: "aqz-KE-bpKQ", Title: "Teardrop", ArtistIDs: []string{a.ID.String()}}
 	if err := d.Import(context.Background(), imp); err != nil {
 		t.Fatal(err)

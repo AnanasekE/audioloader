@@ -64,7 +64,7 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
-	if err := Migrate(db); err != nil {
+	if err := migrate(db, backupBeforeMigration(db, "./database.db")); err != nil {
 		panic(err)
 	}
 	DB = db

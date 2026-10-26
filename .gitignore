@@ -4,3 +4,4 @@ database.db-*
 audioloader
 bin/
 tmp/
+database.db.bak-*

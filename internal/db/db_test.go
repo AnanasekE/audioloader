@@ -60,7 +60,7 @@ func TestMergeDuplicateArtists(t *testing.T) {
 	}
 	ids := map[string]string{}
 	for _, name := range []string{"Foo", "foo ", "FOO", "Bar"} {
-		a, err := AddArtist(name)
+		a, err := AddArtist(All, name)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -104,8 +104,8 @@ func TestMergeDuplicateArtists(t *testing.T) {
 	if len(rel.Artists) != 1 || rel.Artists[0].Name != "Foo" {
 		t.Fatalf("release artists = %v", rel.Artists)
 	}
-	if _, err := AddArtist("bar"); !errors.Is(err, ErrArtistExists) {
-		t.Fatalf("AddArtist(bar) err = %v, want ErrArtistExists", err)
+	if _, err := AddArtist(All, "bar"); !errors.Is(err, ErrArtistExists) {
+		t.Fatalf("AddArtist(All, bar) err = %v, want ErrArtistExists", err)
 	}
 }
 
