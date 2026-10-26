@@ -1,8 +1,12 @@
 package components
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
+	"math"
+	"strings"
+	"time"
 
 	"audioloader/internal/audio"
 	"audioloader/internal/db"
@@ -15,9 +19,9 @@ const PageDownloads = "downloads"
 
 // DownloadsPage lists placeholder tracks waiting for their files. ytErr and
 // spErr are why yt-dlp and spotDL are unavailable, or "".
-templ DownloadsPage(active, failed, notFound []*db.Download, ytErr, spErr string) {
+templ DownloadsPage(active, needsPick, failed, notFound []*db.Download, ytErr, spErr string) {
 	@layout("Downloads", PageDownloads) {
-		@pageHeader("Downloads", fmt.Sprintf("%d in progress · %d failed · %d not found", len(active), len(failed), len(notFound))) {
+		@pageHeader("Downloads", fmt.Sprintf("%d in progress · %d need a pick · %d failed · %d not found", len(active), len(needsPick), len(failed), len(notFound))) {
 		}
 		if ytErr != "" {
 			<p class="card mb-6 text-sm">YouTube downloads are off: { ytErr }.</p>
@@ -27,6 +31,11 @@ templ DownloadsPage(active, failed, notFound []*db.Download, ytErr, spErr string
 		}
 		<h2 class="mb-3 text-lg font-semibold">In progress</h2>
 		@DownloadsActive(active)
+		<h2 class="mt-8 mb-1 text-lg font-semibold">Needs a pick</h2>
+		<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+			No other source had these. Pick the right YouTube video; nothing is downloaded from YouTube on a guess.
+		</p>
+		@downloadList(needsPick, false)
 		<h2 class="mt-8 mb-1 text-lg font-semibold">Failed</h2>
 		if len(failed) > 0 {
 			<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
@@ -97,10 +106,11 @@ templ downloadList(list []*db.Download, retry bool) {
 	}
 }
 
-// downloadFix offers the manual ways to get a track's file: a YouTube URL,
-// or uploading the file.
+// downloadFix offers the manual ways to get a track's file: picking a
+// YouTube result, a YouTube URL, or uploading the file.
 templ downloadFix(t *audio.Track) {
 	<div class="flex flex-wrap gap-x-6 gap-y-2">
+		@youTubePickButton(t)
 		<form
 			class="flex flex-wrap items-center gap-2"
 			hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube" }
@@ -167,6 +177,16 @@ templ releaseMissing(r *audio.Release) {
 				<span id="playlist-loading" class="htmx-indicator text-sm text-zinc-500">Reading the playlist…</span>
 			</form>
 			<div id="playlist-mapping" class="mt-4 text-sm"></div>
+			<ul class="mt-4 divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, rt := range r.Tracks {
+					if !rt.Track.HasFile {
+						<li class="py-2">
+							<span class="block truncate text-sm">{ fmt.Sprintf("%d. %s", rt.Position, rt.Track.Title) }</span>
+							@youTubePickButton(rt.Track)
+						</li>
+					}
+				}
+			</ul>
 		</section>
 	}
 }
@@ -292,4 +312,98 @@ templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist,
 			<span id="youtube-import-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
 		</div>
 	</form>
+}
+
+// youTubePickButton opens the top 5 YouTube results for a missing track
+// below itself. The search runs when it is clicked.
+templ youTubePickButton(t *audio.Track) {
+	<div class="w-full">
+		<button
+			type="button"
+			class="btn"
+			hx-get={ "/ui/downloads/" + t.ID.String() + "/youtube/search" }
+			hx-target="next .yt-pick"
+			hx-indicator="next .yt-loading"
+			hx-on::after-request="if (!event.detail.successful) this.parentElement.querySelector('.yt-pick').textContent = event.detail.xhr.responseText"
+			aria-label={ "Pick from YouTube for " + t.Title }
+		>Pick from YouTube</button>
+		<span class="yt-loading htmx-indicator text-sm text-zinc-500">Searching YouTube…</span>
+		<div class="yt-pick mt-2 text-sm text-red-600 dark:text-red-400" aria-live="polite"></div>
+	</div>
+}
+
+// YouTubeCandidates lists YouTube search results for a missing track. The
+// thumbnails are loaded by the browser from YouTube's image host.
+templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
+	<div class="text-zinc-900 dark:text-zinc-100">
+		if len(found) == 0 {
+			<p class="text-zinc-500 dark:text-zinc-400">YouTube found nothing.</p>
+		} else {
+			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, c := range found {
+					<li class="flex flex-wrap items-center gap-3 py-2">
+						<img class="h-14 w-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
+						<span class="min-w-0 flex-1">
+							<span class="block truncate">{ c.Title }</span>
+							<span class="block truncate text-zinc-500 dark:text-zinc-400">
+								{ channelName(c) } · { formatSeconds(c.Duration) }
+								if d := lengthDiff(c.Duration, t.Duration); d != "" {
+									{ " (" + d + ")" }
+								}
+								for _, b := range channelBadges(c) {
+									<span class="ml-1 rounded bg-zinc-200 px-1.5 text-xs dark:bg-zinc-700">{ b }</span>
+								}
+							</span>
+						</span>
+						<span class="flex items-center gap-2">
+							<a class="btn" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
+							<button
+								type="button"
+								class="btn"
+								hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube" }
+								hx-vals={ fmt.Sprintf(`{"video_id": %q}`, c.ID) }
+							>Use this</button>
+						</span>
+					</li>
+				}
+			</ul>
+		}
+		<button type="button" class="btn mt-2" hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube/none" }>None of these</button>
+	</div>
+}
+
+func channelName(e ytdlp.Entry) string {
+	return cmp.Or(e.Channel, e.Uploader, "unknown channel")
+}
+
+// channelBadges marks channels worth trusting: YouTube's auto-generated
+// "- Topic" channels (the album audio), verified and official ones.
+func channelBadges(e ytdlp.Entry) []string {
+	var out []string
+	name := channelName(e)
+	if strings.HasSuffix(name, " - Topic") {
+		out = append(out, "Topic")
+	}
+	if e.ChannelIsVerified {
+		out = append(out, "Verified")
+	} else if strings.Contains(strings.ToLower(name), "official") {
+		out = append(out, "Official")
+	}
+	return out
+}
+
+// lengthDiff is the video's length against the track's, e.g. "+2 s"; ""
+// when the track's length isn't known.
+func lengthDiff(video float64, expected time.Duration) string {
+	if expected <= 0 || video <= 0 {
+		return ""
+	}
+	diff := int(math.Round(video - expected.Seconds()))
+	switch {
+	case diff == 0:
+		return "same length"
+	case diff > 0:
+		return fmt.Sprintf("+%d s", diff)
+	}
+	return fmt.Sprintf("%d s", diff)
 }

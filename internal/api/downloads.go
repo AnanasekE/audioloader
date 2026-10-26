@@ -21,6 +21,11 @@ func getDownloadsPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	needsPick, err := db.ListDownloads(viewer(r), db.DownloadNeedsPick)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
 	failed, err := db.ListDownloads(viewer(r), db.DownloadFailed)
 	if err != nil {
 		serverError(w, err)
@@ -39,7 +44,17 @@ func getDownloadsPage(w http.ResponseWriter, r *http.Request) {
 	if d.SPErr != nil {
 		spErr = d.SPErr.Error()
 	}
-	render(w, r, components.DownloadsPage(active, failed, notFound, ytErr, spErr))
+	render(w, r, components.DownloadsPage(active, needsPick, failed, notFound, ytErr, spErr))
+}
+
+// getDownloadsBadge counts the downloads waiting for a YouTube pick.
+func getDownloadsBadge(w http.ResponseWriter, r *http.Request) {
+	list, err := db.ListDownloads(viewer(r), db.DownloadNeedsPick)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.Badge(len(list)))
 }
 
 func getActiveDownloads(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +83,19 @@ func retryDownload(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/downloads")
 }
 
-// downloadFromYouTube downloads a pasted video into a placeholder track.
+// downloadFromYouTube downloads a pasted video, or a picked one (video_id,
+// from the search results), into a placeholder track. Either way the URL is
+// checked and rebuilt from the video ID.
 func downloadFromYouTube(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
 	if !ok {
 		return
 	}
-	ref, err := ytdlp.Parse(r.FormValue("url"))
+	raw := r.FormValue("url")
+	if vid := r.FormValue("video_id"); vid != "" {
+		raw = ytdlp.VideoURL(vid)
+	}
+	ref, err := ytdlp.Parse(raw)
 	if err != nil || ref.Video == "" {
 		http.Error(w, "paste the URL of one YouTube video", http.StatusBadRequest)
 		return
@@ -87,6 +108,69 @@ func downloadFromYouTube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := downloads.EnqueueVideo(id.String(), ref.Video); err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/downloads")
+}
+
+// searchYouTubeForTrack shows the top 5 YouTube results for a missing
+// track to pick from. It searches when asked, never ahead of time.
+func searchYouTubeForTrack(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	dl, err := db.GetDownload(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if dl.Track.HasFile {
+		http.Error(w, "this track already has a file", http.StatusConflict)
+		return
+	}
+	d := downloads.Default()
+	if d.YT == nil {
+		http.Error(w, d.YTErr.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	query := dl.Track.Title
+	if len(dl.Track.Artists) > 0 {
+		query = dl.Track.Artists[0].Name + " - " + query
+	}
+	found, err := d.YT.Search(r.Context(), query, 5)
+	if err != nil {
+		http.Error(w, "couldn't search YouTube: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	render(w, r, components.YouTubeCandidates(dl.Track, found))
+}
+
+// noYouTubeMatch records that none of the search results fits.
+func noYouTubeMatch(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	dl, err := db.GetDownload(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if dl.Track.HasFile {
+		http.Error(w, "this track already has a file", http.StatusConflict)
+		return
+	}
+	if err := db.SetDownload(id.String(), db.DownloadNotFound, "", 0, ""); err != nil {
 		serverError(w, err)
 		return
 	}

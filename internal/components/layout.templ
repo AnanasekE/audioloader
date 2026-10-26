@@ -112,7 +112,7 @@ templ nav(active string) {
 				@navLink("/artists", "Artists", active == PageArtists)
 				@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
 				@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
-				@navLink("/downloads", "Downloads", active == PageDownloads)
+				@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
 				if vaultOpen(ctx) {
 					<li>
 						<form method="post" action="/vault/lock" hx-boost="false">

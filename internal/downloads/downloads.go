@@ -80,6 +80,12 @@ func Default() *Downloader {
 	return defaultD
 }
 
+// SetDefault replaces the shared downloader; for tests.
+func SetDefault(d *Downloader) {
+	defaultOnce.Do(func() {})
+	defaultD = d
+}
+
 // JobYouTubeImport downloads a YouTube video as a new track.
 const JobYouTubeImport = "youtube_import"
 
