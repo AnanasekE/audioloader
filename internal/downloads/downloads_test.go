@@ -23,9 +23,8 @@ func fakeDownloader(t *testing.T, extra ...sources.Source) *Downloader {
 		t.Fatal(err)
 	}
 	return &Downloader{
-		Sources:  append(extra, ytdlp.Source{C: yt}),
-		Priority: []string{folder.Name, ytdlp.Name},
-		YT:       yt,
+		Sources: append(extra, ytdlp.Source{C: yt}),
+		YT:      yt,
 	}
 }
 

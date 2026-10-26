@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -27,8 +28,6 @@ import (
 // Downloader holds the configured sources.
 type Downloader struct {
 	Sources []sources.Source
-	// Priority orders sources when candidates are otherwise equal.
-	Priority []string
 	// YT is nil when yt-dlp isn't available; YTErr then says why.
 	YT    *ytdlp.Client
 	YTErr error
@@ -40,13 +39,13 @@ var (
 )
 
 // Default is configured from the environment: AUDIOLOADER_WATCH for the
-// watched folder, YTDLP and FFMPEG for yt-dlp, and AUDIOLOADER_SOURCES for
-// the priority (default "folder,yt-dlp").
+// watched folder, YTDLP and FFMPEG for yt-dlp. Sources are tried in the
+// fixed order of sources.Order.
 func Default() *Downloader {
 	defaultOnce.Do(func() {
-		d := &Downloader{Priority: []string{folder.Name, ytdlp.Name}}
-		if p := os.Getenv("AUDIOLOADER_SOURCES"); p != "" {
-			d.Priority = strings.Split(p, ",")
+		d := &Downloader{}
+		if os.Getenv("AUDIOLOADER_SOURCES") != "" {
+			log.Println("downloads: AUDIOLOADER_SOURCES is ignored; sources are tried in a fixed order:", strings.Join(sources.Order, ", "))
 		}
 		if f := folder.FromEnv(); f != nil {
 			d.Sources = append(d.Sources, f)
@@ -104,7 +103,7 @@ func Retry(trackID string) error {
 }
 
 // Run downloads a placeholder track's file: from the given YouTube video,
-// or else the best candidate any source has.
+// or else the best candidate of the first source that has one.
 func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 	dl, err := db.GetDownload(db.All, trackID)
 	if errors.Is(err, db.ErrNotFound) {
@@ -137,24 +136,27 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 		if err := db.SetDownload(trackID, db.DownloadSearching, "", 0, ""); err != nil {
 			return err
 		}
-		var all []sources.Candidate
-		for _, s := range d.Sources {
+		// the first source in order that has anything wins; later (slower)
+		// ones aren't asked
+		ordered := slices.Clone(d.Sources)
+		slices.SortStableFunc(ordered, func(a, b sources.Source) int {
+			return sources.Position(a.Name()) - sources.Position(b.Name())
+		})
+		for _, s := range ordered {
 			found, err := s.Find(ctx, wantFor(dl))
 			if err != nil {
 				log.Printf("downloads: %s: %v", s.Name(), err)
 				continue
 			}
-			all = append(all, found...)
-		}
-		if len(all) == 0 {
-			return db.SetDownload(trackID, db.DownloadNotFound, "", 0, "")
-		}
-		sources.Rank(all, d.Priority)
-		cand = all[0]
-		for _, s := range d.Sources {
-			if s.Name() == cand.Source {
-				src = s
+			if len(found) == 0 {
+				continue
 			}
+			sources.Rank(found)
+			src, cand = s, found[0]
+			break
+		}
+		if src == nil {
+			return db.SetDownload(trackID, db.DownloadNotFound, "", 0, "")
 		}
 	}
 

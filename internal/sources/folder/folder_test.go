@@ -33,7 +33,7 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sources.Rank(cands, nil)
+	sources.Rank(cands)
 	if len(cands) != 2 || !cands[0].Lossless || filepath.Base(cands[0].Ref) != "b.flac" {
 		t.Fatalf("cands = %+v", cands)
 	}

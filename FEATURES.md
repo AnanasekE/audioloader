@@ -57,7 +57,7 @@
 - Daily background check of followed artists' discographies; "Check now"
 - Inbox of releases missing from the library: cover, type, date, tracklist with owned tracks marked; Confirm, Confirm all, Don't ask again
 - Confirming creates the release, its artists and tracklist; owned tracks are linked, the rest become placeholders with queued downloads
-- Download sources, best first (lossless, then bitrate, then `AUDIOLOADER_SOURCES` order): a watched folder (`AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags), yt-dlp from pasted YouTube URLs
+- Download sources, tried in a fixed order (the first with a candidate wins; quality only breaks ties within a source): a watched folder (`AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags), yt-dlp from pasted YouTube URLs
 - Downloads page: progress, failed (with yt-dlp's error), couldn't find; paste a YouTube URL or upload the file by hand
 - Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
 - Import from YouTube: a video or playlist as new tracks, onto a release or as singles

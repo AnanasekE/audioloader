@@ -35,7 +35,6 @@ All optional; set as environment variables.
 | `FPCALC` | Path to `fpcalc`, if it isn't on `PATH`. |
 | `YTDLP`, `FFMPEG` | Paths to `yt-dlp` and `ffmpeg`, if they aren't on `PATH`. Without them YouTube downloads are off. |
 | `AUDIOLOADER_WATCH` | A folder searched for missing tracks (store downloads, free downloads), matched by MusicBrainz ID, ISRC or tags. |
-| `AUDIOLOADER_SOURCES` | Download source priority when quality ties, default `folder,yt-dlp`. |
 | `AUDIOLOADER_SECRET` | bcrypt hash of the vault passphrase; enables secret tracks. Make one with `./audioloader -hash-secret`. |
 
 Data lives in `database.db` (SQLite) and `data/` (track files, covers, the vault's signing key).
