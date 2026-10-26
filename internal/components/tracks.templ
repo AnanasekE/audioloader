@@ -162,6 +162,7 @@ templ trackMenu(t *audio.Track) {
 					hx-get={ "/ui/playlists/picker?track_id=" + t.ID.String() }
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
+				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
 				if vaultOpen(ctx) {
 					<button
 						type="button"
@@ -298,4 +299,51 @@ func secretToggle(t *audio.Track) string {
 		return `{"secret": "0"}`
 	}
 	return `{"secret": "1"}`
+}
+
+// TrackEditPage edits a track's title, artists and secret flag. Only an
+// episode can change kind, and only into a song.
+templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
+	@layout("Edit "+t.Title, PageTracks) {
+		@pageHeader("Edit track", t.Title) {
+			<a class="btn" href="/tracks">Cancel</a>
+		}
+		<form
+			class="card grid max-w-lg gap-4"
+			hx-post={ "/ui/tracks/" + t.ID.String() }
+			hx-target="#track-edit-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('track-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+		>
+			<div>
+				<label for="track-title" class="mb-1 block text-sm font-medium">Title</label>
+				<input id="track-title" class="input" type="text" name="title" value={ t.Title } required/>
+			</div>
+			<div>
+				<span class="mb-1 block text-sm font-medium">Artists</span>
+				@artistPicker(artists, artistIDs(t.Artists))
+			</div>
+			if t.IsEpisode() {
+				<div>
+					<label for="track-kind" class="mb-1 block text-sm font-medium">Kind</label>
+					<select id="track-kind" class="input" name="kind">
+						<option value="episode" selected>Podcast episode</option>
+						<option value="music">Song (needs an artist)</option>
+					</select>
+				</div>
+			} else {
+				<input type="hidden" name="kind" value="music"/>
+			}
+			if vaultOpen(ctx) {
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" name="secret" value="1" checked?={ t.Secret }/>
+					Secret: only shown while the vault is unlocked
+				</label>
+			}
+			<div class="flex items-center gap-4">
+				<button class="btn" type="submit">Save</button>
+				<span id="track-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
+		</form>
+		<script src="/assets/js/artist-picker.js" defer></script>
+	}
 }

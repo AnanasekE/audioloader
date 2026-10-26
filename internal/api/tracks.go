@@ -46,6 +46,76 @@ func getTrack(w http.ResponseWriter, r *http.Request) {
 	render(w, r, components.Track(track))
 }
 
+func getTrackEditPage(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	track, err := db.GetTrack(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	artists, err := db.ListArtists(viewer(r))
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.TrackEditPage(track, artists))
+}
+
+func updateTrack(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok || !visibleTrack(w, r, id.String()) {
+		return
+	}
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		http.Error(w, "title is required", http.StatusBadRequest)
+		return
+	}
+	kind := r.FormValue("kind")
+	if kind != audio.KindMusic && kind != audio.KindEpisode {
+		http.Error(w, "invalid kind", http.StatusBadRequest)
+		return
+	}
+	// artist_id repeats once per selected artist; a song needs one
+	artistIDs := r.Form["artist_id"]
+	if kind == audio.KindMusic && len(artistIDs) == 0 {
+		http.Error(w, "pick at least one artist", http.StatusBadRequest)
+		return
+	}
+	for _, aid := range artistIDs {
+		if _, err := uuid.Parse(aid); err != nil {
+			http.Error(w, "invalid artist id", http.StatusBadRequest)
+			return
+		}
+	}
+	edit := db.TrackEdit{Title: title, Kind: kind, ArtistIDs: artistIDs}
+	if viewer(r).Secret {
+		secret := r.FormValue("secret") == "1"
+		edit.Secret = &secret
+	}
+
+	err := db.UpdateTrack(viewer(r), id.String(), edit)
+	switch {
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case errors.Is(err, db.ErrBadEdit), errors.Is(err, db.ErrBadReference):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tracks")
+}
+
 func addTrack(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("track")
 	if err != nil {

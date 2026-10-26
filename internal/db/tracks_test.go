@@ -65,3 +65,51 @@ func TestAttachFileDuplicate(t *testing.T) {
 		t.Fatalf("got %q, %v; want %q, ErrExists", got, err, existing)
 	}
 }
+
+func TestUpdateTrack(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Old Artist")
+	b, _ := AddArtist("New Artist")
+	id := addTestTrack(t, "Old Title", "audio", a.ID.String())
+
+	err := UpdateTrack(All, id, TrackEdit{Title: "Brand New Title", Kind: audio.KindMusic, ArtistIDs: []string{b.ID.String()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := GetTrack(All, id)
+	if tr.Title != "Brand New Title" || len(tr.Artists) != 1 || tr.Artists[0].ID != b.ID {
+		t.Fatalf("track = %+v", tr)
+	}
+	res, err := Search(All, "brand new", 5)
+	if err != nil || len(res.Tracks) != 1 {
+		t.Fatalf("search new title = %+v, %v", res, err)
+	}
+	if res, _ := Search(All, "old title", 5); len(res.Tracks) != 0 {
+		t.Fatalf("search old title = %+v", res.Tracks)
+	}
+
+	// a song can't become an episode, a bad artist changes nothing
+	if err := UpdateTrack(All, id, TrackEdit{Title: "x", Kind: audio.KindEpisode}); !errors.Is(err, ErrBadEdit) {
+		t.Fatalf("to episode = %v", err)
+	}
+	err = UpdateTrack(All, id, TrackEdit{Title: "x", Kind: audio.KindMusic, ArtistIDs: []string{"nope"}})
+	if !errors.Is(err, ErrBadReference) {
+		t.Fatalf("bad artist = %v", err)
+	}
+	if tr, _ := GetTrack(All, id); tr.Title != "Brand New Title" || len(tr.Artists) != 1 {
+		t.Fatalf("failed edit changed the track: %+v", tr)
+	}
+
+	// a locked viewer can't edit, or even find, a secret track
+	SetSecret(id, true)
+	if err := UpdateTrack(Public, id, TrackEdit{Title: "x", Kind: audio.KindMusic}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("locked edit = %v", err)
+	}
+	off := false
+	if err := UpdateTrack(All, id, TrackEdit{Title: "Brand New Title", Kind: audio.KindMusic, ArtistIDs: []string{b.ID.String()}, Secret: &off}); err != nil {
+		t.Fatal(err)
+	}
+	if tr, _ := GetTrack(Public, id); tr == nil {
+		t.Fatal("still secret")
+	}
+}

@@ -318,3 +318,68 @@ func hiddenFingerprint(v Viewer, fp Fingerprint) (bool, error) {
 	}
 	return secret, err
 }
+
+// ErrBadEdit is returned for a track edit that isn't allowed, e.g. turning a
+// song into an episode (which needs a show).
+var ErrBadEdit = errors.New("that change isn't allowed")
+
+// TrackEdit is what the edit form changes. It never touches the file, the
+// MusicBrainz IDs or the releases.
+type TrackEdit struct {
+	Title     string
+	Kind      string // KindMusic or KindEpisode; an episode can become a song
+	ArtistIDs []string
+	// Secret is applied only for a viewer who unlocked the vault; nil leaves it
+	Secret *bool
+}
+
+// UpdateTrack saves e in one transaction: the track's fields, then its
+// artists, replaced in the order given. The search index is marked stale by
+// the triggers and rebuilt on the next search.
+func UpdateTrack(v Viewer, id string, e TrackEdit) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var kind string
+	err = tx.QueryRow(`SELECT t.kind FROM tracks t WHERE t.uuid = ? AND `+v.trackCond("t")+`;`, id).Scan(&kind)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if e.Kind != kind && !(kind == audio.KindEpisode && e.Kind == audio.KindMusic) {
+		return ErrBadEdit
+	}
+
+	if _, err := tx.Exec(`UPDATE tracks SET title = ?, kind = ? WHERE uuid = ?;`, e.Title, e.Kind, id); err != nil {
+		return err
+	}
+	if e.Kind != kind {
+		// a song belongs to no show
+		if _, err := tx.Exec(`UPDATE tracks SET show_id = NULL, published = NULL WHERE uuid = ?;`, id); err != nil {
+			return err
+		}
+	}
+	if e.Secret != nil && v.Secret {
+		if _, err := tx.Exec(`UPDATE tracks SET secret = ? WHERE uuid = ?;`, *e.Secret, id); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(`DELETE FROM track_artist_map WHERE track_id = ?;`, id); err != nil {
+		return err
+	}
+	for _, artistID := range e.ArtistIDs {
+		_, err := tx.Exec(`INSERT INTO track_artist_map(track_id, artist_id) VALUES(?, ?);`, id, artistID)
+		if isForeignKeyViolation(err) {
+			return ErrBadReference
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
