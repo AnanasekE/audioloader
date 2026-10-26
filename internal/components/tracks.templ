@@ -163,6 +163,12 @@ templ trackMenu(t *audio.Track) {
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
 				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
+				<button
+					type="button"
+					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
+					hx-confirm={ deleteConfirm(t) }
+				>Delete</button>
 				if vaultOpen(ctx) {
 					<button
 						type="button"
@@ -346,4 +352,18 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 		</form>
 		<script src="/assets/js/artist-picker.js" defer></script>
 	}
+}
+
+// deleteConfirm is the text of the delete dialog: it names the track and the
+// releases it will disappear from.
+func deleteConfirm(t *audio.Track) string {
+	msg := "Delete " + t.Title + " and its file?"
+	if len(t.Releases) > 0 {
+		titles := make([]string, len(t.Releases))
+		for i, r := range t.Releases {
+			titles[i] = r.Title
+		}
+		msg += " It will be removed from " + strings.Join(titles, ", ") + "."
+	}
+	return msg
 }

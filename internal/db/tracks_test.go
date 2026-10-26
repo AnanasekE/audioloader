@@ -3,8 +3,10 @@ package db
 import (
 	"bytes"
 	"errors"
+	"os"
 	"testing"
 	"time"
+	"uuid"
 
 	"audioloader/internal/audio"
 )
@@ -111,5 +113,63 @@ func TestUpdateTrack(t *testing.T) {
 	}
 	if tr, _ := GetTrack(Public, id); tr == nil {
 		t.Fatal("still secret")
+	}
+}
+
+func TestDeleteTrack(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Artist")
+	r, _ := CreateRelease("Album", audio.ReleaseAlbum, "", []string{a.ID.String()})
+	one := addTestTrack(t, "One", "one", a.ID.String())
+	two := addTestTrack(t, "Two", "two", a.ID.String())
+	three := addTestTrack(t, "Three", "three", a.ID.String())
+	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{one, 1}, {two, 1}, {three, 1}}); err != nil {
+		t.Fatal(err)
+	}
+	p, _ := CreatePlaylist("Mix")
+	if err := SetPlaylistTracks(All, p.ID.String(), []string{two, three}); err != nil {
+		t.Fatal(err)
+	}
+	SavePosition(two, 5, false)
+	SaveMatches(two, []Match{{Source: "search", Score: 0.7, RecordingID: "rec", Title: "Two"}}, TagReview)
+	path, err := TrackFilePath(uuid.MustParse(two))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := DeleteTrack(All, two); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("file still there: %v", err)
+	}
+	if _, err := GetTrack(All, two); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("track = %v", err)
+	}
+	for _, q := range []string{
+		`SELECT COUNT(*) FROM release_tracks WHERE track_id = '` + two + `'`,
+		`SELECT COUNT(*) FROM playlist_tracks WHERE track_id = '` + two + `'`,
+		`SELECT COUNT(*) FROM playback_positions WHERE track_id = '` + two + `'`,
+		`SELECT COUNT(*) FROM tag_matches WHERE track_id = '` + two + `'`,
+		`SELECT COUNT(*) FROM track_artist_map WHERE track_id = '` + two + `'`,
+	} {
+		var n int
+		if err := DB.QueryRow(q).Scan(&n); err != nil || n != 0 {
+			t.Errorf("%s = %d, %v", q, n, err)
+		}
+	}
+
+	// the others keep their places; the release stays
+	rel, _ := GetRelease(All, r.ID.String())
+	if len(rel.Tracks) != 2 || rel.Tracks[0].Position != 1 || rel.Tracks[1].Position != 3 {
+		t.Fatalf("release tracks = %+v", rel.Tracks)
+	}
+	if err := DeleteTrack(All, two); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("second delete = %v", err)
+	}
+	// a locked viewer can't delete a secret track
+	SetSecret(three, true)
+	if err := DeleteTrack(Public, three); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("locked delete = %v", err)
 	}
 }

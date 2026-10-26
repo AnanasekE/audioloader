@@ -383,3 +383,36 @@ func UpdateTrack(v Viewer, id string, e TrackEdit) error {
 	}
 	return tx.Commit()
 }
+
+// DeleteTrack removes a track, its audio file and everything that points at
+// it. The foreign keys cascade to its releases' slots, playlist entries,
+// playback position, chapters, download and tagging rows; the other tracks
+// on its releases keep their numbers. Queued jobs for it are dropped too.
+// The file goes after the commit, so a failed delete never loses audio.
+func DeleteTrack(v Viewer, id string) error {
+	tid, err := uuid.Parse(id)
+	if err != nil {
+		return ErrNotFound
+	}
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`DELETE FROM tracks WHERE uuid = ? AND `+v.trackCond("tracks")+`;`, id)
+	if err := expectRow(res, err); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM jobs WHERE status = 'queued' AND instr(payload, ?) > 0;`, id); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// the track is gone either way; a leftover file is only wasted space
+	if path, err := TrackFilePath(tid); err == nil {
+		os.Remove(path)
+	}
+	return nil
+}

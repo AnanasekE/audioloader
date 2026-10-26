@@ -116,6 +116,23 @@ func updateTrack(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/tracks")
 }
 
+func deleteTrack(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	err := db.DeleteTrack(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, backTo(r, "/tracks"))
+}
+
 func addTrack(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("track")
 	if err != nil {
