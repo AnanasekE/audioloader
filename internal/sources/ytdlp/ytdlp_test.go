@@ -81,3 +81,26 @@ func TestDownload(t *testing.T) {
 		t.Fatal("failed download returned no error")
 	}
 }
+
+func TestSearch(t *testing.T) {
+	c := fake(t)
+	res, err := c.Search(context.Background(), "Massive Attack - Teardrop", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// the private video is dropped; the rest keep yt-dlp's order
+	if len(res) != 5 || res[0].ID != "aqz-KE-bpKQ" || !res[0].ChannelIsVerified || res[1].Channel != "Massive Attack - Topic" || res[1].ChannelIsVerified {
+		t.Fatalf("results = %+v", res)
+	}
+	if res[2].Duration != 243 || res[0].Thumbnail != "https://i.ytimg.com/vi/aqz-KE-bpKQ/mqdefault.jpg" {
+		t.Fatalf("results = %+v", res)
+	}
+	if res, _ := c.Search(context.Background(), "x", 2); len(res) != 2 {
+		t.Fatalf("limit ignored: %d results", len(res))
+	}
+	for _, bad := range []string{"", "  \n "} {
+		if _, err := c.Search(context.Background(), bad, 5); err == nil {
+			t.Errorf("Search(%q) accepted", bad)
+		}
+	}
+}

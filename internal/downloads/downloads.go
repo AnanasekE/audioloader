@@ -178,6 +178,11 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 			break
 		}
 		if src == nil {
+			// YouTube is never used on a guess: with yt-dlp around, the user
+			// gets to pick from its search results
+			if d.YT != nil {
+				return db.SetDownload(trackID, db.DownloadNeedsPick, "", 0, "")
+			}
 			return db.SetDownload(trackID, db.DownloadNotFound, "", 0, "")
 		}
 	}
@@ -275,8 +280,9 @@ func wantFor(dl *db.Download) sources.Want {
 	return w
 }
 
-// Schedule looks again for "not found" downloads once a day, when a
-// watched folder is set up (files may have been added to it since).
+// Schedule looks again for "not found" and "needs a pick" downloads once a
+// day, when a watched folder is set up (files may have been added to it
+// since).
 func Schedule(ctx context.Context) {
 	for {
 		select {
@@ -287,7 +293,7 @@ func Schedule(ctx context.Context) {
 		if os.Getenv("AUDIOLOADER_WATCH") == "" {
 			continue
 		}
-		missing, err := db.ListDownloads(db.All, db.DownloadNotFound)
+		missing, err := db.ListDownloads(db.All, db.DownloadNotFound, db.DownloadNeedsPick)
 		if err != nil {
 			log.Println("downloads:", err)
 			continue

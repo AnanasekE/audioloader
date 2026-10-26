@@ -151,6 +151,11 @@ type Entry struct {
 	Channel  string  `json:"channel"`
 	Uploader string  `json:"uploader"`
 	ABR      float64 `json:"abr"` // audio bitrate, kbit/s; only for single videos
+	// ChannelIsVerified is set for verified channels (search results)
+	ChannelIsVerified bool `json:"channel_is_verified"`
+	// Thumbnail is set by Search, from the video ID: a picture on YouTube's
+	// image host, for the browser to load
+	Thumbnail string `json:"-"`
 }
 
 // Info is what yt-dlp knows about a URL: a video, or a playlist whose ID
@@ -171,10 +176,35 @@ func (i *Info) Videos() []Entry {
 
 // Info fetches the metadata of a video or playlist without downloading.
 func (c *Client) Info(ctx context.Context, canonicalURL string) (*Info, error) {
+	return c.info(ctx, canonicalURL)
+}
+
+// Search returns up to n YouTube results for query (best match first),
+// without downloading. The query goes after "--" as one argument behind the
+// ytsearch prefix, so it can't be read as an option.
+func (c *Client) Search(ctx context.Context, query string, n int) ([]Entry, error) {
+	query = strings.Join(strings.Fields(query), " ")
+	if query == "" || n < 1 || n > 20 {
+		return nil, errors.New("yt-dlp: bad search")
+	}
+	info, err := c.info(ctx, "ytsearch"+strconv.Itoa(n)+":"+query)
+	if err != nil {
+		return nil, err
+	}
+	if len(info.Entries) > n {
+		info.Entries = info.Entries[:n]
+	}
+	for i := range info.Entries {
+		info.Entries[i].Thumbnail = "https://i.ytimg.com/vi/" + info.Entries[i].ID + "/mqdefault.jpg"
+	}
+	return info.Entries, nil
+}
+
+func (c *Client) info(ctx context.Context, arg string) (*Info, error) {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	var stderr bytes.Buffer
-	cmd := exec.CommandContext(ctx, c.Bin, "-J", "--flat-playlist", "--no-warnings", "--", canonicalURL)
+	cmd := exec.CommandContext(ctx, c.Bin, "-J", "--flat-playlist", "--no-warnings", "--", arg)
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {

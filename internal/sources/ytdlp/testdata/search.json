@@ -1,0 +1,65 @@
+{
+ "id": "Massive Attack - Teardrop",
+ "title": "Massive Attack - Teardrop",
+ "_type": "playlist",
+ "entries": [
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "aqz-KE-bpKQ",
+   "title": "Massive Attack - Teardrop (Official Video)",
+   "duration": 331,
+   "channel": "Massive Attack",
+   "uploader": "Massive Attack",
+   "channel_is_verified": true,
+   "view_count": 120000000
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "u7qY1uQ2l0w",
+   "title": "Teardrop",
+   "duration": 330,
+   "channel": "Massive Attack - Topic",
+   "uploader": "Massive Attack - Topic",
+   "channel_is_verified": false
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "Kq3xJ7mP9sE",
+   "title": "Massive Attack - Teardrop (Radio Edit)",
+   "duration": 243,
+   "channel": "SomeFan",
+   "uploader": "SomeFan"
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "Zx9cV2bN4mA",
+   "title": "Teardrop - Massive Attack (lyrics)",
+   "duration": 333,
+   "channel": "Lyric Archive",
+   "uploader": "Lyric Archive"
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "Lp0oI8uY6tR",
+   "title": "[Private video]",
+   "duration": null,
+   "channel": null
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "Mn5bV7cX1zQ",
+   "title": "Massive Attack Teardrop slowed",
+   "duration": 400,
+   "channel": "Slowed Songs",
+   "uploader": "Slowed Songs"
+  }
+ ],
+ "webpage_url": "https://www.youtube.com/results?search_query=Massive+Attack+-+Teardrop",
+ "extractor": "youtube:search"
+}

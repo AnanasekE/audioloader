@@ -1,6 +1,6 @@
 #!/bin/sh
 # Stands in for yt-dlp in tests: -J prints fixture JSON, otherwise it
-# "downloads" testdata/audio.opus to the -o template's directory.
+# "downloads" testdata/audio.opus (a ytsearchN: query gets search.json) to the -o template's directory.
 here=$(dirname "$0")
 url=""
 out=""
@@ -16,6 +16,7 @@ while [ $# -gt 0 ]; do
 done
 if [ "$json" = 1 ]; then
 	case "$url" in
+		ytsearch*) cat "$here/search.json" ;;
 		*playlist*) cat "$here/playlist.json" ;;
 		*) cat "$here/video.json" ;;
 	esac

@@ -93,11 +93,11 @@ func TestRunFailures(t *testing.T) {
 	d := fakeDownloader(t)
 	_, ph := confirmedRelease(t, "Angel")
 
-	// no source has it
+	// no source has it, and YouTube waits for a pick
 	if err := d.Run(context.Background(), ph[0], ""); err != nil {
 		t.Fatal(err)
 	}
-	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNotFound {
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNeedsPick {
 		t.Fatalf("status = %s", dl.Status)
 	}
 	// yt-dlp fails
@@ -106,6 +106,76 @@ func TestRunFailures(t *testing.T) {
 	}
 	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadFailed || dl.LastError == "" {
 		t.Fatalf("download = %+v", dl)
+	}
+}
+
+// TestRunSourceOrder covers who wins when several sources have a track.
+func TestRunSourceOrder(t *testing.T) {
+	dbtest.New(t)
+	log := filepath.Join(t.TempDir(), "calls")
+	t.Setenv("FAKE_SPOTDL_LOG", log)
+	dir := t.TempDir()
+	data, _ := os.ReadFile("../tags/testdata/tagged.flac")
+	os.WriteFile(filepath.Join(dir, "teardrop.flac"), data, 0o644)
+	d := fakeDownloader(t, &folder.Source{Dir: dir})
+	_, ph := confirmedRelease(t, "Teardrop", "Angel")
+	db.DB.Exec(`UPDATE tracks SET mbid = 'f3bba4cd-8018-468b-902e-bc8f029593e5' WHERE uuid = ?;`, ph[0])
+	db.DB.Exec(`UPDATE tracks SET spotify_url = 'https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb' WHERE uuid IN (?, ?);`, ph[0], ph[1])
+	status := func(id string) *db.Download {
+		dl, err := db.GetDownload(db.All, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return dl
+	}
+
+	// folder wins over spotDL, which isn't even asked
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl := status(ph[0]); dl.Source != folder.Name || dl.Status != db.DownloadDone {
+		t.Fatalf("download = %+v", dl)
+	}
+	if b, _ := os.ReadFile(log); len(b) != 0 {
+		t.Fatalf("spotdl ran: %q", b)
+	}
+	// spotDL wins over YouTube
+	if err := d.Run(context.Background(), ph[1], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl := status(ph[1]); dl.Source != spotdl.Name || dl.Status != db.DownloadDone {
+		t.Fatalf("download = %+v", dl)
+	}
+}
+
+func TestRunNeedsPick(t *testing.T) {
+	dbtest.New(t)
+	_, ph := confirmedRelease(t, "Angel", "Inertia Creeps")
+
+	// only YouTube is left: wait for a pick
+	d := fakeDownloader(t)
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNeedsPick || dl.Track.HasFile {
+		t.Fatalf("download = %+v", dl)
+	}
+	// the pick runs like a pasted URL
+	if err := d.Run(context.Background(), ph[0], "AAAAAAAAAA1"); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadDone || dl.Source != ytdlp.Name {
+		t.Fatalf("download = %+v", dl)
+	}
+
+	// without yt-dlp there is nothing to pick from
+	d.YT, d.YTErr = nil, ytdlp.ErrUnavailable
+	d.Sources = d.Sources[:len(d.Sources)-1]
+	if err := d.Run(context.Background(), ph[1], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[1]); dl.Status != db.DownloadNotFound {
+		t.Fatalf("status = %s", dl.Status)
 	}
 }
 
@@ -156,7 +226,7 @@ func TestRunFromSpotdl(t *testing.T) {
 	if err := d.Run(context.Background(), ph[0], ""); err != nil {
 		t.Fatal(err)
 	}
-	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNotFound {
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNeedsPick {
 		t.Fatalf("status = %s", dl.Status)
 	}
 }

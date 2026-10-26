@@ -16,6 +16,8 @@ const (
 	DownloadDone        = "done"
 	DownloadNotFound    = "not_found"
 	DownloadFailed      = "failed"
+	// DownloadNeedsPick: only YouTube results are left, waiting for a choice
+	DownloadNeedsPick = "needs_pick"
 )
 
 // Download is a placeholder track waiting for its file.
