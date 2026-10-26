@@ -9,7 +9,7 @@ import (
 	"audioloader/internal/dbtest"
 )
 
-func TestTrackEditHiddenWhileLocked(t *testing.T) {
+func TestHiddenWhileLocked(t *testing.T) {
 	dbtest.New(t)
 	ids := secretLibrary(t)
 	mux := http.NewServeMux()
@@ -28,6 +28,17 @@ func TestTrackEditHiddenWhileLocked(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("save = %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/artists/"+ids["hidden artist"], nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("hidden artist page = %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/artists/"+ids["public artist"], nil))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Mixed") {
+		t.Fatalf("artist page = %d", rec.Code)
 	}
 
 	rec = httptest.NewRecorder()

@@ -65,7 +65,7 @@ templ artistPicker(artists []*audio.Artist, selected []string) {
 templ Artist(a *audio.Artist) {
 	<article class="card flex flex-col items-center gap-2 px-2 py-4 text-center">
 		<img class="pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900" src={ a.ImgURL } alt=""/>
-		<span class="truncate">{ a.Name }</span>
+		<a class="block max-w-full truncate" href={ artistURL(a) }>{ a.Name }</a>
 		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
 		<a class="text-sm" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
 			if a.Followed {
@@ -88,5 +88,71 @@ templ ArtistList(artists []*audio.Artist) {
 				@Artist(artist)
 			}
 		</div>
+	}
+}
+
+func artistURL(a *audio.Artist) templ.SafeURL {
+	return templ.SafeURL("/artists/" + a.ID.String())
+}
+
+// artistLinks lists artist names, each linking to the artist's page.
+templ artistLinks(artists []*audio.Artist) {
+	for i, a := range artists {
+		if i > 0 {
+			{ ", " }
+		}
+		<a href={ artistURL(a) }>{ a.Name }</a>
+	}
+}
+
+// ArtistPage shows an artist with their releases by type, then the tracks
+// that aren't on any of those releases.
+templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track) {
+	@layout(a.Name, PageArtists) {
+		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
+			<div class="min-w-0">
+				<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Artist</p>
+				<h1 class="text-4xl font-bold tracking-tight">{ a.Name }</h1>
+				<p class="mt-1 text-sm">
+					if a.MBID != "" {
+						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
+						{ " · " }
+					}
+					<a href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
+						if a.Followed {
+							Following
+						} else {
+							Follow releases
+						}
+					</a>
+					{ " · " }
+					<a href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
+				</p>
+			</div>
+		</div>
+		if len(releases) == 0 && len(tracks) == 0 {
+			@emptyState() {
+				Nothing by this artist yet.
+			}
+		}
+		for _, typ := range audio.ReleaseTypes {
+			if rs := releasesOfType(releases, typ); len(rs) > 0 {
+				<section class="mb-10">
+					<h2 class="mb-4 text-xl font-semibold">{ pluralLabel(typ) }</h2>
+					if typ == audio.ReleaseSingle {
+						@singleList(rs)
+					} else {
+						@releaseGrid(rs)
+					}
+				</section>
+			}
+		}
+		if len(tracks) > 0 {
+			<section class="mb-10">
+				<h2 class="mb-4 text-xl font-semibold">Other tracks</h2>
+				@TrackList(tracks)
+			</section>
+		}
 	}
 }

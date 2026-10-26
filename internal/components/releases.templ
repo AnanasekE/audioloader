@@ -167,7 +167,9 @@ templ albumView(r *audio.Release) {
 		<div class="min-w-0">
 			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{ r.Type.Label() }</p>
 			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
-			<p class="mt-1">{ artistNames(r.Artists) }</p>
+			<p class="mt-1">
+				@artistLinks(r.Artists)
+			</p>
 			<p class="text-sm text-zinc-500 dark:text-zinc-400">{ releaseFacts(r) }</p>
 			@releaseActions(r)
 		</div>
@@ -203,7 +205,9 @@ templ singleView(r *audio.Release) {
 		<div class="min-w-0">
 			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Single</p>
 			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
-			<p class="mt-1">{ artistNames(r.Artists) }</p>
+			<p class="mt-1">
+				@artistLinks(r.Artists)
+			</p>
 			if r.Date != "" {
 				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Date }</p>
 			}

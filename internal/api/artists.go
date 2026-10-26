@@ -38,6 +38,33 @@ func createArtist(w http.ResponseWriter, r *http.Request) {
 	render(w, r, components.Notice("Added "+name+"."))
 }
 
+func getArtistPage(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "artist_id")
+	if !ok {
+		return
+	}
+	artist, err := db.GetArtist(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	releases, err := db.ListArtistReleases(viewer(r), id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	tracks, err := db.ListArtistTracks(viewer(r), id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.ArtistPage(artist, releases, tracks))
+}
+
 func getArtists(w http.ResponseWriter, r *http.Request) {
 	artists, err := db.ListArtists(viewer(r))
 	if err != nil {

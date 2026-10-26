@@ -39,6 +39,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /playlists/{playlist_id}/edit", getPlaylistPage)
 	handle(mux, "GET /downloads", getDownloadsPage)
 	handle(mux, "GET /upload/youtube", getYouTubeImportPage)
+	handle(mux, "GET /artists/{artist_id}", getArtistPage)
 	handle(mux, "GET /artists/{artist_id}/follow", getFollowPage)
 
 	handle(mux, "POST /ui/artists", createArtist)

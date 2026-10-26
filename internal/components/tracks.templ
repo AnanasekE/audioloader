@@ -138,7 +138,7 @@ templ Track(t *audio.Track) {
 				}
 			</strong>
 			<span class="truncate text-sm text-zinc-500 dark:text-zinc-400">
-				{ artistNames(t.Artists) }
+				@artistLinks(t.Artists)
 				@trackReleaseLabel(t)
 			</span>
 		</div>
