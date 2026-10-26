@@ -298,6 +298,40 @@ func ListArtistReleases(v Viewer, artistID string) ([]*audio.Release, error) {
 	return releases, attachReleaseArtists(releases)
 }
 
+// ListCoveredBy returns the library tracks that cover one of the artist's
+// songs, by anyone, best known first by title. Originals the viewer can't
+// see don't count.
+func ListCoveredBy(v Viewer, artistID string) ([]*audio.Track, error) {
+	rows, err := DB.Query(selectTrack+` JOIN tracks o ON o.uuid = t.original_track_id
+		WHERE `+libraryTracks+` AND `+v.trackCond("t")+` AND `+v.trackCond("o")+`
+		AND o.uuid IN (SELECT track_id FROM track_artist_map WHERE artist_id = ?)
+		ORDER BY t.title COLLATE NOCASE;`, artistID)
+	if err != nil {
+		return nil, err
+	}
+	tracks := make([]*audio.Track, 0)
+	for rows.Next() {
+		t, err := scanTrack(rows)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		tracks = append(tracks, t)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+	if err := attachArtists(tracks); err != nil {
+		return nil, err
+	}
+	if err := attachReleases(tracks); err != nil {
+		return nil, err
+	}
+	return tracks, attachCovers(v, tracks)
+}
+
 // ListArtistTracks returns the library tracks credited to an artist that
 // are on none of the artist's own releases, e.g. features on other
 // artists' albums.

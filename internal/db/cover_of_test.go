@@ -149,3 +149,59 @@ func TestSetCover(t *testing.T) {
 	}
 	check("")
 }
+
+func TestCoverSearchAndCoveredBy(t *testing.T) {
+	newTestDB(t)
+	orig, _ := AddArtist("Massive Attack")
+	cov, _ := AddArtist("Cover Artist")
+	original := addTestTrack(t, "Teardrop", "orig", orig.ID.String())
+	linked := addTestTrack(t, "Linked Cover", "a", cov.ID.String())
+	text := addTestTrack(t, "Text Cover", "b", cov.ID.String())
+	for _, e := range []struct {
+		id    string
+		title string
+		c     CoverEdit
+	}{
+		{linked, "Linked Cover", CoverEdit{TrackID: original}},
+		{text, "Text Cover", CoverEdit{Title: "Karma Police", Artists: "Radiohead"}},
+	} {
+		if err := UpdateTrack(All, e.id, TrackEdit{Title: e.title, Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}, Cover: &e.c}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	found := func(q string) string {
+		res, err := Search(Public, q, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return titles(res.Tracks)
+	}
+	if got := found("karma police"); got != "Text Cover" {
+		t.Errorf("search text original = %q", got)
+	}
+	if got := found("radiohead"); got != "Text Cover" {
+		t.Errorf("search text original artist = %q", got)
+	}
+	// the title column outweighs the original column
+	if got := found("teardrop"); got != "Teardrop,Linked Cover" {
+		t.Errorf("search linked original = %q", got)
+	}
+
+	covers, err := ListCoveredBy(Public, orig.ID.String())
+	if err != nil || len(covers) != 1 || covers[0].Title != "Linked Cover" || covers[0].CoverOf == nil {
+		t.Fatalf("covered by = %v, %v", titles(covers), err)
+	}
+	if covers, _ := ListCoveredBy(Public, cov.ID.String()); len(covers) != 0 {
+		t.Errorf("covered by the cover artist = %v", titles(covers))
+	}
+
+	// a secret original: neither found through its covers nor listed
+	SetSecret(original, true)
+	if got := found("teardrop"); got != "" {
+		t.Errorf("secret original found: %q", got)
+	}
+	if covers, _ := ListCoveredBy(Public, orig.ID.String()); len(covers) != 0 {
+		t.Errorf("secret original covered by %v", titles(covers))
+	}
+}

@@ -36,7 +36,7 @@ func Search(v Viewer, q string, limit int) (*SearchResults, error) {
 	for _, kind := range []string{"track", "release", "artist", "show"} {
 		rows, err := DB.Query(`
 			SELECT ref FROM search WHERE search MATCH ? AND kind = ? AND (secret = 0 OR ?)
-			ORDER BY bm25(search, 0, 0, 0, 10, 3) LIMIT ?;`, match, kind, v.Secret, limit)
+			ORDER BY bm25(search, 0, 0, 0, 10, 3, 1) LIMIT ?;`, match, kind, v.Secret, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -121,8 +121,14 @@ func refreshSearch() error {
 	defer tx.Rollback()
 	stmts := []string{
 		`DELETE FROM search;`,
-		`INSERT INTO search(kind, ref, secret, title, artists)
-			SELECT 'track', t.uuid, t.secret, t.title, COALESCE(group_concat(a.name, ' '), '')
+		// original: what a cover is of, so searching the original finds covers. A
+		// secret original in the library is left out, or its name would find the cover.
+		`INSERT INTO search(kind, ref, secret, title, artists, original)
+			SELECT 'track', t.uuid, t.secret, t.title, COALESCE(group_concat(a.name, ' '), ''),
+				CASE WHEN t.original_track_id IS NOT NULL THEN COALESCE((
+					SELECT o.title || ' ' || COALESCE((SELECT group_concat(oa.name, ' ') FROM track_artist_map om JOIN artists oa ON oa.uuid = om.artist_id WHERE om.track_id = o.uuid), '')
+					FROM tracks o WHERE o.uuid = t.original_track_id AND o.secret = 0), '')
+				ELSE trim(COALESCE(t.original_title, '') || ' ' || COALESCE(t.original_artists, '')) END
 			FROM tracks t
 			LEFT JOIN track_artist_map m ON m.track_id = t.uuid
 			LEFT JOIN artists a ON a.uuid = m.artist_id

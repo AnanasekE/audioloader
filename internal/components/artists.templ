@@ -108,8 +108,8 @@ templ artistLinks(artists []*audio.Artist) {
 }
 
 // ArtistPage shows an artist with their releases by type, then the tracks
-// that aren't on any of those releases.
-templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, others []*audio.Artist, twitchOn bool) {
+// that aren't on any of those releases, then the covers of their songs.
+templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, covers []*audio.Track, others []*audio.Artist, twitchOn bool) {
 	@layout(a.Name, PageArtists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
 			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
@@ -143,7 +143,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			@artistLinkSection(a)
 		}
 		@artistManageForm(a, others)
-		if len(releases) == 0 && len(tracks) == 0 {
+		if len(releases) == 0 && len(tracks) == 0 && len(covers) == 0 {
 			@emptyState() {
 				Nothing by this artist yet.
 			}
@@ -164,6 +164,12 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			<section class="mb-10">
 				<h2 class="mb-4 text-xl font-semibold">Other tracks</h2>
 				@TrackList(tracks)
+			</section>
+		}
+		if len(covers) > 0 {
+			<section class="mb-10">
+				<h2 class="mb-4 text-xl font-semibold">Covered by</h2>
+				@TrackList(covers)
 			</section>
 		}
 	}

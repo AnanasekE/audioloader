@@ -255,6 +255,18 @@ var migrations = []func(tx *sql.Tx) error{
 			ALTER TABLE tracks ADD COLUMN original_mbid TEXT;    -- MusicBrainz recording ID`)
 		return err
 	},
+	// 16: the search index gets a column for the original of a cover, ranked
+	// below the title and artists; rebuilt like in 11
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			DROP TABLE search;
+			CREATE VIRTUAL TABLE search USING fts5(
+				kind UNINDEXED, ref UNINDEXED, secret UNINDEXED, title, artists, original,
+				tokenize = 'unicode61 remove_diacritics 2'
+			);
+			UPDATE search_state SET dirty = 1;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.
