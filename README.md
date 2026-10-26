@@ -43,7 +43,7 @@ All optional; set as environment variables.
 
 Missing tracks are looked up in a fixed order, and the first source that has one wins: your own files (`AUDIOLOADER_WATCH`, or an upload), then spotDL, then YouTube. spotDL uses a Spotify link from MusicBrainz when the release or track has one, else a search whose title and length must match. YouTube is never used on a guess: the top 5 results wait on the Downloads page for you to pick one.
 
-Data lives in `database.db` (SQLite) and `data/` (track files, covers, the vault's signing key).
+Data lives in `database.db` (SQLite) and `data/` (track files, covers, pictures, the vault's signing key). Before a migration that deletes data, the app copies the database to `database.db.bak-<migration number>` (once) and logs what it removes.
 
 ## Development
 

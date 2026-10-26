@@ -10,11 +10,12 @@
 **Never name the secret source's site** in code, comments, tests, plans, fixtures or commit messages. It's configured privately and always called "the secret source".
 
 ## Decisions
-- **Background pages are normal-mode only.** Inbox, Downloads, Tagging and Follow don't exist in secret mode (their nav links are hidden, the routes return 404). Secret tracks are never tagged or matched, and secret downloads finish in the request flow below, so nothing would be on those pages.
+- **Background pages are normal-mode only.** Inbox, Downloads, Tagging, Follow, the YouTube imports and the release cover and MusicBrainz link tools don't exist in secret mode (their nav links are hidden, the routes return 404). Secret tracks are never tagged or matched, and secret downloads are their own job that no page lists, so nothing would be on those pages.
 - **No releases for secret tracks.** Making a track secret removes it from its releases (with a confirm dialog that lists them). Making it public again leaves it without a release; "Turn tracks without a release into singles" can follow later.
 - **Existing data:** one migration removes `release_tracks` rows of secret tracks and deletes releases left with only secret tracks (the tracks stay). It can't be undone: the migration first copies `database.db` to `database.db.bak-<version>`, and logs each removed release.
 
 ## Schema (one migration, after the cleanup above)
+Built as migration 18 (the cleanup) and 19 (this schema). Besides what is shown, 19 adds `artists.secret` and `shows.secret` (created in secret mode; such an artist or show stays hidden from normal mode until it has a track, so a creator added before its first upload doesn't show up there), and recreates the search index with a `modes` bit mask (1 normal, 2 secret) in place of `secret`.
 ```sql
 ALTER TABLE tracks ADD COLUMN description TEXT;
 ALTER TABLE tracks ADD COLUMN image TEXT;          -- per-track picture in data/, secret tracks only

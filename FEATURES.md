@@ -16,7 +16,7 @@
 - Release covers (JPEG, PNG, WebP); tracks show the cover of their album, else EP, single, compilation
 - Unique artist names (case-insensitive); existing duplicates merged
 - Placeholder tracks: known from a tracklist, shown greyed out until their file is added
-- Edit a track (title, artists, secret flag; an episode can become a song) from its menu; search follows the new title
+- Edit a track (title, artists; an episode can become a song) from its menu; search follows the new title
 - Delete a track from its menu, with a confirm dialog naming its releases; its file, playlist entries, positions, downloads and tagging rows go with it, the releases stay
 - Artist pages (`/artists/<id>`): picture, MusicBrainz link, follow status, releases by type, and tracks not on any of their releases; artist names in track rows and on release pages link there
 - Artist profile pictures (JPEG, PNG, WebP, checked by content), "Remove picture" returns to the default
@@ -94,15 +94,21 @@
 - Player for episodes: −15 s / +30 s, speed 0.8–2× remembered per show, pitch kept
 - Chapters from ID3 CHAP frames and MP4 Nero chapters: list to jump to, current chapter under the title
 
-### Secret tracks
+### Secret mode
 
-- Mark tracks secret (track menu, or a checkbox on single, batch, import and episode uploads); only shown while the vault is unlocked
-- Vault at `/vault`: passphrase whose bcrypt hash is `AUDIOLOADER_SECRET` (`audioloader -hash-secret` makes one); signed, HttpOnly, SameSite=Strict cookie for 12 hours; Lock in the nav
-- Locked viewers don't see secret tracks anywhere: lists, releases (renumbered without gaps), artists, shows and releases made up only of them, search, playlists, counts, positions, chapters, downloads, tagging, the stream, the duplicate check (a generic error instead of "already exists")
-- Saving a tracklist or playlist while locked keeps the hidden tracks in their places
-- The player drops secret tracks from its saved state on a locked page
-- Secret tracks are never auto-tagged or matched as owned in the inbox
-- A test requests every GET route while locked and fails on any trace of a secret track
+- Vault at `/vault`: passphrase whose bcrypt hash is `AUDIOLOADER_SECRET` (`audioloader -hash-secret` makes one); signed, HttpOnly, SameSite=Strict cookie for 12 hours. Unlocking switches the whole app into secret mode; Lock in the nav returns to normal mode
+- Two modes, never mixed: normal mode shows only normal tracks, secret mode only secret ones. Tracks, artists, shows, playlists, search, continue listening, counts, positions, chapters and the stream all follow the mode, and so does the duplicate check (a file on the other side gives a generic "upload failed")
+- A release, artist or show belongs to a mode when it has a track of that mode; an empty one belongs to normal mode, except an artist or show made in secret mode, which waits there for its first track. A playlist belongs to the mode it was created in and takes only that mode's tracks
+- Secret tracks are simpler: on no release, no "Cover of", never auto-tagged or matched as owned in the inbox. They have creators, a description, tags and an optional picture (JPEG, PNG, WebP; a placeholder otherwise)
+- Secret mode's track list sorts by date added (default), creator or tag
+- Releases, Inbox, Tagging, Downloads, Follow, "From YouTube" and the other background pages don't exist in secret mode: no nav link, and the routes answer 404
+- Another look in secret mode: violet accent, a "Secret" badge in the nav
+- Uploads in secret mode (single, batch, import, episodes) create secret tracks; the server sets the flag from the mode, never from the form. The forms show title, creators, description and tags, with no release controls
+- "Make secret" / "Make public" in the track menu moves a track to the other mode. Going secret takes it off its releases (the confirm dialog lists them; a release left empty is deleted) and off playlists of the other mode; going public leaves it without a release
+- The player's saved state and queue belong to the mode they were saved in: a page of the other mode drops them, and Lock clears the player at once, with its lock screen metadata
+- Download from URL (secret mode, needs `AUDIOLOADER_SECRET_SOURCE`): paste a page of the secret source, Check fills in title and description to edit, you pick the creators (at least one, checked on the server). One page request and one file request, only to the configured host and media hosts, https only, redirects off those hosts refused; the page URL is the track's source URL and an existing one is reported first; the usual fingerprint and duration checks apply. It runs as a background job that the page polls and that the Downloads page never lists
+- The migration that introduced the modes deleted releases made only of secret tracks (the tracks stayed); it first copied the database to `database.db.bak-18` and logged each removed release
+- A test requests every GET route in both modes and fails on any trace of the other mode's seed; the routes that only exist in normal mode (or only with a secret source) are checked to answer 404 elsewhere
 
 ### Discovery
 
@@ -114,7 +120,7 @@
 - A cover can point to its original: a library track, or text (title, artists, optional MusicBrainz recording ID). Reference only; the cover keeps its own credits
 - "Cover of" on the track edit form (pick from the library, text, or a MusicBrainz recording URL, or remove) and "Set cover of..." in the track menu
 - "Cover of X by Y" on track rows, release pages and in the player; deleting the original just unlinks the cover
-- A secret original is not shown, linked, indexed or listed to a locked viewer
+- An original on the other side of the mode (secret or normal) is not shown, linked, indexed or listed
 - Search also matches the original's title and artists (ranked lower); artist pages list "Covered by"
 - Auto-tagging suggests the original from MusicBrainz (a recording's `cover` performance relation on a work); Apply or Reject on the Tagging page, never overwrites a set original
 
