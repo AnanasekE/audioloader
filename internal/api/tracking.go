@@ -239,7 +239,12 @@ func confirmAllInbox(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	// ?artist= limits it to one artist's group
+	artist := r.URL.Query().Get("artist")
 	for _, ir := range releases {
+		if artist != "" && ir.ArtistID != artist {
+			continue
+		}
 		if _, err := tracking.Confirm(ir.ReleaseGroupMBID); err != nil {
 			serverError(w, err)
 			return

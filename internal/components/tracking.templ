@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"audioloader/internal/audio"
@@ -123,10 +124,27 @@ templ InboxPage(tab string, releases []*db.InboxRelease, newCount, ignoredCount 
 			}
 		}
 		<div class="grid gap-4">
-			for _, r := range releases {
-				@inboxRelease(r, tab)
+			for _, g := range groupInbox(releases) {
+				<details class="inbox-group" data-artist={ g.ArtistID } open>
+					<summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 py-1">
+						<span class="font-semibold">{ g.Name } <span class="font-normal text-zinc-500">({ fmt.Sprint(len(g.Releases)) })</span></span>
+						if tab == "new" && len(g.Releases) > 1 {
+							<button
+								class="btn"
+								hx-post={ "/ui/inbox/confirm-all?artist=" + g.ArtistID }
+								hx-confirm={ fmt.Sprintf("Add all %d releases by %s and download their missing tracks?", len(g.Releases), g.Name) }
+							>Confirm all</button>
+						}
+					</summary>
+					<div class="mt-2 grid gap-2">
+						for _, r := range g.Releases {
+							@inboxRelease(r, tab)
+						}
+					</div>
+				</details>
 			}
 		</div>
+		<script src="/assets/js/inbox.js" defer></script>
 		if len(follows) > 0 {
 			<h2 class="mt-10 mb-3 text-lg font-semibold">Following</h2>
 			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -211,6 +229,32 @@ templ InboxDetails(r *db.InboxRelease) {
 			}
 		</ol>
 	</div>
+}
+
+// inboxGroup is one artist's releases, in the order they were listed.
+type inboxGroup struct {
+	ArtistID string
+	Name     string
+	Releases []*db.InboxRelease
+}
+
+// groupInbox groups releases by artist, sorted by name.
+func groupInbox(releases []*db.InboxRelease) []inboxGroup {
+	var groups []inboxGroup
+	byArtist := map[string]int{}
+	for _, r := range releases {
+		i, ok := byArtist[r.ArtistID]
+		if !ok {
+			i = len(groups)
+			byArtist[r.ArtistID] = i
+			groups = append(groups, inboxGroup{ArtistID: r.ArtistID, Name: r.ArtistName})
+		}
+		groups[i].Releases = append(groups[i].Releases, r)
+	}
+	slices.SortStableFunc(groups, func(a, b inboxGroup) int {
+		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+	})
+	return groups
 }
 
 func trackNumber(t db.InboxTrack) string {
