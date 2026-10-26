@@ -55,6 +55,15 @@ func secretLibrary(t *testing.T) map[string]string {
 		t.Fatal(err)
 	}
 
+	// an inbox release, so the inbox pages have rows to render
+	if err := db.SetFollow(pub.ID.String(), "mb-public", db.DefaultFilters()); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AddInboxRelease(db.InboxRelease{ReleaseGroupMBID: "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", ArtistID: pub.ID.String(),
+		Title: "Upcoming", Type: "album", Date: "2030", Data: db.InboxData{Tracks: []db.InboxTrack{{Position: 1, Title: "Next", OwnedTrackID: ids["public track"]}}}}); err != nil {
+		t.Fatal(err)
+	}
+
 	show, _ := db.ResolveShow("ZZSECRET Show", "")
 	ids["secret show"] = show.ID.String()
 	ep, err := db.AddEpisode(show.ID.String(), &audio.Track{Title: "ZZSECRET Episode", Duration: time.Hour}, bytes.NewReader([]byte("episode")), ".mp3")
@@ -101,13 +110,14 @@ func TestNothingLeaksWhileLocked(t *testing.T) {
 	// IDs to try for each path parameter: the hidden ones, and pages that
 	// show public things next to hidden ones
 	params := map[string][]string{
-		"track_id":     {ids["secret track"], ids["secret episode"], ids["public track"], ids["cover of secret"]},
-		"release_id":   {ids["secret single"], ids["mixed release"]},
-		"artist_id":    {ids["hidden artist"]},
-		"playlist_id":  {ids["playlist"]},
-		"show_id":      {ids["secret show"]},
-		"recording_id": {"00000000-0000-0000-0000-000000000000"},
-		"mbid":         {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"},
+		"track_id":      {ids["secret track"], ids["secret episode"], ids["public track"], ids["cover of secret"]},
+		"release_id":    {ids["secret single"], ids["mixed release"]},
+		"artist_id":     {ids["hidden artist"]},
+		"playlist_id":   {ids["playlist"]},
+		"show_id":       {ids["secret show"]},
+		"recording_id":  {"00000000-0000-0000-0000-000000000000"},
+		"release_group": {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", "00000000-0000-0000-0000-000000000000"},
+		"mbid":          {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"},
 	}
 	extra := []string{
 		"/search?q=zzsecret", "/ui/search?q=zzsecret", "/search?q=secret", "/ui/search?q=artist",

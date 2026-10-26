@@ -181,6 +181,23 @@ func getInboxPage(w http.ResponseWriter, r *http.Request) {
 	render(w, r, components.InboxPage(releases, follows))
 }
 
+func getInboxDetails(w http.ResponseWriter, r *http.Request) {
+	rg, ok := pathUUID(w, r, "release_group")
+	if !ok {
+		return
+	}
+	ir, err := db.GetInboxRelease(rg.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.InboxDetails(ir))
+}
+
 func getInboxBadge(w http.ResponseWriter, r *http.Request) {
 	n, err := db.InboxCount()
 	if err != nil {

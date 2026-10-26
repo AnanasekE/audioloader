@@ -71,6 +71,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /ui/playlists/{playlist_id}/tracks/add", addToPlaylist)
 	handle(mux, "GET /ui/badges/tagging", getTaggingBadge)
 	handle(mux, "GET /ui/badges/inbox", getInboxBadge)
+	handle(mux, "GET /ui/inbox/{release_group}", getInboxDetails)
 	handle(mux, "GET /ui/badges/downloads", getDownloadsBadge)
 	handle(mux, "POST /ui/artists/{artist_id}/rename", renameArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/merge", mergeArtist)
