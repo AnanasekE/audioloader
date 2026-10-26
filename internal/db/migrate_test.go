@@ -112,4 +112,3 @@ func TestBackupSkipsEmptyAndKeepsExisting(t *testing.T) {
 		t.Fatal("overwrote the earlier backup")
 	}
 }
-

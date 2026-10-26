@@ -57,7 +57,7 @@ func main() {
 	}
 	// downloads get their own worker, so a long download and a long
 	// MusicBrainz check don't hold each other up
-	downloadJobs := []string{downloads.JobDownload, downloads.JobYouTubeImport}
+	downloadJobs := []string{downloads.JobDownload, downloads.JobYouTubeImport, downloads.JobSecretDownload}
 	var workers sync.WaitGroup
 	for _, lane := range []jobs.Lane{{Only: downloadJobs}, {Except: downloadJobs}} {
 		workers.Go(func() { jobs.Run(ctx, lane) })

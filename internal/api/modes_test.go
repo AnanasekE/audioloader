@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,10 @@ import (
 
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
+	"audioloader/internal/downloads"
+	"audioloader/internal/jobs"
+	"audioloader/internal/sources/secret"
+	"audioloader/internal/sources/secret/secrettest"
 	"audioloader/internal/vault"
 )
 
@@ -441,4 +446,168 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func TestSecretSourceDownload(t *testing.T) {
+	a := newModeApp(t)
+	fake, src := secrettest.New(t)
+	m4a, err := os.ReadFile("../audio/testdata/chapters.m4a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake.Files[secrettest.MediaHost+"/sounds/one.m4a"] = m4a
+	pageURL := fake.Page("/items/someone/one", `<html><head><title>Fallback</title></head><body>
+		<div class="jp-title">The Title</div>
+		<div class="jp-description"><p>Line one<br>Line two</p></div>
+		<script>$("#p").jPlayer("setMedia", { m4a: "https:\/\/media.example.test\/sounds\/one.m4a" })</script></body></html>`)
+	fake.Page("/items/someone/copy", `<script>x("https://media.example.test/sounds/one.m4a")</script>`)
+
+	// off: no source configured
+	secret.SetDefault(nil)
+	t.Cleanup(func() { secret.SetDefault(nil) })
+	for _, route := range SecretOnly {
+		method, path, _ := strings.Cut(route, " ")
+		if rec := a.do(true, method, path, url.Values{}); rec.Code != http.StatusNotFound {
+			t.Errorf("%s without a source = %d", route, rec.Code)
+		}
+	}
+	secret.SetDefault(src)
+	// and secret mode only
+	for _, route := range SecretOnly {
+		method, path, _ := strings.Cut(route, " ")
+		if rec := a.do(false, method, path, url.Values{}); rec.Code != http.StatusNotFound {
+			t.Errorf("%s in normal mode = %d", route, rec.Code)
+		}
+	}
+	if len(SecretOnly) != 4 {
+		t.Fatalf("secret-only routes = %v", SecretOnly)
+	}
+
+	if b := a.do(true, "GET", "/upload/secret-source", nil); b.Code != http.StatusOK || !strings.Contains(b.Body.String(), "/ui/secret-source/check") {
+		t.Fatalf("page = %d", b.Code)
+	}
+	if b := a.do(true, "GET", "/upload", nil).Body.String(); !strings.Contains(b, "Download from URL") {
+		t.Error("the upload page doesn't offer it")
+	}
+	if b := a.do(false, "GET", "/upload", nil).Body.String(); strings.Contains(b, "Download from URL") {
+		t.Error("normal mode offers it")
+	}
+
+	// Check
+	check := func(raw string) *httptest.ResponseRecorder {
+		return a.do(true, "POST", "/ui/secret-source/check", url.Values{"url": {raw}})
+	}
+	if rec := check("https://evil.example.test/items/a/b"); rec.Code != http.StatusBadRequest {
+		t.Errorf("wrong host = %d", rec.Code)
+	}
+	if rec := check("https://pages.example.test/items/a/nothing"); rec.Code != http.StatusBadGateway {
+		t.Errorf("missing page = %d", rec.Code)
+	}
+	rec := check(pageURL + "/?utm=1")
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `value="The Title"`) || !strings.Contains(body, "Line one\nLine two") ||
+		!strings.Contains(body, `name="url" value="`+pageURL+`"`) || strings.Contains(body, "one.m4a") {
+		t.Fatalf("check = %d %s", rec.Code, body)
+	}
+	if strings.Contains(body, " checked") {
+		t.Error("a creator is picked for you")
+	}
+	if got := len(fake.Requests()); got != 2 { // the missing page, and this one
+		t.Errorf("requests = %v", fake.Requests())
+	}
+
+	// Download: creators by hand, and a title
+	post := func(extra url.Values) *httptest.ResponseRecorder {
+		f := url.Values{"url": {pageURL}, "title": {"The Title"}, "description": {"Line one"}, "tags": {"a, b"}}
+		for k, v := range extra {
+			f[k] = v
+		}
+		return a.do(true, "POST", "/ui/secret-source/download", f)
+	}
+	if rec := post(nil); rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "at least one creator") {
+		t.Errorf("no creators = %d %s", rec.Code, rec.Body)
+	}
+	if rec := post(url.Values{"artist_id": {a.ID["public artist"]}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a creator of the other mode = %d", rec.Code)
+	}
+	if rec := post(url.Values{"artist_id": {a.ID["secret artist"]}, "title": {" "}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("no title = %d", rec.Code)
+	}
+	if n := countJobs(downloads.JobSecretDownload); n != 0 {
+		t.Fatalf("%d jobs queued by failed requests", n)
+	}
+	two := url.Values{"artist_id": {a.ID["secret artist"], a.ID["shared artist"]}}
+	if rec := post(two); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "/ui/secret-source/status?url=") {
+		t.Fatalf("download = %d %s", rec.Code, rec.Body)
+	}
+	if got := len(fake.Requests()); got != 2 {
+		t.Errorf("the download asked the page again: %v", fake.Requests())
+	}
+	if rec := a.do(true, "GET", "/ui/secret-source/status?url="+url.QueryEscape(pageURL), nil); !strings.Contains(rec.Body.String(), "Downloading") {
+		t.Errorf("status = %s", rec.Body)
+	}
+
+	// the downloads lane does it
+	downloads.Register()
+	if ran, err := jobs.RunOnce(context.Background(), jobs.Lane{Only: []string{downloads.JobSecretDownload}}); err != nil || !ran {
+		t.Fatalf("run = %v, %v", ran, err)
+	}
+	id, _ := db.TrackBySourceURL(pageURL)
+	tr, err := db.GetTrack(db.Secret, id)
+	if err != nil || !tr.Secret || tr.Title != "The Title" || tr.Description != "Line one" || len(tr.Tags) != 2 || len(tr.Artists) != 2 || len(tr.Releases) != 0 || tr.Duration <= 0 {
+		t.Fatalf("track = %+v, %v", tr, err)
+	}
+	if _, err := db.GetTrack(db.Normal, id); err == nil {
+		t.Error("the track is visible in normal mode")
+	}
+	if got := fake.Requests(); len(got) != 3 || got[2] != secrettest.MediaHost+"/sounds/one.m4a" {
+		t.Errorf("requests = %v, want one page and one file", got)
+	}
+	if got := fake.Referers[secrettest.MediaHost+"/sounds/one.m4a"]; got != pageURL {
+		t.Errorf("referer = %q", got)
+	}
+	rec = a.do(true, "GET", "/ui/secret-source/status?url="+url.QueryEscape(pageURL), nil)
+	if !strings.Contains(rec.Body.String(), "Done") || !strings.Contains(rec.Body.String(), "/tracks/"+id+"/edit") {
+		t.Errorf("done status = %s", rec.Body)
+	}
+
+	// the same page again is reported before anything is fetched
+	if rec := check(pageURL); rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "Already in the library") {
+		t.Errorf("second check = %d %s", rec.Code, rec.Body)
+	}
+	if rec := post(two); rec.Code != http.StatusConflict {
+		t.Errorf("second download = %d", rec.Code)
+	}
+	if got := len(fake.Requests()); got != 3 {
+		t.Errorf("requests = %v", fake.Requests())
+	}
+
+	// another page with the same file: the usual duplicate check refuses it
+	copyURL := "https://" + secrettest.PageHost + "/items/someone/copy"
+	if rec := a.do(true, "POST", "/ui/secret-source/check", url.Values{"url": {copyURL}}); rec.Code != http.StatusOK {
+		t.Fatalf("check copy = %d", rec.Code)
+	}
+	rec = a.do(true, "POST", "/ui/secret-source/download", url.Values{"url": {copyURL}, "title": {"Copy"}, "artist_id": {a.ID["secret artist"]}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("download copy = %d %s", rec.Code, rec.Body)
+	}
+	jobs.RunOnce(context.Background(), jobs.Lane{Only: []string{downloads.JobSecretDownload}})
+	if id, _ := db.TrackBySourceURL(copyURL); id != "" {
+		t.Error("a duplicate file became a track")
+	}
+	rec = a.do(true, "GET", "/ui/secret-source/status?url="+url.QueryEscape(copyURL), nil)
+	if !strings.Contains(rec.Body.String(), "failed") {
+		t.Errorf("duplicate status = %s", rec.Body)
+	}
+
+	// it never shows on the Downloads page, nor does a badge count it
+	body = a.do(false, "GET", "/downloads", nil).Body.String()
+	if strings.Contains(strings.ToLower(body), "the title") || strings.Contains(body, "someone/one") {
+		t.Error("the Downloads page lists it")
+	}
+}
+
+func countJobs(typ string) (n int) {
+	db.DB.QueryRow(`SELECT COUNT(*) FROM jobs WHERE type = ?;`, typ).Scan(&n)
+	return n
 }

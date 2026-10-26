@@ -105,7 +105,7 @@ func (d *Downloader) Import(ctx context.Context, imp YouTubeImport) error {
 
 // permanentIfBad marks errors that a retry can't fix as permanent.
 func permanentIfBad(err error) error {
-	for _, e := range []error{db.ErrExists, db.ErrSlotTaken, db.ErrBadReference, db.ErrAlreadyOnRelease} {
+	for _, e := range []error{db.ErrExists, db.ErrHidden, db.ErrSlotTaken, db.ErrBadReference, db.ErrAlreadyOnRelease} {
 		if errors.Is(err, e) {
 			return jobs.Permanent(err)
 		}

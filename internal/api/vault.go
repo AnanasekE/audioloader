@@ -7,6 +7,7 @@ import (
 
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/sources/secret"
 	"audioloader/internal/vault"
 )
 
@@ -22,6 +23,7 @@ func WithViewer(next http.Handler) http.Handler {
 			v = db.Secret
 		}
 		ctx := components.WithVaultEnabled(db.WithViewer(r.Context(), v), theVault != nil)
+		ctx = components.WithSecretSource(ctx, secret.Default() != nil)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

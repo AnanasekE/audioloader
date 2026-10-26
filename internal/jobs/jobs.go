@@ -308,3 +308,21 @@ func Recent(typ string, limit int) ([]Job, error) {
 	}
 	return out, rows.Err()
 }
+
+// Latest returns the newest job of a type with the dedupe key, or nil if
+// there is none.
+func Latest(typ, key string) (*Job, error) {
+	var j Job
+	var payload string
+	err := db.DB.QueryRow(`
+		SELECT id, status, payload, COALESCE(last_error, ''), created_at FROM jobs
+		WHERE type = ? AND dedupe_key = ? ORDER BY id DESC LIMIT 1;`, typ, key).Scan(&j.ID, &j.Status, &payload, &j.LastError, &j.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	j.Payload = json.RawMessage(payload)
+	return &j, nil
+}

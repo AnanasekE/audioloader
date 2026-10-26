@@ -17,6 +17,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"audioloader/internal/audio"
@@ -311,4 +312,29 @@ func (s *Source) Fetch(ctx context.Context, page *Page, dir string) (*File, erro
 	}
 	ok = true
 	return &File{Path: filepath.Clean(name), Ext: ext, Duration: dur.Round(time.Second)}, nil
+}
+
+var (
+	defaultMu     sync.Mutex
+	defaultSource *Source
+	defaultLoaded bool
+)
+
+// Default is the process-wide source, from the environment on first use; nil
+// when the feature is off.
+func Default() *Source {
+	defaultMu.Lock()
+	defer defaultMu.Unlock()
+	if !defaultLoaded {
+		defaultSource, defaultLoaded = FromEnv(), true
+	}
+	return defaultSource
+}
+
+// SetDefault replaces the process-wide source (nil turns the feature off);
+// for tests.
+func SetDefault(s *Source) {
+	defaultMu.Lock()
+	defer defaultMu.Unlock()
+	defaultSource, defaultLoaded = s, true
 }

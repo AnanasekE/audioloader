@@ -117,6 +117,9 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 				if !secretMode(ctx) {
 					<a class="btn" href="/upload/youtube">From YouTube</a>
 				}
+				if secretMode(ctx) && secretSourceOn(ctx) {
+					<a class="btn" href="/upload/secret-source">Download from URL</a>
+				}
 			</div>
 		}
 		<div class="group">

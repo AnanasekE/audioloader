@@ -105,6 +105,7 @@ func Register() {
 		}
 		return Default().Import(ctx, imp)
 	})
+	registerSecret()
 }
 
 // EnqueueVideo queues downloading a YouTube video into a placeholder track.
@@ -216,7 +217,8 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 	}
 	defer f.Cleanup()
 
-	merged, err := Attach(db.All, trackID, f.Path)
+	// placeholders belong to normal mode: a file that is a secret track is no match
+	merged, err := Attach(db.Normal, trackID, f.Path)
 	if err != nil {
 		return d.fail(trackID, src.Name(), err)
 	}

@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"audioloader/internal/sources/secret"
 	"audioloader/internal/vault"
 )
 
@@ -11,6 +12,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	theVault = v
 	Routes = nil
 	NormalOnly = nil
+	SecretOnly = nil
 	mux.Handle("GET /assets/", http.StripPrefix(
 		"/assets/",
 		http.FileServer(http.Dir("assets")),
@@ -42,6 +44,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /playlists/{playlist_id}/edit", getPlaylistPage)
 	handleNormal(mux, "GET /downloads", getDownloadsPage)
 	handleNormal(mux, "GET /upload/youtube", getYouTubeImportPage)
+	handleSecret(mux, "GET /upload/secret-source", getSecretSourcePage)
 	handle(mux, "GET /artists/{artist_id}", getArtistPage)
 	handleNormal(mux, "GET /artists/{artist_id}/follow", getFollowPage)
 
@@ -96,6 +99,9 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handleNormal(mux, "POST /ui/tracks/{track_id}/file", uploadTrackFile)
 	handleNormal(mux, "POST /ui/releases/{release_id}/youtube", previewReleasePlaylist)
 	handleNormal(mux, "POST /ui/releases/{release_id}/youtube/confirm", confirmReleasePlaylist)
+	handleSecret(mux, "POST /ui/secret-source/check", checkSecretSource)
+	handleSecret(mux, "POST /ui/secret-source/download", downloadFromSecretSource)
+	handleSecret(mux, "GET /ui/secret-source/status", getSecretSourceStatus)
 	handleNormal(mux, "POST /ui/youtube/preview", previewYouTubeImport)
 	handleNormal(mux, "POST /ui/youtube/import", importFromYouTube)
 	handleNormal(mux, "POST /ui/inbox/confirm-all", confirmAllInbox)
@@ -126,6 +132,22 @@ var Routes []string
 // the inbox, tagging and downloads work on things secret tracks don't have.
 // In secret mode they answer 404.
 var NormalOnly []string
+
+// SecretOnly lists the patterns that exist in secret mode only, and only
+// when a secret source is configured. Anywhere else they answer 404.
+var SecretOnly []string
+
+// handleSecret registers a route that needs secret mode and a secret source.
+func handleSecret(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
+	SecretOnly = append(SecretOnly, pattern)
+	handle(mux, pattern, func(w http.ResponseWriter, r *http.Request) {
+		if !viewer(r).IsSecret() || secret.Default() == nil {
+			http.NotFound(w, r)
+			return
+		}
+		h(w, r)
+	})
+}
 
 // handleNormal registers a route that exists in normal mode only.
 func handleNormal(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
