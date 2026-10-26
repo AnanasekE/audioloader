@@ -9,12 +9,12 @@ func TestPlaylists(t *testing.T) {
 	newTestDB(t)
 	a := addTestTrack(t, "A", "a")
 	b := addTestTrack(t, "B", "b")
-	p, err := CreatePlaylist("Mix")
+	p, err := CreatePlaylist(All, "Mix")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []string{a, b, a} {
-		if err := AppendToPlaylist(p.ID.String(), id); err != nil {
+		if err := AppendToPlaylist(All, p.ID.String(), id); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -31,7 +31,7 @@ func TestPlaylists(t *testing.T) {
 	if titles(got.Tracks) != "B,A" {
 		t.Fatalf("after reorder = %s", titles(got.Tracks))
 	}
-	if err := AppendToPlaylist(p.ID.String(), "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrBadReference) {
+	if err := AppendToPlaylist(All, p.ID.String(), "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrBadReference) {
 		t.Fatalf("unknown track err = %v", err)
 	}
 
@@ -45,7 +45,7 @@ func TestPlaylists(t *testing.T) {
 	if len(list) != 1 || list[0].Count != 1 {
 		t.Fatalf("list = %+v", list)
 	}
-	if err := DeletePlaylist(p.ID.String()); err != nil {
+	if err := DeletePlaylist(All, p.ID.String()); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := GetPlaylist(All, p.ID.String()); !errors.Is(err, ErrNotFound) {

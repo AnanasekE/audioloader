@@ -170,12 +170,12 @@ func TestArtistTwitchWithoutClient(t *testing.T) {
 
 func TestTwitchHiddenWhileLocked(t *testing.T) {
 	dbtest.New(t)
-	ids := secretLibrary(t)
+	ids := modeLibrary(t)
 	mux := http.NewServeMux()
 	Register(mux, nil)
 	h := WithViewer(mux)
 	for _, p := range []string{"/twitch", "/twitch/picture", "/link"} {
-		if rec := postForm(h, "/ui/artists/"+ids["hidden artist"]+p, "twitch=known&mbid=10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"); rec.Code != http.StatusNotFound {
+		if rec := postForm(h, "/ui/artists/"+ids["secret artist"]+p, "twitch=known&mbid=10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"); rec.Code != http.StatusNotFound {
 			t.Errorf("POST %s = %d", p, rec.Code)
 		}
 	}

@@ -65,6 +65,17 @@ func (v Viewer) trackCond(alias string) string {
 	return alias + ".secret = 0"
 }
 
+// playlistCond: a playlist belongs to the mode it was created in.
+func (v Viewer) playlistCond(alias string) string {
+	switch v.Mode {
+	case ModeSecret:
+		return alias + ".secret = 1"
+	case ModeAll:
+		return "1"
+	}
+	return alias + ".secret = 0"
+}
+
 func (v Viewer) releaseCond(alias string) string {
 	switch v.Mode {
 	case ModeSecret:

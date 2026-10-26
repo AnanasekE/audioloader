@@ -14,8 +14,8 @@ import (
 // ErrNotFound is returned when a looked-up row or file doesn't exist.
 var ErrNotFound = errors.New("not found")
 
-const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, t.img_url, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''),
-	t.kind, COALESCE(t.show_id, ''), COALESCE(t.published, ''), t.secret FROM tracks t`
+const selectTrack = `SELECT t.uuid, t.title, t.duration_seconds, ` + trackImgURL + `, t.has_file, COALESCE(t.mbid, ''), COALESCE(t.isrc, ''),
+	t.kind, COALESCE(t.show_id, ''), COALESCE(t.published, ''), t.secret, COALESCE(t.description, '') FROM tracks t`
 
 // libraryTracks is the condition every listing of the music library uses,
 // on a tracks table aliased t. Placeholders have no file to play, so they
@@ -30,15 +30,21 @@ type scanner interface {
 func scanTrack(s scanner) (*audio.Track, error) {
 	var t audio.Track
 	var seconds int
-	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind, &t.ShowID, &t.Published, &t.Secret); err != nil {
+	if err := s.Scan(&t.ID, &t.Title, &seconds, &t.ImgURL, &t.HasFile, &t.MBID, &t.ISRC, &t.Kind, &t.ShowID, &t.Published, &t.Secret, &t.Description); err != nil {
 		return nil, err
 	}
 	t.Duration = time.Duration(seconds) * time.Second
 	return &t, nil
 }
 
+// ListTracks returns the library's tracks. In secret mode they come newest
+// first: that is the "date added" order of its track list.
 func ListTracks(v Viewer) ([]*audio.Track, error) {
-	rows, err := DB.Query(selectTrack + ` WHERE ` + libraryTracks + ` AND ` + v.trackCond("t") + `;`)
+	order := ""
+	if v.IsSecret() {
+		order = ` ORDER BY t.rowid DESC`
+	}
+	rows, err := DB.Query(selectTrack + ` WHERE ` + libraryTracks + ` AND ` + v.trackCond("t") + order + `;`)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +72,9 @@ func ListTracks(v Viewer) ([]*audio.Track, error) {
 	if err := attachCovers(v, tracks); err != nil {
 		return nil, err
 	}
+	if err := attachTags(tracks); err != nil {
+		return nil, err
+	}
 	return tracks, nil
 }
 
@@ -84,6 +93,9 @@ func GetTrack(v Viewer, id string) (*audio.Track, error) {
 		return nil, err
 	}
 	if err := attachCovers(v, []*audio.Track{t}); err != nil {
+		return nil, err
+	}
+	if err := attachTags([]*audio.Track{t}); err != nil {
 		return nil, err
 	}
 	return t, nil
@@ -212,8 +224,8 @@ func insertTrack(id string, secret bool, artistIDs []string, track *audio.Track,
 	defer tx.Rollback()
 
 	_, err = tx.Exec(
-		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, mbid, isrc, secret) VALUES(?, ?, ?, ?, ?, ?, ?, ?);`,
-		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, nullIfEmpty(track.MBID), nullIfEmpty(track.ISRC), secret,
+		`INSERT INTO tracks(uuid, title, duration_seconds, file_size, head_hash, mbid, isrc, secret, description) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+		id, track.Title, int(track.Duration.Seconds()), fp.Size, fp.HeadHash, nullIfEmpty(track.MBID), nullIfEmpty(track.ISRC), secret, nullIfEmpty(track.Description),
 	)
 	if err != nil {
 		return err
@@ -230,6 +242,9 @@ func insertTrack(id string, secret bool, artistIDs []string, track *audio.Track,
 	}
 	if secret {
 		// secret tracks are on no release
+		if err := setTags(tx, id, track.Tags); err != nil {
+			return err
+		}
 		return tx.Commit()
 	}
 	if link == nil {
@@ -345,6 +360,9 @@ type TrackEdit struct {
 	Secret *bool
 	// Cover sets or removes the original song; nil leaves it as it is
 	Cover *CoverEdit
+	// Description and Tags are for secret tracks; nil leaves them as they are
+	Description *string
+	Tags        *[]string
 }
 
 // UpdateTrack saves e in one transaction: the track's fields, then its
@@ -385,6 +403,16 @@ func UpdateTrack(v Viewer, id string, e TrackEdit) error {
 	}
 	if e.Cover != nil {
 		if err := setCover(tx, v, id, *e.Cover); err != nil {
+			return err
+		}
+	}
+	if e.Description != nil {
+		if _, err := tx.Exec(`UPDATE tracks SET description = ? WHERE uuid = ?;`, nullIfEmpty(*e.Description), id); err != nil {
+			return err
+		}
+	}
+	if e.Tags != nil {
+		if err := setTags(tx, id, *e.Tags); err != nil {
 			return err
 		}
 	}
@@ -433,5 +461,6 @@ func DeleteTrack(v Viewer, id string) error {
 	if path, err := TrackFilePath(tid); err == nil {
 		os.Remove(path)
 	}
+	removeTrackImages(tid)
 	return nil
 }

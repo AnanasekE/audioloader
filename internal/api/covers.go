@@ -133,3 +133,67 @@ func visibleArtist(w http.ResponseWriter, r *http.Request, id string) bool {
 	}
 	return true
 }
+
+func getTrackImage(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	path, err := db.TrackImagePath(viewer(r), id)
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// a secret picture must not stay in the browser's cache after locking
+	w.Header().Set("Cache-Control", "private, no-store")
+	http.ServeFile(w, r, path)
+}
+
+// uploadTrackImage sets the picture of a secret track.
+func uploadTrackImage(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok || !visibleTrack(w, r, id.String()) {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, db.MaxCoverSize+(1<<20))
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "missing image, or it is over 10 MiB", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	err = db.SaveTrackImage(viewer(r), id, file)
+	switch {
+	case errors.Is(err, db.ErrBadImage):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tracks/"+id.String()+"/edit")
+}
+
+func removeTrackImage(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok || !visibleTrack(w, r, id.String()) {
+		return
+	}
+	if err := db.RemoveTrackImage(viewer(r), id); errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tracks/"+id.String()+"/edit")
+}

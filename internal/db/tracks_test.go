@@ -126,7 +126,7 @@ func TestDeleteTrack(t *testing.T) {
 	if err := SetReleaseTracks(All, r.ID.String(), []ReleaseTrackInput{{one, 1}, {two, 1}, {three, 1}}); err != nil {
 		t.Fatal(err)
 	}
-	p, _ := CreatePlaylist("Mix")
+	p, _ := CreatePlaylist(All, "Mix")
 	if err := SetPlaylistTracks(All, p.ID.String(), []string{two, three}); err != nil {
 		t.Fatal(err)
 	}

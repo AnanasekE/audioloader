@@ -69,13 +69,15 @@ templ Artist(a *audio.Artist) {
 		<img class="pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900" src={ a.ImgURL } alt=""/>
 		<a class="block max-w-full truncate" href={ artistURL(a) }>{ a.Name }</a>
 		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
-		<a class="text-sm" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
-			if a.Followed {
-				Following
-			} else {
-				Follow releases
-			}
-		</a>
+		if !secretMode(ctx) {
+			<a class="text-sm" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
+				if a.Followed {
+					Following
+				} else {
+					Follow releases
+				}
+			</a>
+		}
 	</article>
 }
 
@@ -117,7 +119,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Artist</p>
 				<h1 class="text-4xl font-bold tracking-tight">{ a.Name }</h1>
 				<p class="mt-1 text-sm">
-					if a.MBID != "" {
+					if a.MBID != "" && !secretMode(ctx) {
 						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
 						{ " · " }
 					}
@@ -125,21 +127,23 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 						<a href={ templ.SafeURL("https://www.twitch.tv/" + a.TwitchLogin) } rel="noopener noreferrer">Twitch</a>
 						{ " · " }
 					}
-					<a href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
-						if a.Followed {
-							Following
-						} else {
-							Follow releases
-						}
-					</a>
-					{ " · " }
+					if !secretMode(ctx) {
+						<a href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
+							if a.Followed {
+								Following
+							} else {
+								Follow releases
+							}
+						</a>
+						{ " · " }
+					}
 					<a href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
 				</p>
 			</div>
 		</div>
 		@artistImageForm(a)
 		@artistTwitchForm(a, twitchOn)
-		if a.MBID == "" {
+		if a.MBID == "" && !secretMode(ctx) {
 			@artistLinkSection(a)
 		}
 		@artistManageForm(a, others)

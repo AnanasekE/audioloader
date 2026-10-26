@@ -56,7 +56,7 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 						<label for="batch-default-release" class="text-sm font-medium">Release for all tracks</label>
 						@releaseSelect("batch-default-release", releases, release, "input w-auto min-w-48")
 					</div>
-					if vaultOpen(ctx) {
+					if secretMode(ctx) {
 						<label class="flex items-center gap-2 text-sm">
 							<input id="batch-secret" type="checkbox" name="secret" value="1"/>
 							All secret

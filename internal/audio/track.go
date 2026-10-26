@@ -24,8 +24,11 @@ type Track struct {
 	// Position is where playback of an episode stopped; Finished marks it played
 	Position time.Duration
 	Finished bool
-	// Secret tracks are only shown once the vault is unlocked
-	Secret bool
+	// Secret tracks are only shown in secret mode, where they have a
+	// description and tags instead of releases
+	Secret      bool
+	Description string
+	Tags        []string
 	// CoverOf is the original song this track covers, nil if none or if it
 	// is a secret track the viewer can't see
 	CoverOf *CoverRef

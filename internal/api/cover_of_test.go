@@ -19,14 +19,14 @@ func TestCoverOfForm(t *testing.T) {
 		t.Fatal(err)
 	}
 	fakeMusicBrainz(t, map[string]string{"/recording/f3bba4cd-8018-468b-902e-bc8f029593e5": string(fixture)})
-	ids := secretLibrary(t)
+	ids := modeLibrary(t)
 	mux := http.NewServeMux()
 	Register(mux, nil)
 	h := WithViewer(mux)
 
 	id, artist := ids["public track"], ids["public artist"]
 	save := func(form url.Values) *httptest.ResponseRecorder {
-		form.Set("title", "Open Song")
+		form.Set("title", "ZZPUBLIC Song 1")
 		form.Set("kind", "music")
 		form.Set("artist_id", artist)
 		req := httptest.NewRequest("POST", "/ui/tracks/"+id, strings.NewReader(form.Encode()))
@@ -68,11 +68,11 @@ func TestCoverOfForm(t *testing.T) {
 	if coverOf() == "" {
 		t.Fatal("a save without cover_mode removed the cover")
 	}
-	closing := ids["cover of secret"]
+	closing := ids["public cover"]
 	if rec := save(url.Values{"cover_mode": {"library"}, "cover_track_id": {closing}}); rec.Code != http.StatusNoContent {
 		t.Fatalf("library = %d %s", rec.Code, rec.Body)
 	}
-	if got := coverOf(); got != "Public Cover by Public Artist" {
+	if got := coverOf(); got != "ZZPUBLIC Cover by ZZPUBLIC Artist" {
 		t.Fatalf("library cover = %q", got)
 	}
 	// bad input
@@ -88,7 +88,7 @@ func TestCoverOfForm(t *testing.T) {
 			t.Errorf("%s = %d", name, rec.Code)
 		}
 	}
-	if got := coverOf(); got != "Public Cover by Public Artist" {
+	if got := coverOf(); got != "ZZPUBLIC Cover by ZZPUBLIC Artist" {
 		t.Fatalf("failed saves changed the cover: %q", got)
 	}
 	// MusicBrainz doesn't know the recording
@@ -105,10 +105,10 @@ func TestCoverOfForm(t *testing.T) {
 		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
 		return rec.Body.String()
 	}
-	if body := get("/ui/tracks/pick?q=song&exclude=" + id); strings.Contains(body, "Open Song") || !strings.Contains(body, "Closing Song") && !strings.Contains(body, "Public Cover") {
+	if body := get("/ui/tracks/pick?q=song&exclude=" + id); strings.Contains(body, "ZZPUBLIC Song 1") || !strings.Contains(body, "ZZPUBLIC Song 2") {
 		t.Errorf("picker = %s", body)
 	}
-	if body := get("/ui/tracks/pick?q=open"); !strings.Contains(body, "Open Song") {
+	if body := get("/ui/tracks/pick?q=song"); !strings.Contains(body, "ZZPUBLIC Song 1") {
 		t.Errorf("picker = %s", body)
 	}
 	if body := get("/ui/tracks/pick?q=zzsecret"); strings.Contains(strings.ToLower(body), "zzsecret") {
@@ -118,7 +118,7 @@ func TestCoverOfForm(t *testing.T) {
 
 func TestCoverSuggestionRoutes(t *testing.T) {
 	dbtest.New(t)
-	ids := secretLibrary(t)
+	ids := modeLibrary(t)
 	mux := http.NewServeMux()
 	Register(mux, nil)
 	h := WithViewer(mux)

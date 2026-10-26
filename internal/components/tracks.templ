@@ -2,20 +2,107 @@ package components
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"audioloader/internal/audio"
 )
 
-templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track) {
+// Sort orders of the track list in secret mode.
+const (
+	SortAdded   = "added"
+	SortCreator = "creator"
+	SortTag     = "tag"
+)
+
+// TracksPage lists the library. Secret mode has no releases to browse by,
+// so its list can be sorted by date added (newest first, as the tracks
+// come), creator or tag.
+templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy string) {
 	@layout("Tracks", PageTracks) {
 		@pageHeader("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
 			<a class="btn" href="/upload">Upload track</a>
 		}
 		@ContinueListening(continueListening)
-		@TrackList(tracks)
+		if secretMode(ctx) {
+			<nav class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" aria-label="Sort tracks">
+				<span class="text-zinc-500 dark:text-zinc-400">Sort by</span>
+				for _, s := range []struct{ Key, Label string }{{SortAdded, "Date added"}, {SortCreator, "Creator"}, {SortTag, "Tag"}} {
+					@navAnchor("/tracks?sort="+s.Key, s.Label, s.Key == sortBy)
+				}
+			</nav>
+			for _, g := range GroupTracks(tracks, sortBy) {
+				<section class="mb-8">
+					if g.Title != "" {
+						<h2 class="mb-2 text-lg font-semibold">{ g.Title }</h2>
+					}
+					@TrackList(g.Tracks)
+				</section>
+			}
+			if len(tracks) == 0 {
+				@TrackList(tracks)
+			}
+		} else {
+			@TrackList(tracks)
+		}
 	}
+}
+
+// TrackGroup is a titled run of tracks on the secret track list.
+type TrackGroup struct {
+	Title  string
+	Tracks []*audio.Track
+}
+
+// GroupTracks splits tracks (newest first) for a sort order. By creator or
+// tag a track is listed under each of its creators or tags, groups ordered
+// by name, with the tracks lacking one last.
+func GroupTracks(tracks []*audio.Track, sortBy string) []TrackGroup {
+	keys := func(t *audio.Track) []string { return nil }
+	none := ""
+	switch sortBy {
+	case SortCreator:
+		none = "No creator"
+		keys = func(t *audio.Track) []string {
+			names := make([]string, len(t.Artists))
+			for i, a := range t.Artists {
+				names[i] = a.Name
+			}
+			return names
+		}
+	case SortTag:
+		none = "Untagged"
+		keys = func(t *audio.Track) []string { return t.Tags }
+	default:
+		return []TrackGroup{{Tracks: tracks}}
+	}
+	byKey := map[string]*TrackGroup{}
+	var order []string
+	var rest []*audio.Track
+	for _, t := range tracks {
+		ks := keys(t)
+		if len(ks) == 0 {
+			rest = append(rest, t)
+		}
+		for _, k := range ks {
+			id := strings.ToLower(k)
+			if byKey[id] == nil {
+				byKey[id] = &TrackGroup{Title: k}
+				order = append(order, id)
+			}
+			byKey[id].Tracks = append(byKey[id].Tracks, t)
+		}
+	}
+	sort.Strings(order)
+	groups := make([]TrackGroup, 0, len(order)+1)
+	for _, id := range order {
+		groups = append(groups, *byKey[id])
+	}
+	if len(rest) > 0 {
+		groups = append(groups, TrackGroup{Title: none, Tracks: rest})
+	}
+	return groups
 }
 
 // UploadPage starts with the kind of release. A single is uploaded right
@@ -27,7 +114,9 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 			<div class="flex flex-wrap gap-2">
 				<a class="btn" href="/upload/import">Import library</a>
 				<a class="btn" href="/upload/batch">Batch mode</a>
-				<a class="btn" href="/upload/youtube">From YouTube</a>
+				if !secretMode(ctx) {
+					<a class="btn" href="/upload/youtube">From YouTube</a>
+				}
 			</div>
 		}
 		<div class="group">
@@ -109,7 +198,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 				/>
 				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=exists]:text-amber-400" aria-live="polite"></small>
 			</div>
-			if vaultOpen(ctx) {
+			if secretMode(ctx) {
 				<label class="flex items-center gap-2 text-sm">
 					<input type="checkbox" name="secret" value="1"/>
 					Secret: only shown while the vault is unlocked
@@ -173,7 +262,7 @@ templ trackMenu(t *audio.Track) {
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
-				if vaultOpen(ctx) {
+				if secretMode(ctx) {
 					<button
 						type="button"
 						class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"

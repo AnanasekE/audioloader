@@ -26,7 +26,7 @@ templ layout(title string, active string) {
 		// hx-boost turns links into htmx swaps of the body, so the page never
 		// reloads while browsing and the hx-preserve'd player keeps playing
 		// data-vault tells player.js whether secret tracks may stay in its state
-		<body hx-boost="true" data-vault={ boolAttr(vaultOpen(ctx)) }>
+		<body hx-boost="true" data-vault={ boolAttr(secretMode(ctx)) }>
 			<div class="mx-auto max-w-4xl px-4 pb-28">
 				@nav(active)
 				<main>
@@ -105,15 +105,19 @@ templ nav(active string) {
 			</form>
 			<ul class="flex flex-wrap gap-x-5 gap-y-1">
 				@navLink("/tracks", "Tracks", active == PageTracks)
-				@navLink("/releases", "Releases", active == PageReleases)
+				if !secretMode(ctx) {
+					@navLink("/releases", "Releases", active == PageReleases)
+				}
 				@navLink("/playlists", "Playlists", active == PagePlaylists)
 				@navLink("/shows", "Podcasts", active == PageShows)
 				@navLink("/upload", "Upload", active == PageUpload)
 				@navLink("/artists", "Artists", active == PageArtists)
-				@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
-				@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
-				@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
-				if vaultOpen(ctx) {
+				if !secretMode(ctx) {
+					@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
+					@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
+					@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
+				}
+				if secretMode(ctx) {
 					<li>
 						<form method="post" action="/vault/lock" hx-boost="false">
 							<button type="submit" class="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">Lock</button>

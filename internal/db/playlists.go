@@ -9,18 +9,20 @@ import (
 	"audioloader/internal/audio"
 )
 
-func CreatePlaylist(name string) (*audio.Playlist, error) {
+// CreatePlaylist makes a playlist that belongs to v's mode: a normal mode
+// playlist holds normal tracks only, and a secret one secret tracks only.
+func CreatePlaylist(v Viewer, name string) (*audio.Playlist, error) {
 	p := &audio.Playlist{ID: uuid.New(), Name: name}
-	_, err := DB.Exec(`INSERT INTO playlists(uuid, name) VALUES(?, ?);`, p.ID.String(), name)
+	_, err := DB.Exec(`INSERT INTO playlists(uuid, name, secret) VALUES(?, ?, ?);`, p.ID.String(), name, v.IsSecret())
 	return p, err
 }
 
-func RenamePlaylist(id, name string) error {
-	return expectRow(DB.Exec(`UPDATE playlists SET name = ? WHERE uuid = ?;`, name, id))
+func RenamePlaylist(v Viewer, id, name string) error {
+	return expectRow(DB.Exec(`UPDATE playlists SET name = ? WHERE uuid = ? AND `+v.playlistCond("playlists")+`;`, name, id))
 }
 
-func DeletePlaylist(id string) error {
-	return expectRow(DB.Exec(`DELETE FROM playlists WHERE uuid = ?;`, id))
+func DeletePlaylist(v Viewer, id string) error {
+	return expectRow(DB.Exec(`DELETE FROM playlists WHERE uuid = ? AND `+v.playlistCond("playlists")+`;`, id))
 }
 
 // expectRow turns "no row affected" into ErrNotFound.
@@ -36,7 +38,7 @@ func expectRow(res sql.Result, err error) error {
 	return nil
 }
 
-// ListPlaylists returns all playlists with their track count, length and
+// ListPlaylists returns v's playlists with their track count, length and
 // image, newest first.
 func ListPlaylists(v Viewer) ([]*audio.Playlist, error) {
 	rows, err := DB.Query(`
@@ -46,6 +48,7 @@ func ListPlaylists(v Viewer) ([]*audio.Playlist, error) {
 		FROM playlists p
 		LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.uuid
 		LEFT JOIN tracks t ON t.uuid = pt.track_id AND `+v.trackCond("t")+`
+		WHERE `+v.playlistCond("p")+`
 		GROUP BY p.uuid
 		ORDER BY p.created_at DESC, p.rowid DESC;`, DefaultCover)
 	if err != nil {
@@ -68,7 +71,7 @@ func ListPlaylists(v Viewer) ([]*audio.Playlist, error) {
 // GetPlaylist returns a playlist with its tracks in order.
 func GetPlaylist(v Viewer, id string) (*audio.Playlist, error) {
 	var p audio.Playlist
-	err := DB.QueryRow(`SELECT uuid, name FROM playlists WHERE uuid = ?;`, id).Scan(&p.ID, &p.Name)
+	err := DB.QueryRow(`SELECT uuid, name FROM playlists p WHERE uuid = ? AND `+v.playlistCond("p")+`;`, id).Scan(&p.ID, &p.Name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -121,8 +124,12 @@ func GetPlaylist(v Viewer, id string) (*audio.Playlist, error) {
 	return &p, nil
 }
 
-// AppendToPlaylist adds a track at the end of a playlist.
-func AppendToPlaylist(playlistID, trackID string) error {
+// AppendToPlaylist adds a track at the end of a playlist. A track of the
+// other mode than the playlist's can't be added (ErrBadReference).
+func AppendToPlaylist(v Viewer, playlistID, trackID string) error {
+	if err := sameMode(DB, v, playlistID, []string{trackID}); err != nil {
+		return err
+	}
 	_, err := DB.Exec(`
 		INSERT INTO playlist_tracks(playlist_id, position, track_id)
 		SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM playlist_tracks WHERE playlist_id = ?;`,
@@ -133,6 +140,37 @@ func AppendToPlaylist(playlistID, trackID string) error {
 	return err
 }
 
+// sameMode checks that the playlist is v's and every track is on its side;
+// a playlist of the other mode is not found, a track of the other mode is a
+// bad reference.
+func sameMode(q querier, v Viewer, playlistID string, trackIDs []string) error {
+	var secret bool
+	err := q.QueryRow(`SELECT p.secret FROM playlists p WHERE p.uuid = ? AND `+v.playlistCond("p")+`;`, playlistID).Scan(&secret)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	for _, id := range trackIDs {
+		if v.SeesAll() {
+			break // background code and tests may mix
+		}
+		var ok bool
+		err := q.QueryRow(`SELECT t.secret = ? FROM tracks t WHERE t.uuid = ?;`, secret, id).Scan(&ok)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrBadReference
+		}
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrBadReference
+		}
+	}
+	return nil
+}
+
 // SetPlaylistTracks replaces a playlist's tracks with trackIDs, in order.
 // Entries the viewer can't see keep their places.
 func SetPlaylistTracks(v Viewer, playlistID string, trackIDs []string) error {
@@ -141,12 +179,8 @@ func SetPlaylistTracks(v Viewer, playlistID string, trackIDs []string) error {
 		return err
 	}
 	defer tx.Rollback()
-	var exists bool
-	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM playlists WHERE uuid = ?);`, playlistID).Scan(&exists); err != nil {
+	if err := sameMode(tx, v, playlistID, trackIDs); err != nil {
 		return err
-	}
-	if !exists {
-		return ErrNotFound
 	}
 	taken := map[int]bool{}
 	if !v.SeesAll() {

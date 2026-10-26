@@ -11,7 +11,7 @@ import (
 
 func TestHiddenWhileLocked(t *testing.T) {
 	dbtest.New(t)
-	ids := secretLibrary(t)
+	ids := modeLibrary(t)
 	mux := http.NewServeMux()
 	Register(mux, nil)
 	h := WithViewer(mux)
@@ -31,19 +31,19 @@ func TestHiddenWhileLocked(t *testing.T) {
 	}
 
 	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest("GET", "/artists/"+ids["hidden artist"], nil))
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/artists/"+ids["secret artist"], nil))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("hidden artist page = %d", rec.Code)
 	}
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/artists/"+ids["public artist"], nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Mixed") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "ZZPUBLIC Album") {
 		t.Fatalf("artist page = %d", rec.Code)
 	}
 
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/tracks/"+ids["public track"]+"/edit", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Open Song") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "ZZPUBLIC Song 1") {
 		t.Fatalf("public edit page = %d", rec.Code)
 	}
 }

@@ -84,7 +84,7 @@ func ImportPage(artists []*audio.Artist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if vaultOpen(ctx) {
+			if secretMode(ctx) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<label class=\"mt-2 flex items-center gap-2 text-sm\"><input id=\"import-secret\" type=\"checkbox\"> Import everything as secret</label> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

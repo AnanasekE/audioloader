@@ -243,7 +243,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if vaultOpen(ctx) {
+			if secretMode(ctx) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<label class=\"flex items-center gap-2 text-sm\"><input id=\"batch-secret\" type=\"checkbox\" name=\"secret\" value=\"1\"> All secret</label>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

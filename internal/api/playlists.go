@@ -54,7 +54,7 @@ func createPlaylist(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name is required", http.StatusBadRequest)
 		return
 	}
-	p, err := db.CreatePlaylist(name)
+	p, err := db.CreatePlaylist(viewer(r), name)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -72,7 +72,7 @@ func renamePlaylist(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name is required", http.StatusBadRequest)
 		return
 	}
-	if err := db.RenamePlaylist(id, name); errors.Is(err, db.ErrNotFound) {
+	if err := db.RenamePlaylist(viewer(r), id, name); errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
@@ -87,7 +87,7 @@ func deletePlaylist(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := db.DeletePlaylist(id); errors.Is(err, db.ErrNotFound) {
+	if err := db.DeletePlaylist(viewer(r), id); errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
@@ -158,8 +158,11 @@ func addToPlaylist(w http.ResponseWriter, r *http.Request) {
 	if !visibleTrack(w, r, trackID) {
 		return
 	}
-	if err := db.AppendToPlaylist(id, trackID); errors.Is(err, db.ErrBadReference) {
-		http.Error(w, "unknown playlist or track", http.StatusBadRequest)
+	if err := db.AppendToPlaylist(viewer(r), id, trackID); errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	} else if errors.Is(err, db.ErrBadReference) {
+		http.Error(w, "that track can't go on this playlist", http.StatusBadRequest)
 		return
 	} else if err != nil {
 		serverError(w, err)

@@ -200,7 +200,7 @@ func TestSetSecretMovesTrack(t *testing.T) {
 	two := addTestTrack(t, "Two", "two", a.ID.String())
 	album, _ := CreateRelease("Album", audio.ReleaseAlbum, "", []string{a.ID.String()})
 	SetReleaseTracks(All, album.ID.String(), []ReleaseTrackInput{{one, 1}, {two, 1}})
-	p, _ := CreatePlaylist("p")
+	p, _ := CreatePlaylist(All, "p")
 	SetPlaylistTracks(All, p.ID.String(), []string{one, two})
 
 	releases, _ := ReleasesOfTrack(one)
@@ -285,7 +285,7 @@ func TestSecretPlaylistSlots(t *testing.T) {
 	b := addTestTrack(t, "B", "b")
 	SetSecret(s, true)
 	// a playlist from before the modes can mix both sides
-	p, _ := CreatePlaylist("p")
+	p, _ := CreatePlaylist(All, "p")
 	SetPlaylistTracks(All, p.ID.String(), []string{a, s, b})
 
 	pl, _ := GetPlaylist(Normal, p.ID.String())

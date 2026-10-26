@@ -13,10 +13,10 @@ func UseTemp(dir string) (restore func(), err error) {
 		d.Close()
 		return nil, err
 	}
-	oldDB, oldTracks, oldCovers, oldArtists := DB, TracksDir, CoversDir, ArtistImagesDir
-	DB, TracksDir, CoversDir, ArtistImagesDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers"), filepath.Join(dir, "artists")
+	oldDB, oldTracks, oldCovers, oldArtists, oldImages := DB, TracksDir, CoversDir, ArtistImagesDir, TrackImagesDir
+	DB, TracksDir, CoversDir, ArtistImagesDir, TrackImagesDir = d, filepath.Join(dir, "tracks"), filepath.Join(dir, "covers"), filepath.Join(dir, "artists"), filepath.Join(dir, "track-images")
 	return func() {
 		d.Close()
-		DB, TracksDir, CoversDir, ArtistImagesDir = oldDB, oldTracks, oldCovers, oldArtists
+		DB, TracksDir, CoversDir, ArtistImagesDir, TrackImagesDir = oldDB, oldTracks, oldCovers, oldArtists, oldImages
 	}, nil
 }
