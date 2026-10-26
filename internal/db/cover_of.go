@@ -54,3 +54,41 @@ func attachCovers(v Viewer, tracks []*audio.Track) error {
 	}
 	return rows.Err()
 }
+
+// CoverEdit sets which song a track covers, as part of a TrackEdit. Give
+// either TrackID (an original in the library) or a Title with optional
+// Artists and MBID (a text reference), never both. The zero value removes
+// the link. The cover's own artists are never touched.
+type CoverEdit struct {
+	TrackID string
+	Title   string
+	Artists string // display text, e.g. "A & B"
+	MBID    string // MusicBrainz recording ID
+}
+
+// setCover writes c onto track id. It returns ErrBadEdit for a link to
+// itself or for both kinds at once, and ErrBadReference for an original
+// that doesn't exist, isn't a song or that v can't see.
+func setCover(tx querier, v Viewer, id string, c CoverEdit) error {
+	hasText := c.Title != "" || c.Artists != "" || c.MBID != ""
+	switch {
+	case c.TrackID != "" && hasText:
+		return ErrBadEdit
+	case c.TrackID == id:
+		return ErrBadEdit
+	case c.TrackID != "":
+		var ok bool
+		err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM tracks t WHERE t.uuid = ? AND t.kind = 'music' AND `+v.trackCond("t")+`);`, c.TrackID).Scan(&ok)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrBadReference
+		}
+	case hasText && c.Title == "":
+		return ErrBadEdit
+	}
+	_, err := tx.Exec(`UPDATE tracks SET original_track_id = ?, original_title = ?, original_artists = ?, original_mbid = ? WHERE uuid = ?;`,
+		nullIfEmpty(c.TrackID), nullIfEmpty(c.Title), nullIfEmpty(c.Artists), nullIfEmpty(c.MBID), id)
+	return err
+}

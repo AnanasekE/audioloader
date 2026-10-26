@@ -164,6 +164,9 @@ templ trackMenu(t *audio.Track) {
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
 				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
+				if !t.IsEpisode() {
+					<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
+				}
 				<button
 					type="button"
 					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
@@ -375,6 +378,9 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 			} else {
 				<input type="hidden" name="kind" value="music"/>
 			}
+			if !t.IsEpisode() {
+				@coverOfFields(t)
+			}
 			if vaultOpen(ctx) {
 				<label class="flex items-center gap-2 text-sm">
 					<input type="checkbox" name="secret" value="1" checked?={ t.Secret }/>
@@ -388,6 +394,82 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
 		</form>
 		<script src="/assets/js/artist-picker.js" defer></script>
 	}
+}
+
+// coverOfFields is the "Cover of" part of the edit form. cover_mode picks
+// what the fields below it mean; "keep" leaves the cover as it is, which is
+// also right for a hidden original (the form can't show it).
+templ coverOfFields(t *audio.Track) {
+	<fieldset id="cover-of" class="group grid gap-3 rounded-md border border-zinc-300 p-3 dark:border-zinc-700">
+		<legend class="px-1 text-sm font-medium">Cover of</legend>
+		if t.CoverOf != nil {
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">Now: { t.CoverOf.String() }</p>
+		}
+		<select id="cover-mode" class="input" name="cover_mode" aria-label="Set the original song by">
+			<option value="keep" selected>Leave as it is</option>
+			<option id="cover-opt-library" value="library">Pick a track in the library</option>
+			<option id="cover-opt-text" value="text">Title and artist as text</option>
+			<option id="cover-opt-mbid" value="mbid">MusicBrainz recording URL</option>
+			<option value="none">Not a cover (remove)</option>
+		</select>
+		<div class="hidden group-has-[#cover-opt-library:checked]:block">
+			<input type="hidden" id="cover-track-id" name="cover_track_id"/>
+			<input
+				class="input"
+				type="search"
+				name="q"
+				placeholder="Search the library"
+				autocomplete="off"
+				aria-label="Search for the original track"
+				hx-get="/ui/tracks/pick"
+				hx-trigger="input changed delay:250ms"
+				hx-target="#cover-pick-results"
+				hx-vals={ `{"exclude": "` + t.ID.String() + `"}` }
+				hx-on:keydown="if (event.key === 'Enter') event.preventDefault()"
+			/>
+			<p id="cover-track-label" class="mt-1 text-sm text-zinc-500 empty:hidden dark:text-zinc-400"></p>
+			<div id="cover-pick-results"></div>
+		</div>
+		<div class="hidden gap-2 group-has-[#cover-opt-text:checked]:grid">
+			<input class="input" type="text" name="cover_title" placeholder="Original title" aria-label="Original title"/>
+			<input class="input" type="text" name="cover_artists" placeholder="Original artists, e.g. A &amp; B" aria-label="Original artists"/>
+		</div>
+		<div class="hidden group-has-[#cover-opt-mbid:checked]:block">
+			<input class="input" type="url" name="cover_mb_url" placeholder="https://musicbrainz.org/recording/…" aria-label="MusicBrainz recording URL"/>
+			<small class="mt-1 block text-zinc-500">Title and artists are looked up when you save.</small>
+		</div>
+	</fieldset>
+}
+
+// CoverPickResults lists library songs to pick as a cover's original;
+// choosing one fills the form's cover_track_id.
+templ CoverPickResults(tracks []*audio.Track) {
+	if len(tracks) == 0 {
+		<p class="mt-1 text-sm text-zinc-500">Nothing matches.</p>
+	} else {
+		<ul class="mt-1 rounded-md border border-zinc-300 bg-white p-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+			for _, t := range tracks {
+				<li>
+					<button
+						type="button"
+						class="block w-full truncate rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+						data-id={ t.ID.String() }
+						data-label={ coverPickLabel(t) }
+						hx-on:click="document.getElementById('cover-track-id').value = this.dataset.id; document.getElementById('cover-track-label').textContent = 'Picked: ' + this.dataset.label; document.getElementById('cover-mode').value = 'library'; this.closest('ul').remove()"
+					>
+						{ t.Title }<span class="text-zinc-500">{ " · " + artistNames(t.Artists) }</span>
+					</button>
+				</li>
+			}
+		</ul>
+	}
+}
+
+func coverPickLabel(t *audio.Track) string {
+	if len(t.Artists) == 0 {
+		return t.Title
+	}
+	return t.Title + " by " + artistNames(t.Artists)
 }
 
 // deleteConfirm is the text of the delete dialog: it names the track and the

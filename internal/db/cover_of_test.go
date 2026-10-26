@@ -1,6 +1,8 @@
 package db
 
 import (
+	"database/sql"
+	"errors"
 	"testing"
 
 	"audioloader/internal/audio"
@@ -56,4 +58,94 @@ func TestCoverOfLoads(t *testing.T) {
 	if tr, _ := GetTrack(All, linked); tr.CoverOf == nil || tr.CoverOf.Title != "Song" {
 		t.Errorf("unlocked viewer: %+v", tr.CoverOf)
 	}
+}
+
+func TestSetCover(t *testing.T) {
+	newTestDB(t)
+	orig, _ := AddArtist("Original Artist")
+	cov, _ := AddArtist("Cover Artist")
+	original := addTestTrack(t, "Song", "orig", orig.ID.String())
+	cover := addTestTrack(t, "Cover", "cov", cov.ID.String())
+	edit := func(c CoverEdit) error {
+		return UpdateTrack(All, cover, TrackEdit{Title: "Cover", Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}, Cover: &c})
+	}
+	check := func(want string) {
+		t.Helper()
+		tr, err := GetTrack(All, cover)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := ""
+		if tr.CoverOf != nil {
+			got = tr.CoverOf.String()
+		}
+		if got != want {
+			t.Fatalf("cover of = %q, want %q", got, want)
+		}
+		if len(tr.Artists) != 1 || tr.Artists[0].ID != cov.ID {
+			t.Fatalf("cover artists changed: %+v", tr.Artists)
+		}
+	}
+
+	// text
+	if err := edit(CoverEdit{Title: "Text Song", Artists: "A & B"}); err != nil {
+		t.Fatal(err)
+	}
+	check("Text Song by A & B")
+	// MusicBrainz: text plus the recording ID
+	if err := edit(CoverEdit{Title: "Teardrop", Artists: "Massive Attack", MBID: "f3bba4cd-8018-468b-902e-bc8f029593e5"}); err != nil {
+		t.Fatal(err)
+	}
+	if tr, _ := GetTrack(All, cover); tr.CoverOf.MBID == "" || tr.CoverOf.TrackID != "" {
+		t.Fatalf("mbid cover = %+v", tr.CoverOf)
+	}
+	// library: replaces the text, never both
+	if err := edit(CoverEdit{TrackID: original}); err != nil {
+		t.Fatal(err)
+	}
+	check("Song by Original Artist")
+	var title sql.NullString
+	DB.QueryRow(`SELECT original_title FROM tracks WHERE uuid = ?;`, cover).Scan(&title)
+	if title.Valid {
+		t.Fatal("text reference left behind a library link")
+	}
+
+	// bad input changes nothing
+	for name, c := range map[string]CoverEdit{
+		"itself":     {TrackID: cover},
+		"both":       {TrackID: original, Title: "x"},
+		"no title":   {Artists: "A"},
+		"no such id": {TrackID: "00000000-0000-0000-0000-000000000000"},
+	} {
+		if err := edit(c); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+	check("Song by Original Artist")
+	// a nil Cover leaves it alone
+	if err := UpdateTrack(All, cover, TrackEdit{Title: "Cover", Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}}); err != nil {
+		t.Fatal(err)
+	}
+	check("Song by Original Artist")
+
+	// a locked viewer can't link a secret original
+	SetSecret(original, true)
+	err := UpdateTrack(Public, cover, TrackEdit{Title: "Cover", Kind: audio.KindMusic, ArtistIDs: []string{cov.ID.String()}, Cover: &CoverEdit{TrackID: original}})
+	if !errors.Is(err, ErrBadReference) {
+		t.Fatalf("secret original = %v", err)
+	}
+	SetSecret(original, false)
+
+	// deleting the original unlinks the cover, which keeps only its own credits
+	if err := DeleteTrack(All, original); err != nil {
+		t.Fatal(err)
+	}
+	check("")
+
+	// remove clears the text
+	edit(CoverEdit{Title: "Text Song"})
+	if err := edit(CoverEdit{}); err != nil {
+		t.Fatal(err)
+	}
+	check("")
 }

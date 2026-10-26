@@ -189,3 +189,22 @@ func TestParseSpotifyURL(t *testing.T) {
 		}
 	}
 }
+
+func TestRecordingID(t *testing.T) {
+	const id = "f3bba4cd-8018-468b-902e-bc8f029593e5"
+	for in, ok := range map[string]bool{
+		"https://musicbrainz.org/recording/" + id:        true,
+		" musicbrainz.org/recording/" + id + "/edit?x=1": true,
+		"https://beta.musicbrainz.org/recording/" + id:   true,
+		id:                                      true,
+		"https://musicbrainz.org/release/" + id: false,
+		"https://example.com/musicbrainz.org/recording/" + id: false,
+		"https://musicbrainz.org/recording/nope":              false,
+		"":                                                    false,
+	} {
+		got, gotOK := RecordingID(in)
+		if gotOK != ok || ok && got != id {
+			t.Errorf("RecordingID(%q) = %q, %v", in, got, gotOK)
+		}
+	}
+}

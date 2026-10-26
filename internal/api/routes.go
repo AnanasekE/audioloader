@@ -47,6 +47,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /ui/artists", getArtists)
 	handle(mux, "GET /ui/musicbrainz/artists/{mbid}/releases", getCandidateReleases)
 	handle(mux, "GET /ui/tracks", getTracks)
+	handle(mux, "GET /ui/tracks/pick", pickCoverTracks)
 	handle(mux, "GET /ui/tracks/{track_id}", getTrack)
 	handle(mux, "POST /ui/tracks", addTrack)
 	handle(mux, "POST /ui/tracks/{track_id}", updateTrack)

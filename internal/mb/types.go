@@ -1,6 +1,10 @@
 package mb
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+	"uuid"
+)
 
 // The types mirror the parts of MusicBrainz's JSON that we use.
 
@@ -102,4 +106,20 @@ type Recording struct {
 	FirstReleaseDate string     `json:"first-release-date"`
 	Relations        []Relation `json:"relations"`
 	Score            int        `json:"score"` // search results only
+}
+
+var recordingURL = regexp.MustCompile(`(?i)^(?:https?://)?(?:[a-z]+\.)?musicbrainz\.org/recording/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#].*)?$`)
+
+// RecordingID extracts the recording ID from a MusicBrainz recording URL,
+// e.g. https://musicbrainz.org/recording/<id>. A bare ID is accepted too.
+// ok is false for anything else.
+func RecordingID(s string) (id string, ok bool) {
+	s = strings.TrimSpace(s)
+	if m := recordingURL.FindStringSubmatch(s); m != nil {
+		return strings.ToLower(m[1]), true
+	}
+	if _, err := uuid.Parse(s); err == nil {
+		return strings.ToLower(s), true
+	}
+	return "", false
 }

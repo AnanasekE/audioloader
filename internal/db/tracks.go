@@ -337,6 +337,8 @@ type TrackEdit struct {
 	ArtistIDs []string
 	// Secret is applied only for a viewer who unlocked the vault; nil leaves it
 	Secret *bool
+	// Cover sets or removes the original song; nil leaves it as it is
+	Cover *CoverEdit
 }
 
 // UpdateTrack saves e in one transaction: the track's fields, then its
@@ -372,6 +374,11 @@ func UpdateTrack(v Viewer, id string, e TrackEdit) error {
 	}
 	if e.Secret != nil && v.Secret {
 		if _, err := tx.Exec(`UPDATE tracks SET secret = ? WHERE uuid = ?;`, *e.Secret, id); err != nil {
+			return err
+		}
+	}
+	if e.Cover != nil {
+		if err := setCover(tx, v, id, *e.Cover); err != nil {
 			return err
 		}
 	}

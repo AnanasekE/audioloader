@@ -107,6 +107,7 @@ func TestNothingLeaksWhileLocked(t *testing.T) {
 	}
 	extra := []string{
 		"/search?q=zzsecret", "/ui/search?q=zzsecret", "/search?q=secret", "/ui/search?q=artist",
+		"/ui/tracks/pick?q=zzsecret", "/ui/tracks/pick?q=secret",
 		"/ui/playlists/picker?track_id=" + ids["secret track"],
 		"/upload/batch?release=" + ids["mixed release"],
 	}

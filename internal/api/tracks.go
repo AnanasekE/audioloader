@@ -16,6 +16,7 @@ import (
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/mb"
 	"audioloader/internal/tagging"
 )
 
@@ -96,6 +97,11 @@ func updateTrack(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	edit := db.TrackEdit{Title: title, Kind: kind, ArtistIDs: artistIDs}
+	cover, ok := coverFromForm(w, r)
+	if !ok {
+		return
+	}
+	edit.Cover = cover
 	if viewer(r).Secret {
 		secret := r.FormValue("secret") == "1"
 		edit.Secret = &secret
@@ -114,6 +120,72 @@ func updateTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hxLocation(w, "/tracks")
+}
+
+// coverFromForm reads the "Cover of" part of the edit form. cover_mode says
+// which fields count: nothing (leave as is), the library track
+// cover_track_id, the text fields cover_title and cover_artists, a
+// MusicBrainz recording URL that is looked up here, or none to remove the
+// link. It returns nil to leave the cover alone, and writes a 400 for bad values.
+func coverFromForm(w http.ResponseWriter, r *http.Request) (*db.CoverEdit, bool) {
+	switch r.FormValue("cover_mode") {
+	case "", "keep":
+		return nil, true
+	case "none":
+		return &db.CoverEdit{}, true
+	case "library":
+		id := strings.TrimSpace(r.FormValue("cover_track_id"))
+		if _, err := uuid.Parse(id); err != nil {
+			http.Error(w, "pick the original track from the list", http.StatusBadRequest)
+			return nil, false
+		}
+		return &db.CoverEdit{TrackID: id}, true
+	case "text":
+		title := strings.TrimSpace(r.FormValue("cover_title"))
+		if title == "" {
+			http.Error(w, "the original needs a title", http.StatusBadRequest)
+			return nil, false
+		}
+		return &db.CoverEdit{Title: title, Artists: strings.TrimSpace(r.FormValue("cover_artists"))}, true
+	case "mbid":
+		id, ok := mb.RecordingID(r.FormValue("cover_mb_url"))
+		if !ok {
+			http.Error(w, "not a MusicBrainz recording URL", http.StatusBadRequest)
+			return nil, false
+		}
+		rec, err := mb.Default().GetRecording(r.Context(), id)
+		if errors.Is(err, mb.ErrNotFound) {
+			http.Error(w, "MusicBrainz doesn't know that recording", http.StatusBadRequest)
+			return nil, false
+		}
+		if err != nil {
+			log.Println("cover of: musicbrainz:", err)
+			http.Error(w, "could not reach MusicBrainz, try again later", http.StatusBadGateway)
+			return nil, false
+		}
+		return &db.CoverEdit{Title: rec.Title, Artists: rec.ArtistCredit.String(), MBID: rec.ID}, true
+	}
+	http.Error(w, "invalid cover mode", http.StatusBadRequest)
+	return nil, false
+}
+
+// pickCoverTracks answers the "Cover of" search: library songs matching q,
+// leaving out the track being edited (exclude).
+func pickCoverTracks(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	res, err := db.Search(viewer(r), q, 8)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	exclude := r.URL.Query().Get("exclude")
+	tracks := make([]*audio.Track, 0, len(res.Tracks))
+	for _, t := range res.Tracks {
+		if t.ID.String() != exclude && !t.IsEpisode() {
+			tracks = append(tracks, t)
+		}
+	}
+	render(w, r, components.CoverPickResults(tracks))
 }
 
 func deleteTrack(w http.ResponseWriter, r *http.Request) {
