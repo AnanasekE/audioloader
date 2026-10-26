@@ -32,6 +32,7 @@ All optional; set as environment variables.
 | `AUDIOLOADER_ADDR` | Address to listen on, default `:8080`. |
 | `AUDIOLOADER_CONTACT` | Contact (email or URL) for the User-Agent MusicBrainz asks for. Defaults to the repository URL. |
 | `ACOUSTID_KEY` | AcoustID API key, for identifying tracks by their audio. Also needs `fpcalc` (Chromaprint). |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Credentials of a Twitch app (dev.twitch.tv, client credentials), for fetching artists' channel pictures. Both are needed; without them a Twitch channel can still be saved but no picture is fetched. |
 | `FPCALC` | Path to `fpcalc`, if it isn't on `PATH`. |
 | `YTDLP`, `FFMPEG` | Paths to `yt-dlp` and `ffmpeg`, if they aren't on `PATH`. Without them YouTube downloads are off. |
 | `SPOTDL` | Path to `spotdl`, if it isn't on `PATH`. Needs `ffmpeg` too. Without it spotDL downloads are off. |
