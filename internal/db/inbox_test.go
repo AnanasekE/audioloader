@@ -132,3 +132,42 @@ func TestFollows(t *testing.T) {
 		t.Fatalf("follow = %+v, %v", f, err)
 	}
 }
+
+func TestInboxOwnedCounts(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Artist")
+	if err := SetFollow(a.ID.String(), "mb-a", DefaultFilters()); err != nil {
+		t.Fatal(err)
+	}
+	add := func(rg string, owned ...bool) {
+		var tracks []InboxTrack
+		for i, o := range owned {
+			tr := InboxTrack{Position: i + 1, Title: "t"}
+			if o {
+				tr.OwnedTrackID = "some-track"
+			}
+			tracks = append(tracks, tr)
+		}
+		if err := AddInboxRelease(InboxRelease{ReleaseGroupMBID: rg, ArtistID: a.ID.String(), Title: rg, Type: "album", Data: InboxData{Tracks: tracks}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("none", false, false)
+	add("some", true, false, false)
+	add("all", true, true)
+
+	got := map[string][2]int{}
+	list, err := ListInbox("new")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range list {
+		got[r.ReleaseGroupMBID] = [2]int{r.Owned(), len(r.Data.Tracks)}
+	}
+	want := map[string][2]int{"none": {0, 2}, "some": {1, 3}, "all": {2, 2}}
+	for k, w := range want {
+		if got[k] != w {
+			t.Errorf("%s owned/total = %v, want %v", k, got[k], w)
+		}
+	}
+}
