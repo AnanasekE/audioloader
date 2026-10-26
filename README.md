@@ -38,6 +38,8 @@ All optional; set as environment variables.
 | `SPOTDL` | Path to `spotdl`, if it isn't on `PATH`. Needs `ffmpeg` too. Without it spotDL downloads are off. |
 | `AUDIOLOADER_WATCH` | A folder searched for missing tracks (store downloads, free downloads), matched by MusicBrainz ID, ISRC or tags. |
 | `AUDIOLOADER_SECRET` | bcrypt hash of the vault passphrase; enables secret tracks. Make one with `./audioloader -hash-secret`. |
+| `AUDIOLOADER_SECRET_SOURCE` | The host of the pages the secret source downloads from, as a bare host name. Only `https` page URLs on exactly this host are accepted. Without it, "Download from URL" in secret mode is off. |
+| `AUDIOLOADER_SECRET_SOURCE_MEDIA` | Comma-separated hosts the audio files may be fetched from, if they aren't on the page host. Redirects to any other host are refused. |
 
 Missing tracks are looked up in a fixed order, and the first source that has one wins: your own files (`AUDIOLOADER_WATCH`, or an upload), then spotDL, then YouTube. spotDL uses a Spotify link from MusicBrainz when the release or track has one, else a search whose title and length must match. YouTube is never used on a guess: the top 5 results wait on the Downloads page for you to pick one.
 

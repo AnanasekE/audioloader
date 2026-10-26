@@ -47,16 +47,22 @@ var intervals = map[string]time.Duration{
 	"coverart":    time.Second,
 }
 
-// New returns a client configured from AUDIOLOADER_CONTACT (put into the
-// User-Agent, which MusicBrainz requires) and ACOUSTID_KEY.
-func New() *Client {
+// UserAgent is the User-Agent audioloader names itself with, containing
+// AUDIOLOADER_CONTACT (the repository URL if unset).
+func UserAgent() string {
 	contact := os.Getenv("AUDIOLOADER_CONTACT")
 	if contact == "" {
 		contact = "https://github.com/AnanasekE/audioloader"
 	}
+	return "audioloader/0.1 ( " + contact + " )"
+}
+
+// New returns a client configured from AUDIOLOADER_CONTACT (put into the
+// User-Agent, which MusicBrainz requires) and ACOUSTID_KEY.
+func New() *Client {
 	return &Client{
 		HTTP:           &http.Client{Timeout: 10 * time.Second},
-		UserAgent:      "audioloader/0.1 ( " + contact + " )",
+		UserAgent:      UserAgent(),
 		AcoustIDKey:    os.Getenv("ACOUSTID_KEY"),
 		MusicBrainzURL: "https://musicbrainz.org/ws/2",
 		AcoustIDURL:    "https://api.acoustid.org/v2",
