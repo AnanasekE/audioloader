@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** all six plans are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–5 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`. Plans 6–11 cover `REQUESTS.md` and aren't started.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -12,6 +12,12 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 3 | [Playback and discovery](03-playback-discovery.md) | Queue, search, playlists |
 | 4 | [Podcasts and long audio](04-podcasts.md) | Podcasts and long audio |
 | 5 | [Secret tracks](05-secret-tracks.md) | Secret tracks |
+| 6 | [Download sources](06-download-sources.md) | spotDL, source order, pick from YouTube (REQUESTS.md) |
+| 7 | [Track editing and artist pages](07-editing-and-artist-pages.md) | Edit and delete tracks, artist pages and pictures |
+| 8 | [Artist links](08-artist-links.md) | MusicBrainz artist pick, Twitch channel (REQUESTS.md) |
+| 9 | [Cover songs](09-cover-songs.md) | Covers: link to the original (REQUESTS.md) |
+| 10 | [Inbox organization](10-inbox-organization.md) | Better inbox organization (REQUESTS.md) |
+| 11 | [Secret mode](11-secret-mode.md) | Secret mode, secret source (REQUESTS.md) |
 
 ## Rules for every plan
 
