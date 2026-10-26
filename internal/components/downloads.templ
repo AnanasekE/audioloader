@@ -13,14 +13,17 @@ import (
 
 const PageDownloads = "downloads"
 
-// DownloadsPage lists placeholder tracks waiting for their files. ytErr is
-// why yt-dlp is unavailable, or "".
-templ DownloadsPage(active, failed, notFound []*db.Download, ytErr string) {
+// DownloadsPage lists placeholder tracks waiting for their files. ytErr and
+// spErr are why yt-dlp and spotDL are unavailable, or "".
+templ DownloadsPage(active, failed, notFound []*db.Download, ytErr, spErr string) {
 	@layout("Downloads", PageDownloads) {
 		@pageHeader("Downloads", fmt.Sprintf("%d in progress · %d failed · %d not found", len(active), len(failed), len(notFound))) {
 		}
 		if ytErr != "" {
 			<p class="card mb-6 text-sm">YouTube downloads are off: { ytErr }.</p>
+		}
+		if spErr != "" {
+			<p class="card mb-6 text-sm">spotDL downloads are off: { spErr }.</p>
 		}
 		<h2 class="mb-3 text-lg font-semibold">In progress</h2>
 		@DownloadsActive(active)
@@ -189,7 +192,7 @@ templ PlaylistMapping(r *audio.Release, mapping []downloads.Mapping, videos []yt
 				<select class="input" name="video_id" aria-label={ "Video for " + m.Track.Track.Title }>
 					<option value="">No video</option>
 					for _, v := range videos {
-						<option value={ v.ID } selected?={ v.ID == m.VideoID }>{ fmt.Sprintf("%s (%s)", v.Title, formatSeconds(v.Duration)) }</option>
+						<option value={ v.ID } selected?={ v.ID == m.ID }>{ fmt.Sprintf("%s (%s)", v.Title, formatSeconds(v.Duration)) }</option>
 					}
 				</select>
 			</label>

@@ -29,6 +29,10 @@ type Download struct {
 	Progress  float64 // 0..1 while downloading
 	LastError string
 	UpdatedAt string
+	// Spotify links of the track and of its release, from MusicBrainz or
+	// an album mapping; "" if unknown
+	SpotifyURL     string
+	ReleaseSpotify string
 }
 
 // ListDownloads returns downloads with any of the given statuses, by release.
@@ -98,6 +102,18 @@ func GetDownload(v Viewer, trackID string) (*Download, error) {
 		d.Release = r
 		break
 	}
+	var track, release sql.NullString
+	if err := DB.QueryRow(`SELECT spotify_url FROM tracks WHERE uuid = ?;`, trackID).Scan(&track); err != nil {
+		return nil, err
+	}
+	d.SpotifyURL = track.String
+	if d.Release != nil {
+		err := DB.QueryRow(`SELECT spotify_url FROM releases WHERE uuid = ?;`, d.Release.ID.String()).Scan(&release)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		d.ReleaseSpotify = release.String
+	}
 	return &d, nil
 }
 
@@ -143,6 +159,13 @@ func DownloadCounts() (map[string]int, error) {
 // SetSourceURL records where a track's file came from.
 func SetSourceURL(trackID, url string) error {
 	_, err := DB.Exec(`UPDATE tracks SET source_url = ? WHERE uuid = ?;`, url, trackID)
+	return err
+}
+
+// SetSpotifyURL records a track's Spotify link, e.g. from mapping its
+// album. It never replaces a link the track already has.
+func SetSpotifyURL(trackID, url string) error {
+	_, err := DB.Exec(`UPDATE tracks SET spotify_url = ? WHERE uuid = ? AND spotify_url IS NULL;`, url, trackID)
 	return err
 }
 

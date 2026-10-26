@@ -31,11 +31,15 @@ func getDownloadsPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	ytErr := ""
-	if d := downloads.Default(); d.YTErr != nil {
+	ytErr, spErr := "", ""
+	d := downloads.Default()
+	if d.YTErr != nil {
 		ytErr = d.YTErr.Error()
 	}
-	render(w, r, components.DownloadsPage(active, failed, notFound, ytErr))
+	if d.SPErr != nil {
+		spErr = d.SPErr.Error()
+	}
+	render(w, r, components.DownloadsPage(active, failed, notFound, ytErr, spErr))
 }
 
 func getActiveDownloads(w http.ResponseWriter, r *http.Request) {

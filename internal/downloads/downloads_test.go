@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"audioloader/internal/dbtest"
 	"audioloader/internal/sources"
 	"audioloader/internal/sources/folder"
+	"audioloader/internal/sources/spotdl"
 	"audioloader/internal/sources/ytdlp"
 )
 
@@ -22,9 +24,15 @@ func fakeDownloader(t *testing.T, extra ...sources.Source) *Downloader {
 	if err != nil {
 		t.Fatal(err)
 	}
+	spBin, _ := filepath.Abs("../sources/spotdl/testdata/fake-spotdl")
+	sp, err := spotdl.New(spBin, "true")
+	if err != nil {
+		t.Fatal(err)
+	}
 	return &Downloader{
-		Sources: append(extra, ytdlp.Source{C: yt}),
+		Sources: append(extra, spotdl.Source{C: sp}, ytdlp.Source{C: yt}),
 		YT:      yt,
+		SP:      sp,
 	}
 }
 
@@ -123,6 +131,77 @@ func TestRunFromFolder(t *testing.T) {
 	}
 }
 
+func TestRunFromSpotdl(t *testing.T) {
+	dbtest.New(t)
+	log := filepath.Join(t.TempDir(), "calls")
+	t.Setenv("FAKE_SPOTDL_LOG", log)
+	d := fakeDownloader(t)
+	_, ph := confirmedRelease(t, "Angel", "Teardrop")
+	calls := func() string { b, _ := os.ReadFile(log); return string(b) }
+
+	// a track with its own link downloads it with no search
+	db.DB.Exec(`UPDATE tracks SET spotify_url = 'https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb' WHERE uuid = ?;`, ph[1])
+	if err := d.Run(context.Background(), ph[1], ""); err != nil {
+		t.Fatal(err)
+	}
+	dl, _ := db.GetDownload(db.All, ph[1])
+	if dl.Status != db.DownloadDone || dl.Source != spotdl.Name || !dl.Track.HasFile {
+		t.Fatalf("download = %+v", dl)
+	}
+	if got := calls(); got != "download https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb\n" {
+		t.Fatalf("calls = %q", got)
+	}
+
+	// without a link, a search result of the wrong length (the fake has Angel at 380 s) is rejected
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNotFound {
+		t.Fatalf("status = %s", dl.Status)
+	}
+}
+
+func TestRunSearchAccepted(t *testing.T) {
+	dbtest.New(t)
+	d := fakeDownloader(t)
+	_, ph := confirmedRelease(t, "Teardrop")
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	dl, _ := db.GetDownload(db.All, ph[0])
+	if dl.Status != db.DownloadDone || dl.Source != spotdl.Name {
+		t.Fatalf("download = %+v", dl)
+	}
+}
+
+func TestRunMapsSpotifyAlbum(t *testing.T) {
+	dbtest.New(t)
+	log := filepath.Join(t.TempDir(), "calls")
+	t.Setenv("FAKE_SPOTDL_LOG", log)
+	d := fakeDownloader(t)
+	rel, ph := confirmedRelease(t, "Angel", "Teardrop", "Inertia Creeps")
+	db.DB.Exec(`UPDATE releases SET spotify_url = 'https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj' WHERE uuid = ?;`, rel.ID.String())
+
+	for _, id := range ph[:2] {
+		if err := d.Run(context.Background(), id, ""); err != nil {
+			t.Fatal(err)
+		}
+		if dl, _ := db.GetDownload(db.All, id); dl.Status != db.DownloadDone || dl.Source != spotdl.Name {
+			t.Fatalf("download = %+v", dl)
+		}
+	}
+	// one album lookup for both, and no search; the mapped links are kept
+	b, _ := os.ReadFile(log)
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	if len(lines) != 3 || lines[0] != "save https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj" || strings.Contains(string(b), "Massive Attack -") {
+		t.Fatalf("calls = %q", lines)
+	}
+	dl, _ := db.GetDownload(db.All, ph[2])
+	if dl.SpotifyURL != "" {
+		t.Fatalf("unmapped track got %q", dl.SpotifyURL)
+	}
+}
+
 func TestImport(t *testing.T) {
 	dbtest.New(t)
 	d := fakeDownloader(t)
@@ -179,7 +258,7 @@ func TestMapPlaylist(t *testing.T) {
 	m := MapPlaylist(r, videos)
 	got := map[string]string{}
 	for _, x := range m {
-		got[x.Track.Track.Title] = x.VideoID
+		got[x.Track.Track.Title] = x.ID
 	}
 	want := map[string]string{"Angel": "v1", "Teardrop": "", "Inertia Creeps": "v4"}
 	if len(got) != len(want) {

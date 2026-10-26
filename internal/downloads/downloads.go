@@ -22,6 +22,7 @@ import (
 	"audioloader/internal/jobs"
 	"audioloader/internal/sources"
 	"audioloader/internal/sources/folder"
+	"audioloader/internal/sources/spotdl"
 	"audioloader/internal/sources/ytdlp"
 )
 
@@ -31,6 +32,12 @@ type Downloader struct {
 	// YT is nil when yt-dlp isn't available; YTErr then says why.
 	YT    *ytdlp.Client
 	YTErr error
+	// SP is nil when spotDL isn't available; SPErr then says why.
+	SP    *spotdl.Client
+	SPErr error
+
+	albumMu sync.Mutex
+	albums  map[string]albumSongs
 }
 
 var (
@@ -39,7 +46,7 @@ var (
 )
 
 // Default is configured from the environment: AUDIOLOADER_WATCH for the
-// watched folder, YTDLP and FFMPEG for yt-dlp. Sources are tried in the
+// watched folder, YTDLP, SPOTDL and FFMPEG for yt-dlp and spotDL. Sources are tried in the
 // fixed order of sources.Order.
 func Default() *Downloader {
 	defaultOnce.Do(func() {
@@ -49,6 +56,15 @@ func Default() *Downloader {
 		}
 		if f := folder.FromEnv(); f != nil {
 			d.Sources = append(d.Sources, f)
+		}
+		d.SP, d.SPErr = spotdl.Default()
+		if d.SP != nil {
+			d.Sources = append(d.Sources, spotdl.Source{C: d.SP})
+			if v, err := d.SP.Version(context.Background()); err == nil {
+				log.Println("spotdl", v)
+			}
+		} else {
+			log.Println("downloads:", d.SPErr)
 		}
 		d.YT, d.YTErr = ytdlp.Default()
 		if d.YT != nil {
@@ -142,8 +158,14 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 		slices.SortStableFunc(ordered, func(a, b sources.Source) int {
 			return sources.Position(a.Name()) - sources.Position(b.Name())
 		})
+		want := wantFor(dl)
 		for _, s := range ordered {
-			found, err := s.Find(ctx, wantFor(dl))
+			if s.Name() == spotdl.Name && want.SpotifyURL == "" && dl.ReleaseSpotify != "" {
+				// the release has an album link: map its songs onto the
+				// placeholders, so this track needs no search
+				want.SpotifyURL = d.mapAlbum(ctx, dl)
+			}
+			found, err := s.Find(ctx, want)
 			if err != nil {
 				log.Printf("downloads: %s: %v", s.Name(), err)
 				continue
@@ -243,7 +265,7 @@ func AttachReader(v db.Viewer, trackID string, f io.ReadSeeker, ext string) (mer
 }
 
 func wantFor(dl *db.Download) sources.Want {
-	w := sources.Want{Title: dl.Track.Title, MBID: dl.Track.MBID, ISRC: dl.Track.ISRC, Duration: dl.Track.Duration}
+	w := sources.Want{Title: dl.Track.Title, MBID: dl.Track.MBID, ISRC: dl.Track.ISRC, Duration: dl.Track.Duration, SpotifyURL: dl.SpotifyURL}
 	for _, a := range dl.Track.Artists {
 		w.Artists = append(w.Artists, a.Name)
 	}
@@ -276,4 +298,75 @@ func Schedule(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// albumSongs is a looked-up Spotify album, kept for a while: every
+// placeholder of a release asks for the same one.
+type albumSongs struct {
+	songs []spotdl.Song
+	at    time.Time
+}
+
+const albumTTL = 10 * time.Minute
+
+// mapAlbum maps the songs of dl's release album onto the release's
+// placeholder tracks, with the same rule as a YouTube playlist, and stores
+// each mapped track's Spotify link. It returns dl's own link, or "" if
+// nothing fits or the lookup failed (which is logged, not fatal: the
+// search still gets its turn).
+func (d *Downloader) mapAlbum(ctx context.Context, dl *db.Download) string {
+	if d.SP == nil || dl.Release == nil {
+		return ""
+	}
+	songs, err := d.albumSongs(ctx, dl.ReleaseSpotify)
+	if err != nil {
+		log.Println("downloads: spotdl album:", err)
+		return ""
+	}
+	release, err := db.GetRelease(db.All, dl.Release.ID.String())
+	if err != nil {
+		log.Println("downloads:", err)
+		return ""
+	}
+	var entries []Entry
+	for _, s := range songs {
+		if _, u, err := spotdl.ParseURL(s.URL); err == nil {
+			entries = append(entries, Entry{ID: u, Title: s.Name, Duration: s.Length()})
+		}
+	}
+	own := ""
+	for _, m := range MapTracks(release, entries) {
+		if m.ID == "" {
+			continue
+		}
+		if err := db.SetSpotifyURL(m.Track.Track.ID.String(), m.ID); err != nil {
+			log.Println("downloads:", err)
+			continue
+		}
+		if m.Track.Track.ID == dl.Track.ID {
+			own = m.ID
+		}
+	}
+	return own
+}
+
+func (d *Downloader) albumSongs(ctx context.Context, albumURL string) ([]spotdl.Song, error) {
+	kind, u, err := spotdl.ParseURL(albumURL)
+	if err != nil || kind != "album" {
+		return nil, spotdl.ErrBadURL
+	}
+	d.albumMu.Lock()
+	defer d.albumMu.Unlock()
+	if c, ok := d.albums[u]; ok && time.Since(c.at) < albumTTL {
+		return c.songs, nil
+	}
+	songs, err := d.SP.Save(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	if d.albums == nil {
+		d.albums = map[string]albumSongs{}
+	}
+	d.albums[u] = albumSongs{songs, time.Now()}
+	return songs, nil
 }

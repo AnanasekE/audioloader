@@ -139,18 +139,35 @@ func CleanTitle(videoTitle string, artists []string) string {
 	return t
 }
 
-// Mapping pairs a release's placeholder track with a playlist video.
-type Mapping struct {
-	Track   *audio.ReleaseTrack
-	VideoID string // "" if no video fits
-	Title   string // the video's title
-	Score   float64
+// Entry is something that may fill a track: a playlist video or a song of
+// a Spotify album.
+type Entry struct {
+	ID       string // a video ID or a Spotify track URL
+	Title    string
+	Duration time.Duration // 0 if unknown
 }
 
-// MapPlaylist matches playlist videos to the release's tracks without a
-// file, by title (cleaned of video noise) and a length within 5 seconds.
-// Each video is used once, best pairs first.
+// Mapping pairs a release's placeholder track with an entry.
+type Mapping struct {
+	Track *audio.ReleaseTrack
+	ID    string // the entry's ID, "" if no entry fits
+	Title string // the entry's title
+	Score float64
+}
+
+// MapPlaylist is MapTracks for the videos of a YouTube playlist.
 func MapPlaylist(r *audio.Release, videos []ytdlp.Entry) []Mapping {
+	entries := make([]Entry, len(videos))
+	for i, v := range videos {
+		entries[i] = Entry{ID: v.ID, Title: v.Title, Duration: time.Duration(v.Duration * float64(time.Second))}
+	}
+	return MapTracks(r, entries)
+}
+
+// MapTracks matches entries to the release's tracks without a file, by
+// title (cleaned of video noise) and a length within 5 seconds. Each entry
+// is used once, best pairs first.
+func MapTracks(r *audio.Release, videos []Entry) []Mapping {
 	var artists []string
 	for _, a := range r.Artists {
 		artists = append(artists, a.Name)
@@ -169,7 +186,7 @@ func MapPlaylist(r *audio.Release, videos []ytdlp.Entry) []Mapping {
 	for ti, rt := range missing {
 		for vi, v := range videos {
 			if rt.Track.Duration > 0 && v.Duration > 0 {
-				diff := rt.Track.Duration - time.Duration(v.Duration*float64(time.Second))
+				diff := rt.Track.Duration - v.Duration
 				if diff < -5*time.Second || diff > 5*time.Second {
 					continue
 				}
@@ -190,11 +207,11 @@ func MapPlaylist(r *audio.Release, videos []ytdlp.Entry) []Mapping {
 	}
 	usedV := map[int]bool{}
 	for _, p := range pairs {
-		if out[p.ti].VideoID != "" || usedV[p.vi] {
+		if out[p.ti].ID != "" || usedV[p.vi] {
 			continue
 		}
 		usedV[p.vi] = true
-		out[p.ti].VideoID, out[p.ti].Title, out[p.ti].Score = videos[p.vi].ID, videos[p.vi].Title, p.score
+		out[p.ti].ID, out[p.ti].Title, out[p.ti].Score = videos[p.vi].ID, videos[p.vi].Title, p.score
 	}
 	return out
 }

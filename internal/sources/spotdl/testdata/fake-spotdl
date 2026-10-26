@@ -1,0 +1,44 @@
+#!/bin/sh
+# Stands in for spotdl in tests, with the argument shape of spotDL 4.5:
+# global options, the operation, then "--" and the query. "save" writes
+# fixture JSON to --save-file; "download" "downloads" testdata/audio.opus
+# to the --output template's directory. Set FAKE_SPOTDL_LOG to a file to
+# record each call's operation and query.
+here=$(dirname "$0")
+save=""
+out=""
+op=""
+query=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--version) echo 4.5.2; exit 0 ;;
+		--save-file) shift; save="$1" ;;
+		--output) shift; out="$1" ;;
+		--format|--ffmpeg) shift ;;
+		save|download) op="$1" ;;
+		--) shift; query="$1"; break ;;
+	esac
+	shift
+done
+[ -n "$FAKE_SPOTDL_LOG" ] && echo "$op $query" >> "$FAKE_SPOTDL_LOG"
+case "$op" in
+	save)
+		case "$query" in
+			*open.spotify.com/album/*) cat "$here/album.json" > "$save" ;;
+			*open.spotify.com/track/*) cat "$here/track.json" > "$save" ;;
+			*Teardrop*) cat "$here/search_teardrop.json" > "$save" ;;
+			*Angel*) cat "$here/search_angel_long.json" > "$save" ;;
+			*) echo "[]" > "$save" ;;
+		esac
+		;;
+	download)
+		case "$query" in
+			*track/failfailfailfailfail12) echo "LookupError: no match on YouTube Music" >&2; exit 1 ;;
+		esac
+		id=${query##*/}
+		dir=$(dirname "$out")
+		# copy, then make the bytes unique per track so fingerprints differ
+		cp "$here/audio.opus" "$dir/$id.opus"
+		printf '%s' "$id" >> "$dir/$id.opus"
+		;;
+esac

@@ -11,12 +11,15 @@ import (
 
 // Want describes the track a download is for.
 type Want struct {
-	Title    string
-	Artists  []string
-	Release  string
-	MBID     string // MusicBrainz recording ID
-	ISRC     string
-	Duration time.Duration // 0 if unknown
+	Title   string
+	Artists []string
+	Release string
+	MBID    string // MusicBrainz recording ID
+	ISRC    string
+	// SpotifyURL is the track's Spotify link, if MusicBrainz or an album
+	// mapping gave one.
+	SpotifyURL string
+	Duration   time.Duration // 0 if unknown
 }
 
 // Candidate is a file a source could provide.

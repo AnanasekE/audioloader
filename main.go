@@ -50,7 +50,7 @@ func main() {
 	tracking.Register()
 	go tracking.Schedule(ctx)
 	downloads.Register()
-	downloads.Default() // logs the yt-dlp version, or why it's unavailable
+	downloads.Default() // logs the yt-dlp and spotDL versions, or why they're unavailable
 	go downloads.Schedule(ctx)
 	if err := jobs.ResetRunning(); err != nil {
 		log.Fatal(err)
