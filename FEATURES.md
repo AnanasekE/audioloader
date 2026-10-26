@@ -107,6 +107,15 @@
 - Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing
 - Playlists: create, add from a track's menu, reorder, remove, rename, delete; a track can be on a playlist more than once
 
+### Cover songs
+
+- A cover can point to its original: a library track, or text (title, artists, optional MusicBrainz recording ID). Reference only; the cover keeps its own credits
+- "Cover of" on the track edit form (pick from the library, text, or a MusicBrainz recording URL, or remove) and "Set cover of..." in the track menu
+- "Cover of X by Y" on track rows, release pages and in the player; deleting the original just unlinks the cover
+- A secret original is not shown, linked, indexed or listed to a locked viewer
+- Search also matches the original's title and artists (ranked lower); artist pages list "Covered by"
+- Auto-tagging suggests the original from MusicBrainz (a recording's `cover` performance relation on a work); Apply or Reject on the Tagging page, never overwrites a set original
+
 ### Tooling and UI
 
 - Tailwind via the standalone CLI (no Node), dark mode
