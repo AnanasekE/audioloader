@@ -180,3 +180,35 @@ func TrackBySourceURL(url string) (string, error) {
 	}
 	return id, err
 }
+
+// SourceURLOf returns the URL a track was downloaded from, or "".
+func SourceURLOf(v Viewer, trackID string) (string, error) {
+	var u sql.NullString
+	err := DB.QueryRow(`SELECT t.source_url FROM tracks t WHERE t.uuid = ? AND `+v.trackCond("t")+`;`, trackID).Scan(&u)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return u.String, err
+}
+
+// ArtistSourceURLs lists the URLs the artist's tracks were downloaded from.
+func ArtistSourceURLs(v Viewer, artistID string) ([]string, error) {
+	rows, err := DB.Query(`
+		SELECT DISTINCT t.source_url FROM tracks t
+		JOIN track_artist_map m ON m.track_id = t.uuid
+		WHERE m.artist_id = ? AND t.source_url IS NOT NULL AND t.source_url != '' AND `+v.trackCond("t")+`
+		ORDER BY t.source_url;`, artistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var u string
+		if err := rows.Scan(&u); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}

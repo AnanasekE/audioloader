@@ -2,8 +2,9 @@
 // named privately in AUDIOLOADER_SECRET_SOURCE, whose pages each hold one
 // audio file. A pasted page URL is checked against the configured host, the
 // page is fetched once to find the audio file, title and description, and the
-// file is fetched once from an allowed media host. Nothing else is requested:
-// no other links are followed and no listings are crawled.
+// file is fetched once from an allowed media host. A page without audio may
+// be a listing, such as an uploader's page: its links to pages one level
+// below it are listed, and none of them is fetched until it's picked.
 package secret
 
 import (
@@ -137,16 +138,40 @@ func (s *Source) isMedia(u *url.URL) bool {
 // Normalize checks that raw is a page of the source and returns it in the
 // form used as the track's source URL: https, lowercase host, no query,
 // fragment or trailing slash. The same page always gives the same string.
+// As pasted from a browser it may also be http, lack a scheme, or have a
+// "www." in front of the host; it's always fetched over https.
 func (s *Source) Normalize(raw string) (string, error) {
-	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Scheme != "https" || u.User != nil || hostOf(u) != s.Host {
+	raw = strings.TrimSpace(raw)
+	if !strings.Contains(raw, "://") && !strings.Contains(raw, ":") {
+		raw = "https://" + raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
+		return "", ErrBadURL
+	}
+	host := strings.TrimSuffix(hostOf(u), ":80")
+	if host != s.Host && host != "www."+s.Host {
 		return "", ErrBadURL
 	}
 	p := strings.TrimRight(u.EscapedPath(), "/")
 	if p == "" {
 		return "", ErrBadURL
 	}
-	return "https://" + hostOf(u) + p, nil
+	return "https://" + s.Host + p, nil
+}
+
+// Parent is the page one level above pageURL, a normalized page URL, such as
+// the uploader's page of a recording; "" if there's none.
+func (s *Source) Parent(pageURL string) string {
+	u, err := url.Parse(pageURL)
+	if err != nil || hostOf(u) != s.Host {
+		return ""
+	}
+	dir := path.Dir(u.EscapedPath())
+	if dir == "/" || dir == "." {
+		return ""
+	}
+	return "https://" + s.Host + dir
 }
 
 // client is the base client with a redirect policy that keeps every hop on
@@ -195,44 +220,73 @@ type Page struct {
 	// Title and Description are defaults for the user to edit; either may be empty.
 	Title       string
 	Description string
+	// Tags are the [Tag] markers in the title, then the description, as
+	// defaults for the user to edit.
+	Tags []string
 	// AudioURL is the audio file, on an allowed host.
 	AudioURL string
+}
+
+// Listing is a page that links to other pages of the source one level below
+// it, such as an uploader's page.
+type Listing struct {
+	// URL is the normalized listing URL.
+	URL     string
+	Title   string
+	Entries []Entry
+}
+
+// Entry is a page a listing links to.
+type Entry struct {
+	URL   string // normalized
+	Title string // the link's text; may be empty
 }
 
 // Inspect fetches the page at raw, which must be a page of the source, and
 // finds its audio file, title and description.
 func (s *Source) Inspect(ctx context.Context, raw string) (*Page, error) {
+	page, _, err := s.Look(ctx, raw)
+	if err == nil && page == nil {
+		err = ErrNoAudio
+	}
+	return page, err
+}
+
+// Look fetches the page at raw once. A page with an audio file gives a Page;
+// one without gives a Listing of the pages it links to one level below it,
+// or ErrNoAudio when it links to none.
+func (s *Source) Look(ctx context.Context, raw string) (*Page, *Listing, error) {
 	pageURL, err := s.Normalize(raw)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.PageTimeout)
 	defer cancel()
 	resp, err := s.get(ctx, pageURL, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("the page answered %d", resp.StatusCode)
+		return nil, nil, fmt.Errorf("the page answered %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, s.MaxPage+1))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if int64(len(body)) > s.MaxPage {
-		return nil, ErrTooLarge
+		return nil, nil, ErrTooLarge
 	}
 	base, _ := url.Parse(pageURL)
 	found := parsePage(body, base)
 
-	page := &Page{URL: pageURL, Title: found.title, Description: found.description}
+	page := &Page{URL: pageURL, Title: found.title, Description: found.description, Tags: BracketTags(found.title, found.description)}
 	switch {
 	case found.tagged != "":
 		// a file the page names itself; where it lives is checked, not guessed around
 		u, err := base.Parse(found.tagged)
 		if err != nil || !s.isMedia(u) {
-			return nil, ErrAudioHost
+			return nil, nil, ErrAudioHost
 		}
 		page.AudioURL = u.String()
 	default:
@@ -243,10 +297,34 @@ func (s *Source) Inspect(ctx context.Context, raw string) (*Page, error) {
 			}
 		}
 	}
-	if page.AudioURL == "" {
-		return nil, ErrNoAudio
+	if page.AudioURL != "" {
+		return page, nil, nil
 	}
-	return page, nil
+
+	l := &Listing{URL: pageURL, Title: found.title}
+	seen := map[string]int{} // URL to its index in Entries
+	for _, ln := range found.links {
+		u, err := base.Parse(ln.href)
+		if err != nil {
+			continue
+		}
+		entryURL, err := s.Normalize(u.String())
+		if err != nil || s.Parent(entryURL) != pageURL {
+			continue
+		}
+		if i, ok := seen[entryURL]; ok {
+			if l.Entries[i].Title == "" {
+				l.Entries[i].Title = ln.text
+			}
+			continue
+		}
+		seen[entryURL] = len(l.Entries)
+		l.Entries = append(l.Entries, Entry{URL: entryURL, Title: ln.text})
+	}
+	if len(l.Entries) == 0 {
+		return nil, nil, ErrNoAudio
+	}
+	return nil, l, nil
 }
 
 // audioExts are the file types the source's files may have.

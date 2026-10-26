@@ -52,7 +52,32 @@ func rememberedPage(url string) *secret.Page {
 }
 
 func getSecretSourcePage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, components.SecretSourcePage())
+	render(w, r, components.SecretSourcePage(r.URL.Query().Get("url")))
+}
+
+// uploaderPages are the pages one level above the pages the artist's tracks
+// came from, such as the uploaders' pages; none outside secret mode.
+func uploaderPages(r *http.Request, artistID string) ([]string, error) {
+	src := secret.Default()
+	if src == nil || !viewer(r).IsSecret() {
+		return nil, nil
+	}
+	urls, err := db.ArtistSourceURLs(viewer(r), artistID)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, u := range urls {
+		if _, err := src.Normalize(u); err != nil {
+			continue
+		}
+		if p := src.Parent(u); p != "" && !seen[p] {
+			seen[p] = true
+			out = append(out, p)
+		}
+	}
+	return out, nil
 }
 
 // secretSourceError writes the message for a failed lookup of a page.
@@ -61,7 +86,7 @@ func secretSourceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, secret.ErrBadURL):
 		http.Error(w, "That isn't a page of the secret source.", http.StatusBadRequest)
 	case errors.Is(err, secret.ErrNoAudio):
-		http.Error(w, "No audio found on that page.", http.StatusUnprocessableEntity)
+		http.Error(w, "No audio or recordings found on that page. Check the address: its case matters.", http.StatusUnprocessableEntity)
 	case errors.Is(err, secret.ErrAudioHost), errors.Is(err, secret.ErrOffHost):
 		http.Error(w, "That page points to a host that isn't allowed.", http.StatusUnprocessableEntity)
 	case errors.Is(err, secret.ErrTooLarge):
@@ -101,12 +126,24 @@ func checkSecretSource(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	} else if t != nil {
-		renderStatus(w, r, http.StatusConflict, components.SecretSourceExists(t))
+		renderStatus(w, r, http.StatusConflict, components.SecretSourceExists(t, src.Parent(pageURL)))
 		return
 	}
-	page, err := src.Inspect(r.Context(), pageURL)
+	page, listing, err := src.Look(r.Context(), pageURL)
 	if err != nil {
 		secretSourceError(w, err)
+		return
+	}
+	if listing != nil {
+		entries := make([]components.ListingEntry, len(listing.Entries))
+		for i, e := range listing.Entries {
+			entries[i].Entry = e
+			if entries[i].Have, err = existingSecretTrack(r, e.URL); err != nil {
+				serverError(w, err)
+				return
+			}
+		}
+		render(w, r, components.SecretSourceListing(listing, entries))
 		return
 	}
 	rememberPage(page)
@@ -115,7 +152,7 @@ func checkSecretSource(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.SecretSourceDetails(page, artists))
+	render(w, r, components.SecretSourceDetails(page, artists, src.Parent(page.URL)))
 }
 
 // downloadFromSecretSource queues the download. The creators are always
@@ -165,7 +202,7 @@ func downloadFromSecretSource(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	} else if t != nil {
-		renderStatus(w, r, http.StatusConflict, components.SecretSourceExists(t))
+		renderStatus(w, r, http.StatusConflict, components.SecretSourceExists(t, src.Parent(pageURL)))
 		return
 	}
 

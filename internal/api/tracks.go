@@ -1,6 +1,7 @@
 package api
 
 import (
+	"audioloader/internal/sources/secret"
 	"encoding/json"
 	"errors"
 	"log"
@@ -69,7 +70,18 @@ func getTrackEditPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.TrackEditPage(track, artists))
+	var uploader string
+	if src := secret.Default(); src != nil && viewer(r).IsSecret() {
+		u, err := db.SourceURLOf(viewer(r), id.String())
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		if _, err := src.Normalize(u); err == nil {
+			uploader = src.Parent(u)
+		}
+	}
+	render(w, r, components.TrackEditPage(track, artists, uploader))
 }
 
 func updateTrack(w http.ResponseWriter, r *http.Request) {

@@ -75,7 +75,12 @@ func getArtistPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.ArtistPage(artist, releases, tracks, covers, others, twitchClient() != nil))
+	uploaders, err := uploaderPages(r, id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.ArtistPage(artist, releases, tracks, covers, others, twitchClient() != nil, uploaders))
 }
 
 func renameArtist(w http.ResponseWriter, r *http.Request) {

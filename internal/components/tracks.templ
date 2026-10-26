@@ -482,10 +482,13 @@ templ secretTrackDetails(t *audio.Track) {
 
 // TrackEditPage edits a track's title, artists and secret flag. Only an
 // episode can change kind, and only into a song.
-templ TrackEditPage(t *audio.Track, artists []*audio.Artist) {
+templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 	@layout("Edit "+t.Title, PageTracks) {
 		@pageHeader("Edit track", t.Title) {
 			<a class="btn" href="/tracks">Cancel</a>
+		}
+		if uploader != "" {
+			<p class="mb-4 text-sm">@UploaderLink(uploader)</p>
 		}
 		<form
 			class="card grid max-w-lg gap-4"

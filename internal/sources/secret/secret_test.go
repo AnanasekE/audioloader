@@ -26,6 +26,11 @@ func TestNormalize(t *testing.T) {
 		{"https://pages.example.test/items/someone/a-slug", "https://pages.example.test/items/someone/a-slug"},
 		{"  https://PAGES.example.test/items/someone/a-slug/?utm=1#t  ", "https://pages.example.test/items/someone/a-slug"},
 		{"https://pages.example.test:443/items/x/y", "https://pages.example.test/items/x/y"},
+		// as pasted from a browser
+		{"http://pages.example.test/items/a/b", "https://pages.example.test/items/a/b"},
+		{"https://www.pages.example.test/items/a/b/", "https://pages.example.test/items/a/b"},
+		{"www.pages.example.test/items/a/b", "https://pages.example.test/items/a/b"},
+		{"pages.example.test/items/a", "https://pages.example.test/items/a"},
 	} {
 		got, err := s.Normalize(c.in)
 		if err != nil || got != c.want {
@@ -33,8 +38,11 @@ func TestNormalize(t *testing.T) {
 		}
 	}
 	for _, bad := range []string{
-		"http://pages.example.test/items/a/b",            // not https
-		"https://evil.example.test/items/a/b",            // another host
+		"ftp://pages.example.test/items/a/b",  // not the web
+		"https://evil.example.test/items/a/b", // another host
+		"https://www.evil.example.test/items/a/b",
+		"https://wwwpages.example.test/items/a/b",
+		"https://sub.pages.example.test/items/a/b",
 		"https://pages.example.test.evil.test/items/a/b", // a lookalike
 		"https://evil.test/?https://pages.example.test/items/a/b",
 		"https://user:pw@pages.example.test/items/a/b", // credentials
@@ -328,5 +336,69 @@ func TestFromEnv(t *testing.T) {
 	s := secret.FromEnv()
 	if s == nil || s.Host != "pages.example.test" || len(s.Media) != 2 || s.Media[1] != "cdn.example.test" {
 		t.Fatalf("source = %+v", s)
+	}
+}
+
+func TestParent(t *testing.T) {
+	_, s := newFake(t)
+	for in, want := range map[string]string{
+		"https://pages.example.test/items/someone/a-slug": "https://pages.example.test/items/someone",
+		"https://pages.example.test/items/someone":        "https://pages.example.test/items",
+		"https://pages.example.test/items":                "",
+		"https://evil.example.test/items/someone/a":       "",
+	} {
+		if got := s.Parent(in); got != want {
+			t.Errorf("Parent(%q) = %q; want %q", in, got, want)
+		}
+	}
+}
+
+func TestLookListsTheLinksOneLevelBelow(t *testing.T) {
+	f, s := newFake(t)
+	listURL := f.Page("/items/someone", `<html><head><title>someone</title></head><body>
+		<a href="/items">up</a>
+		<a href="https://pages.example.test/items/someone/first"></a>
+		<a href="https://pages.example.test/items/someone/first">First one</a>
+		<a href="/items/someone/second/">Second one</a>
+		<a href="second">relative, so not below the listing</a>
+		<a href="/items/someone/third/deeper">too deep</a>
+		<a href="/items/other/fourth">another uploader</a>
+		<a href="https://evil.example.test/items/someone/fifth">another host</a>
+		<a href="http://www.pages.example.test/items/someone/sixth?ref=x">Sixth</a>
+		<script>var media = "https://media.example.test/sounds/not-a-page.txt"</script>
+	</body></html>`)
+	page, l, err := s.Look(context.Background(), "https://www.pages.example.test/items/someone/")
+	if err != nil || page != nil || l == nil {
+		t.Fatalf("Look = %v, %v, %v", page, l, err)
+	}
+	if l.URL != listURL || l.Title != "someone" {
+		t.Errorf("listing = %q %q", l.URL, l.Title)
+	}
+	want := []secret.Entry{
+		{URL: listURL + "/first", Title: "First one"},
+		{URL: listURL + "/second", Title: "Second one"},
+		{URL: listURL + "/sixth", Title: "Sixth"},
+	}
+	if len(l.Entries) != len(want) {
+		t.Fatalf("entries = %+v", l.Entries)
+	}
+	for i := range want {
+		if l.Entries[i] != want[i] {
+			t.Errorf("entry %d = %+v; want %+v", i, l.Entries[i], want[i])
+		}
+	}
+	if got := f.Requests(); len(got) != 1 {
+		t.Errorf("requests = %v; a listing's pages aren't fetched", got)
+	}
+	if _, err := s.Inspect(context.Background(), listURL); !errors.Is(err, secret.ErrNoAudio) {
+		t.Errorf("Inspect of a listing = %v", err)
+	}
+}
+
+func TestBracketTags(t *testing.T) {
+	got := secret.BracketTags("[F4A] [Soft] A title [x, y]", "Some text [soft] [ Long  tag ]\n[]\n[unclosed\n[Another]")
+	want := []string{"F4A", "Soft", "x y", "Long tag", "Another"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("BracketTags = %q; want %q", got, want)
 	}
 }

@@ -107,6 +107,10 @@
 - "Make secret" / "Make public" in the track menu moves a track to the other mode. Going secret takes it off its releases (the confirm dialog lists them; a release left empty is deleted) and off playlists of the other mode; going public leaves it without a release
 - The player's saved state and queue belong to the mode they were saved in: a page of the other mode drops them, and Lock clears the player at once, with its lock screen metadata
 - Download from URL (secret mode, needs `AUDIOLOADER_SECRET_SOURCE`): paste a page of the secret source, Check fills in title and description to edit, you pick the creators (at least one, checked on the server). One page request and one file request, only to the configured host and media hosts, https only, redirects off those hosts refused; the page URL is the track's source URL and an existing one is reported first; the usual fingerprint and duration checks apply. It runs as a background job that the page polls and that the Downloads page never lists
+  - tags are prefilled from `[Tag]` markers in the title and description
+  - addresses as pasted from a browser work too: http, no scheme, or `www.` in front; they're always fetched over https
+  - a page without audio, such as an uploader's page, lists the pages it links one level below it: the ones not in the library first, each with a Download button, the ones already downloaded folded away. Only the listing is fetched until one is picked
+  - "Other pages from this uploader" (the page one level up) on a downloaded track's edit page, its creator's page and the "already in the library" message
 - The migration that introduced the modes deleted releases made only of secret tracks (the tracks stayed); it first copied the database to `database.db.bak-18` and logged each removed release
 - A test requests every GET route in both modes and fails on any trace of the other mode's seed; the routes that only exist in normal mode (or only with a secret source) are checked to answer 404 elsewhere
 

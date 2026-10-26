@@ -18,7 +18,11 @@ type found struct {
 	// texts are the absolute URLs in the page's text, in order, for pages that
 	// set their player up in a script
 	texts []string
+	// links are the page's <a href> links with their text, in order
+	links []link
 }
+
+type link struct{ href, text string }
 
 const (
 	maxTitle       = 200
@@ -60,6 +64,10 @@ func parsePage(body []byte, base *url.URL) found {
 			case "title":
 				if docTitle == "" {
 					docTitle = oneLine(text(n))
+				}
+			case "a":
+				if href := strings.TrimSpace(attr(n, "href")); href != "" {
+					f.links = append(f.links, link{href, cut(oneLine(text(n)), maxTitle)})
 				}
 			}
 			// jPlayer's markup names its parts by class
@@ -196,4 +204,25 @@ func urlsIn(s string) []string {
 	s = strings.ReplaceAll(s, `\/`, `/`)
 	s = strings.ReplaceAll(s, `&amp;`, `&`)
 	return absURL.FindAllString(s, -1)
+}
+
+var bracketTag = regexp.MustCompile(`\[([^\[\]\n]{1,60})\]`)
+
+// BracketTags lists the tags written as [Tag] in texts, in order, without
+// repeats (ignoring case). A comma would split a tag in the form's field, so
+// it becomes a space.
+func BracketTags(texts ...string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, t := range texts {
+		for _, m := range bracketTag.FindAllStringSubmatch(t, -1) {
+			tag := oneLine(strings.ReplaceAll(m[1], ",", " "))
+			if tag == "" || seen[strings.ToLower(tag)] {
+				continue
+			}
+			seen[strings.ToLower(tag)] = true
+			out = append(out, tag)
+		}
+	}
+	return out
 }

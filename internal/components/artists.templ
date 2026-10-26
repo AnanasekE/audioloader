@@ -111,7 +111,7 @@ templ artistLinks(artists []*audio.Artist) {
 
 // ArtistPage shows an artist with their releases by type, then the tracks
 // that aren't on any of those releases, then the covers of their songs.
-templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, covers []*audio.Track, others []*audio.Artist, twitchOn bool) {
+templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, covers []*audio.Track, others []*audio.Artist, twitchOn bool, uploaders []string) {
 	@layout(a.Name, PageArtists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
 			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
@@ -139,6 +139,9 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 					}
 					<a href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
 				</p>
+				for _, u := range uploaders {
+					<p class="mt-1 text-sm">@UploaderLink(u)</p>
+				}
 			</div>
 		</div>
 		@artistImageForm(a)

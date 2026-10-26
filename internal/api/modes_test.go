@@ -582,8 +582,37 @@ func TestSecretSourceDownload(t *testing.T) {
 		t.Errorf("requests = %v", fake.Requests())
 	}
 
+	// the uploader's page lists their other pages, the downloaded one folded away
+	listURL := fake.Page("/items/someone", `<a href="/items/someone/one">The one</a> <a href="/items/someone/copy">A copy</a> <a href="/items/other/x">Not theirs</a>`)
+	uploaderLink := "/upload/secret-source?url=" + url.QueryEscape(listURL)
+	if rec := check(pageURL); !strings.Contains(rec.Body.String(), uploaderLink) {
+		t.Errorf("the duplicate message doesn't offer the uploader's page: %s", rec.Body)
+	}
+	rec = check("www." + secrettest.PageHost + "/items/someone/")
+	body = rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, "1 not in the library, 1 already downloaded") ||
+		!strings.Contains(body, `value="https://`+secrettest.PageHost+`/items/someone/copy"`) ||
+		!strings.Contains(body, "/tracks/"+id+"/edit") || strings.Contains(body, "Not theirs") {
+		t.Fatalf("listing = %d %s", rec.Code, body)
+	}
+	if got := fake.Requests(); got[len(got)-1] != secrettest.PageHost+"/items/someone" {
+		t.Errorf("requests = %v", got)
+	}
+	if b := a.do(true, "GET", "/tracks/"+id+"/edit", nil).Body.String(); !strings.Contains(b, uploaderLink) {
+		t.Error("the edit page doesn't link the uploader's page")
+	}
+	if b := a.do(true, "GET", "/artists/"+a.ID["secret artist"], nil).Body.String(); !strings.Contains(b, uploaderLink) {
+		t.Error("the creator's page doesn't link the uploader's page")
+	}
+	if b := a.do(false, "GET", "/artists/"+a.ID["shared artist"], nil).Body.String(); strings.Contains(b, "Other pages from this uploader") {
+		t.Error("normal mode links the uploader's page")
+	}
+	if b := a.do(true, "GET", uploaderLink, nil).Body.String(); !strings.Contains(b, `hx-trigger="load, submit"`) || !strings.Contains(b, `value="`+listURL+`"`) {
+		t.Error("a prefilled address isn't checked on load")
+	}
+
 	// another page with the same file: the usual duplicate check refuses it
-	copyURL := "https://" + secrettest.PageHost + "/items/someone/copy"
+	copyURL :="https://" + secrettest.PageHost + "/items/someone/copy"
 	if rec := a.do(true, "POST", "/ui/secret-source/check", url.Values{"url": {copyURL}}); rec.Code != http.StatusOK {
 		t.Fatalf("check copy = %d", rec.Code)
 	}
