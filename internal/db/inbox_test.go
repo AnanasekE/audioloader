@@ -157,7 +157,7 @@ func TestInboxOwnedCounts(t *testing.T) {
 	add("all", true, true)
 
 	got := map[string][2]int{}
-	list, err := ListInbox("new")
+	list, err := ListInbox(InboxFilter{Status: "new"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,5 +200,57 @@ func TestRestoreInboxRelease(t *testing.T) {
 	}
 	if n, ig, _ := InboxCounts(); n != 1 || ig != 0 {
 		t.Fatalf("counts after restore = %d, %d", n, ig)
+	}
+}
+
+func TestListInboxFilter(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Massive Attack")
+	b, _ := AddArtist("Portishead")
+	for _, id := range []string{a.ID.String(), b.ID.String()} {
+		if err := SetFollow(id, "mb-"+id, DefaultFilters()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	owned := []InboxTrack{{Position: 1, Title: "x", OwnedTrackID: "t"}}
+	for _, r := range []InboxRelease{
+		{ReleaseGroupMBID: "1", ArtistID: a.ID.String(), Title: "Mezzanine", Type: "album", Date: "1998"},
+		{ReleaseGroupMBID: "2", ArtistID: a.ID.String(), Title: "Teardrop", Type: "single", Date: "1998-04"},
+		{ReleaseGroupMBID: "3", ArtistID: b.ID.String(), Title: "Dummy 100%", Type: "album", Date: "1994", Data: InboxData{Tracks: owned}},
+		{ReleaseGroupMBID: "4", ArtistID: b.ID.String(), Title: "Undated", Type: "ep"},
+	} {
+		if err := AddInboxRelease(r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ids := func(f InboxFilter) string {
+		f.Status = "new"
+		list, err := ListInbox(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := ""
+		for _, r := range list {
+			s += r.ReleaseGroupMBID
+		}
+		return s
+	}
+	for _, c := range []struct {
+		f    InboxFilter
+		want string
+	}{
+		{InboxFilter{}, "2134"},
+		{InboxFilter{Sort: "oldest"}, "3124"},
+		{InboxFilter{Type: "album"}, "13"},
+		{InboxFilter{Type: "album", NoneOwned: true}, "1"},
+		{InboxFilter{Q: "portis"}, "34"},
+		{InboxFilter{Q: "tear"}, "2"},
+		{InboxFilter{Q: "100%"}, "3"},
+		{InboxFilter{Q: "%"}, "3"},
+		{InboxFilter{Q: "nothing"}, ""},
+	} {
+		if got := ids(c.f); got != c.want {
+			t.Errorf("%+v = %q, want %q", c.f, got, c.want)
+		}
 	}
 }

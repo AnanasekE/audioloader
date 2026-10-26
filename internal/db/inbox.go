@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 	"uuid"
@@ -94,9 +95,60 @@ func scanInbox(s scanner) (*InboxRelease, error) {
 	return &r, json.Unmarshal([]byte(data), &r.Data)
 }
 
-// ListInbox returns the inbox releases with the given status, newest release first.
-func ListInbox(status string) ([]*InboxRelease, error) {
-	rows, err := DB.Query(selectInbox+` WHERE i.status = ? ORDER BY i.date IS NULL, i.date DESC, i.title;`, status)
+// InboxFilter narrows and orders a list of inbox releases.
+type InboxFilter struct {
+	Status    string // new or ignored
+	Type      string // a release type, or "" for all
+	NoneOwned bool   // only releases with nothing in the library yet
+	Q         string // matches the title or the artist's name
+	Sort      string // "oldest" for oldest first, else newest first
+}
+
+// Active reports whether anything besides the status narrows the list.
+func (f InboxFilter) Active() bool {
+	return f.Type != "" || f.NoneOwned || f.Q != ""
+}
+
+// Query encodes the filter (not the status) as a query string.
+func (f InboxFilter) Query() string {
+	v := url.Values{}
+	if f.Type != "" {
+		v.Set("type", f.Type)
+	}
+	if f.NoneOwned {
+		v.Set("owned", "none")
+	}
+	if f.Q != "" {
+		v.Set("q", f.Q)
+	}
+	if f.Sort == "oldest" {
+		v.Set("sort", "oldest")
+	}
+	return v.Encode()
+}
+
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// ListInbox returns the inbox releases matching the filter, newest release
+// first unless it says otherwise.
+func ListInbox(f InboxFilter) ([]*InboxRelease, error) {
+	query := selectInbox + ` WHERE i.status = ?`
+	args := []any{f.Status}
+	if f.Type != "" {
+		query += ` AND i.type = ?`
+		args = append(args, f.Type)
+	}
+	if q := strings.TrimSpace(f.Q); q != "" {
+		like := "%" + likeEscaper.Replace(q) + "%"
+		query += ` AND (i.title LIKE ? ESCAPE '\' OR a.name LIKE ? ESCAPE '\')`
+		args = append(args, like, like)
+	}
+	if f.Sort == "oldest" {
+		query += ` ORDER BY i.date IS NULL, i.date, i.title;`
+	} else {
+		query += ` ORDER BY i.date IS NULL, i.date DESC, i.title;`
+	}
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +158,10 @@ func ListInbox(status string) ([]*InboxRelease, error) {
 		r, err := scanInbox(rows)
 		if err != nil {
 			return nil, err
+		}
+		// ownership is in the stored tracklist, so this can't be SQL
+		if f.NoneOwned && r.Owned() > 0 {
+			continue
 		}
 		out = append(out, r)
 	}

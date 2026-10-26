@@ -63,7 +63,9 @@
 
 - Follow an artist (linked to their MusicBrainz ID, picked from the top 5 search results) with filters: release types, secondary types to skip (live, remix, ...)
 - Daily background check of followed artists' discographies; "Check now"
-- Inbox of releases missing from the library: cover, type, date, tracklist with owned tracks marked; Confirm, Confirm all, Don't ask again
+- Inbox of releases missing from the library, one compact row each with "3 of 11 in library"; cover and tracklist (owned tracks marked) open on demand
+- Inbox tabs New and Ignored (move an ignored release back), grouped by artist in collapsible groups (remembered in the browser); Confirm, Confirm all (also per artist), Don't ask again
+- Inbox filters by type and "nothing owned yet", sort by date, search by title or artist; all kept in the URL
 - Confirming creates the release, its artists and tracklist; owned tracks are linked, the rest become placeholders with queued downloads
 - Download sources, tried in a fixed order (the first with a candidate wins; quality only breaks ties within a source): your own files (a watched folder, `AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags; or a manual upload), then spotDL, then YouTube (yt-dlp)
 - spotDL: uses the Spotify album or track link from MusicBrainz when there is one (an album link is mapped onto the release's placeholders like a YouTube playlist); otherwise searches by artist and title and accepts the top result only if its title matches and its length is within 5 s

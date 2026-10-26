@@ -167,12 +167,26 @@ func checkArtistNow(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/inbox")
 }
 
+// inboxFilter reads the inbox's filters, sort and search from the query string.
+func inboxFilter(r *http.Request, status string) db.InboxFilter {
+	q := r.URL.Query()
+	f := db.InboxFilter{Status: status, NoneOwned: q.Get("owned") == "none", Q: strings.TrimSpace(q.Get("q"))}
+	if t := q.Get("type"); audio.ReleaseType(t).Valid() {
+		f.Type = t
+	}
+	if q.Get("sort") == "oldest" {
+		f.Sort = "oldest"
+	}
+	return f
+}
+
 func getInboxPage(w http.ResponseWriter, r *http.Request) {
 	tab := "new"
 	if r.URL.Query().Get("tab") == "ignored" {
 		tab = "ignored"
 	}
-	releases, err := db.ListInbox(tab)
+	filter := inboxFilter(r, tab)
+	releases, err := db.ListInbox(filter)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -187,7 +201,7 @@ func getInboxPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.InboxPage(tab, releases, newCount, ignored, follows))
+	render(w, r, components.InboxPage(filter, releases, newCount, ignored, follows))
 }
 
 func getInboxDetails(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +248,8 @@ func confirmInboxRelease(w http.ResponseWriter, r *http.Request) {
 }
 
 func confirmAllInbox(w http.ResponseWriter, r *http.Request) {
-	releases, err := db.ListInbox("new")
+	// the filters of the page it was clicked on apply
+	releases, err := db.ListInbox(inboxFilter(r, "new"))
 	if err != nil {
 		serverError(w, err)
 		return

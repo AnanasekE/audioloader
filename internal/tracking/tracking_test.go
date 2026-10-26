@@ -69,7 +69,7 @@ func TestCheck(t *testing.T) {
 	if err := Check(context.Background(), c, a.ID.String()); err != nil {
 		t.Fatal(err)
 	}
-	inbox, err := db.ListInbox("new")
+	inbox, err := db.ListInbox(db.InboxFilter{Status: "new"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestCheck(t *testing.T) {
 	if err := Check(context.Background(), c, a.ID.String()); err != nil {
 		t.Fatal(err)
 	}
-	if inbox, _ := db.ListInbox("new"); len(inbox) != 3 {
+	if inbox, _ := db.ListInbox(db.InboxFilter{Status: "new"}); len(inbox) != 3 {
 		t.Fatalf("after second check: %d", len(inbox))
 	}
 

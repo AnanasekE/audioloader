@@ -99,50 +99,95 @@ templ followFilters(follow *db.Follow) {
 	</fieldset>
 }
 
-templ InboxPage(tab string, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
+templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
+	{{ tab := filter.Status }}
 	@layout("Inbox", PageInbox) {
-		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))) {
-			if tab == "new" && len(releases) > 1 {
-				<button class="btn" hx-post="/ui/inbox/confirm-all" hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
-			}
-		}
+		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist")))
+
 		<nav class="mb-4 flex gap-4 text-sm" aria-label="Inbox tabs">
 			@inboxTab("/inbox", "New", newCount, tab == "new")
 			@inboxTab("/inbox?tab=ignored", "Ignored", ignoredCount, tab == "ignored")
 		</nav>
-		if len(follows) == 0 {
-			@emptyState() {
-				Follow artists on the Artists page to get their new releases here.
+		<form
+			class="mb-4 flex flex-wrap items-end gap-3 text-sm"
+			hx-get="/inbox"
+			hx-trigger="change, input delay:300ms from:input[type=search], submit"
+			hx-target="#inbox-list"
+			hx-select="#inbox-list"
+			hx-swap="outerHTML"
+			hx-push-url="true"
+			role="search"
+		>
+			if tab == "ignored" {
+				<input type="hidden" name="tab" value="ignored"/>
 			}
-		} else if len(releases) == 0 {
-			@emptyState() {
-				if tab == "ignored" {
-					Nothing ignored.
-				} else {
-					Nothing new.
+			<label>
+				<span class="sr-only">Search</span>
+				<input class="input" type="search" name="q" value={ filter.Q } placeholder="Search title or artist"/>
+			</label>
+			<label>
+				<span class="sr-only">Type</span>
+				<select class="input" name="type">
+					<option value="">All types</option>
+					for _, typ := range audio.ReleaseTypes {
+						<option value={ string(typ) } selected?={ filter.Type == string(typ) }>{ typ.Label() }</option>
+					}
+				</select>
+			</label>
+			<label>
+				<span class="sr-only">Sort</span>
+				<select class="input" name="sort">
+					<option value="date">Newest first</option>
+					<option value="oldest" selected?={ filter.Sort == "oldest" }>Oldest first</option>
+				</select>
+			</label>
+			<label class="flex items-center gap-2">
+				<input type="checkbox" name="owned" value="none" checked?={ filter.NoneOwned }/>
+				Nothing owned yet
+			</label>
+		</form>
+		<div id="inbox-list">
+			if tab == "new" && len(releases) > 1 {
+				<div class="mb-3 flex justify-end">
+					<button class="btn" hx-post={ "/ui/inbox/confirm-all?" + filter.Query() } hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
+				</div>
+			}
+			if len(follows) == 0 {
+				@emptyState() {
+					Follow artists on the Artists page to get their new releases here.
+				}
+			} else if len(releases) == 0 {
+				@emptyState() {
+					if filter.Active() {
+						Nothing matches.
+					} else if tab == "ignored" {
+						Nothing ignored.
+					} else {
+						Nothing new.
+					}
 				}
 			}
-		}
-		<div class="grid gap-4">
-			for _, g := range groupInbox(releases) {
-				<details class="inbox-group" data-artist={ g.ArtistID } open>
-					<summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 py-1">
-						<span class="font-semibold">{ g.Name } <span class="font-normal text-zinc-500">({ fmt.Sprint(len(g.Releases)) })</span></span>
-						if tab == "new" && len(g.Releases) > 1 {
-							<button
-								class="btn"
-								hx-post={ "/ui/inbox/confirm-all?artist=" + g.ArtistID }
-								hx-confirm={ fmt.Sprintf("Add all %d releases by %s and download their missing tracks?", len(g.Releases), g.Name) }
-							>Confirm all</button>
-						}
-					</summary>
-					<div class="mt-2 grid gap-2">
-						for _, r := range g.Releases {
-							@inboxRelease(r, tab)
-						}
-					</div>
-				</details>
-			}
+			<div class="grid gap-4">
+				for _, g := range groupInbox(releases) {
+					<details class="inbox-group" data-artist={ g.ArtistID } open>
+						<summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 py-1">
+							<span class="font-semibold">{ g.Name } <span class="font-normal text-zinc-500">({ fmt.Sprint(len(g.Releases)) })</span></span>
+							if tab == "new" && len(g.Releases) > 1 {
+								<button
+									class="btn"
+									hx-post={ "/ui/inbox/confirm-all?artist=" + g.ArtistID + "&" + filter.Query() }
+									hx-confirm={ fmt.Sprintf("Add all %d releases by %s and download their missing tracks?", len(g.Releases), g.Name) }
+								>Confirm all</button>
+							}
+						</summary>
+						<div class="mt-2 grid gap-2">
+							for _, r := range g.Releases {
+								@inboxRelease(r, tab)
+							}
+						</div>
+					</details>
+				}
+			</div>
 		</div>
 		<script src="/assets/js/inbox.js" defer></script>
 		if len(follows) > 0 {
