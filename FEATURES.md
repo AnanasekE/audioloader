@@ -57,8 +57,10 @@
 - Daily background check of followed artists' discographies; "Check now"
 - Inbox of releases missing from the library: cover, type, date, tracklist with owned tracks marked; Confirm, Confirm all, Don't ask again
 - Confirming creates the release, its artists and tracklist; owned tracks are linked, the rest become placeholders with queued downloads
-- Download sources, tried in a fixed order (the first with a candidate wins; quality only breaks ties within a source): a watched folder (`AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags), yt-dlp from pasted YouTube URLs
-- Downloads page: progress, failed (with yt-dlp's error), couldn't find; paste a YouTube URL or upload the file by hand
+- Download sources, tried in a fixed order (the first with a candidate wins; quality only breaks ties within a source): your own files (a watched folder, `AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags; or a manual upload), then spotDL, then YouTube (yt-dlp)
+- spotDL: uses the Spotify album or track link from MusicBrainz when there is one (an album link is mapped onto the release's placeholders like a YouTube playlist); otherwise searches by artist and title and accepts the top result only if its title matches and its length is within 5 s
+- YouTube search for missing tracks: when nothing else has the track, the download waits as "Needs a pick" (also counted in the nav). "Pick from YouTube" shows the top 5 results (thumbnail, channel, length and difference from the expected length, Topic and verified badges) with Use this, Preview and None of these; also on release pages
+- Downloads page: progress, needs a pick, failed (with the tool's error), couldn't find; paste a YouTube URL or upload the file by hand
 - Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
 - Import from YouTube: a video or playlist as new tracks, onto a release or as singles
 - Downloaded files go through the usual fingerprint and duration checks; a file already in the library merges the placeholder into it
@@ -120,7 +122,6 @@
 ### Downloads and podcasts
 
 - Bandcamp purchases as a download source (behind a flag, with the user's own cookie)
-- YouTube search (`ytsearch5:`) for missing tracks, always confirmed by hand
 - Library import: treat untagged files over 30 minutes as episodes (the single upload form already does)
 
 ### Apps

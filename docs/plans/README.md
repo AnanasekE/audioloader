@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–5 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`. Plans 6–11 cover `REQUESTS.md` and aren't started.
+**Status:** plans 0–6 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`. Plans 7–11 cover the rest of `REQUESTS.md` and aren't started.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
