@@ -9,6 +9,8 @@
 // buttons, a speed menu (remembered per show) and chapters.
 (() => {
 	const STORAGE_KEY = "audioloader.player";
+	// the mode of this page; the saved state carries the mode it was saved in
+	const MODE = document.body.dataset.mode === "secret" ? "secret" : "normal";
 
 	const root = document.getElementById("player");
 	const audio = document.getElementById("player-audio");
@@ -44,7 +46,7 @@
 			}
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ track: current, time: audio.currentTime, volume: audio.volume, paused: audio.paused, queue, order, pos, shuffle }),
+				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: audio.volume, paused: audio.paused, queue, order, pos, shuffle }),
 			);
 		} catch {
 			// storage can be full or disabled (private mode); playback still works
@@ -411,31 +413,32 @@
 		ms.setActionHandler("nexttrack", next);
 	}
 
-	window.player = { playList, enqueue, playNext, next, prev, toggleShuffle, clear };
-
-	// a locked page must not keep secret tracks around from an unlocked one:
-	// not playing, not queued, not in storage
-	const locked = document.body.dataset.vault !== "1";
-	const state = restoreState();
-	if (state && locked) {
-		const keep = (t) => t && !t.secret;
-		if (Array.isArray(state.queue) && Array.isArray(state.order)) {
-			// rebuilt from the kept tracks in play order, so no secret entry stays in the queue
-			const current = state.order[state.pos];
-			const kept = state.order.filter((i) => keep(state.queue[i]));
-			state.pos = Math.max(0, kept.indexOf(current));
-			state.queue = kept.map((i) => state.queue[i]);
-			state.order = state.queue.map((_, i) => i);
-		}
-		if (!keep(state.track)) {
-			state.track = state.order?.length ? state.queue[state.order[state.pos]] : null;
-			state.time = 0;
-			state.paused = true;
-		}
-		// write the purged state back now, not at the next save
+	// reset forgets everything: what plays, the queue, the stored state and the
+	// lock screen metadata. Locking and unlocking call it as the form is sent,
+	// so nothing of one mode is left for the other.
+	function reset() {
+		audio.pause();
+		clear();
 		try {
-			if (state.track) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-			else localStorage.removeItem(STORAGE_KEY);
+			localStorage.removeItem(STORAGE_KEY);
+		} catch {}
+		if ("mediaSession" in navigator) navigator.mediaSession.metadata = null;
+	}
+
+	window.player = { playList, enqueue, playNext, next, prev, toggleShuffle, clear, reset };
+
+	// a page of one mode must not resume what the other mode played: not
+	// playing, not queued, not in storage
+	const saved = restoreState();
+	const state = window.playerState.forMode(saved, MODE);
+	if (saved && !state) {
+		try {
+			localStorage.removeItem(STORAGE_KEY);
+		} catch {}
+	} else if (state) {
+		// write the cleaned state back now, not at the next save
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 		} catch {}
 	}
 	if (state?.track) {
