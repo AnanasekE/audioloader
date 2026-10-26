@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"net/url"
 	"slices"
 
 	"audioloader/internal/audio"
@@ -318,26 +319,39 @@ templ artistLinkSection(a *audio.Artist) {
 	<details class="mb-8">
 		<summary class="cursor-pointer text-sm font-medium">Link to MusicBrainz</summary>
 		<div class="mt-2 max-w-lg">
-			<button
-				type="button"
-				class="btn"
-				hx-get={ "/ui/artists/" + a.ID.String() + "/link" }
-				hx-target="#artist-link-panel"
-				hx-disabled-elt="this"
-			>Find on MusicBrainz</button>
-			<div id="artist-link-panel" class="mt-2" aria-live="polite"></div>
-			<span id="artist-link-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+			@artistLinkButton(a, "")
 		</div>
 	</details>
 }
 
+// artistLinkButton loads the candidate panel that follows it. back is the
+// page to return to after linking, "" for the artist's own page.
+templ artistLinkButton(a *audio.Artist, back string) {
+	<button
+		type="button"
+		class="btn"
+		hx-get={ artistLinkURL(a, back) }
+		hx-target="next [data-link-panel]"
+		hx-disabled-elt="this"
+	>Find on MusicBrainz</button>
+	<div class="mt-2" data-link-panel aria-live="polite"></div>
+}
+
+func artistLinkURL(a *audio.Artist, back string) string {
+	u := "/ui/artists/" + a.ID.String() + "/link"
+	if back != "" {
+		u += "?back=" + url.QueryEscape(back)
+	}
+	return u
+}
+
 // ArtistLinkCandidates is the panel of MusicBrainz candidates for an
 // artist: pick one, paste an ID or URL, or give up.
-templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr string) {
+templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr string, back string) {
 	<div
 		class="card grid gap-3"
-		hx-target="#artist-link-panel"
-		hx-on::after-request="document.getElementById('artist-link-result').textContent = event.detail.successful ? '' : (event.detail.xhr.responseText || 'Could not link.')"
+		hx-target="closest [data-link-panel]"
+		hx-on::after-request="this.querySelector('[data-link-result]').textContent = event.detail.successful ? '' : (event.detail.xhr.responseText || 'Could not link.')"
 	>
 		for _, c := range candidates {
 			@artistCandidate(c) {
@@ -345,7 +359,7 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 					type="button"
 					class="btn shrink-0"
 					hx-post={ "/ui/artists/" + a.ID.String() + "/link" }
-					hx-vals={ templ.JSONString(map[string]string{"mbid": c.ID}) }
+					hx-vals={ templ.JSONString(map[string]string{"mbid": c.ID, "back": back}) }
 				>Use this</button>
 			}
 		}
@@ -355,16 +369,20 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 			<p class="text-sm text-zinc-500">MusicBrainz found no artist with that name.</p>
 		}
 		<form class="flex gap-2" hx-post={ "/ui/artists/" + a.ID.String() + "/link" }>
-			<label for="artist-link-manual" class="sr-only">MusicBrainz artist ID or URL</label>
-			<input id="artist-link-manual" class="input flex-1" type="text" name="mbid_manual" placeholder="Or paste https://musicbrainz.org/artist/…" required/>
+			<input type="hidden" name="back" value={ back }/>
+			<label class="sr-only">
+				MusicBrainz artist ID or URL
+				<input class="input flex-1" type="text" name="mbid_manual" placeholder="Or paste https://musicbrainz.org/artist/…" required/>
+			</label>
 			<button class="btn shrink-0" type="submit">Use</button>
 		</form>
-		<div>
+		<div class="flex flex-wrap items-center gap-4">
 			<button
 				type="button"
 				class="btn"
-				onclick="document.getElementById('artist-link-panel').innerHTML = ''; this.closest('details').open = false"
+				onclick="this.closest('[data-link-panel]').innerHTML = ''; this.closest('details')?.removeAttribute('open')"
 			>None of these</button>
+			<span data-link-result class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
 		</div>
 	</div>
 }
@@ -382,12 +400,13 @@ templ ArtistLinkTaken(a *audio.Artist, other *audio.Artist) {
 			</p>
 			<form
 				hx-post={ "/ui/artists/" + a.ID.String() + "/merge" }
-				hx-target="#artist-link-result"
+				hx-swap="none"
 				hx-confirm={ "Merge " + a.Name + " into " + other.Name + "? Their tracks and releases move over and " + a.Name + " is deleted." }
-				hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-link-result').textContent = event.detail.xhr.responseText || 'Could not merge.'"
+				hx-on::after-request="this.querySelector('[data-link-result]').textContent = event.detail.successful ? '' : (event.detail.xhr.responseText || 'Could not merge.')"
 			>
 				<input type="hidden" name="into" value={ other.ID.String() }/>
 				<button class="btn" type="submit">Merge into { other.Name }</button>
+				<span data-link-result class="ml-2 text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
 			</form>
 		}
 	</div>

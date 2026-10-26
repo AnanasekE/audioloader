@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strings"
 
+	"audioloader/internal/audio"
 	"audioloader/internal/match"
 )
 
@@ -239,6 +241,71 @@ func setArtistMBID(tx *sql.Tx, a MatchArtist) error {
 		WHERE lower(name) = lower(?) AND mbid IS NULL
 		AND NOT EXISTS (SELECT 1 FROM artists WHERE mbid = ?);`, a.ID, a.Name, a.ID)
 	return err
+}
+
+// ArtistSuggestion is a library artist without a MusicBrainz ID that an
+// applied match credits under a similar but different name. Nothing is
+// linked until the user picks.
+type ArtistSuggestion struct {
+	Artist       *audio.Artist
+	CreditedName string // how the match spells the artist
+}
+
+// ArtistSuggestions lists the library artists that applied matches credit
+// under a close but not identical name, e.g. "Massive Attak" for "Massive
+// Attack". Exact names are linked when the match is applied, so they never
+// show up here.
+func ArtistSuggestions(v Viewer) ([]ArtistSuggestion, error) {
+	rows, err := DB.Query(`
+		SELECT a.uuid, a.name, m.data FROM tag_matches m
+		JOIN tracks t ON t.uuid = m.track_id
+		JOIN track_artist_map tam ON tam.track_id = t.uuid
+		JOIN artists a ON a.uuid = tam.artist_id
+		WHERE m.status = 'applied' AND a.mbid IS NULL AND ` + v.trackCond("t") + ` AND ` + v.artistCond("a") + `
+		ORDER BY a.name COLLATE NOCASE, a.uuid, m.rowid;`)
+	if err != nil {
+		return nil, err
+	}
+	type hit struct{ artistID, credited string }
+	var hits []hit
+	seen := map[string]bool{}
+	for rows.Next() {
+		var id, name, data string
+		if err := rows.Scan(&id, &name, &data); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		if seen[id] {
+			continue
+		}
+		var m Match
+		if err := json.Unmarshal([]byte(data), &m); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		for _, c := range append(m.Artists, m.ReleaseArtists...) {
+			if c.ID != "" && !strings.EqualFold(name, c.Name) && match.Close(name, c.Name) {
+				seen[id] = true
+				hits = append(hits, hit{id, c.Name})
+				break
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	var out []ArtistSuggestion
+	for _, h := range hits {
+		a, err := GetArtist(v, h.artistID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ArtistSuggestion{Artist: a, CreditedName: h.credited})
+	}
+	return out, nil
 }
 
 // UntaggedTrackIDs returns library tracks that were never auto-tagged or

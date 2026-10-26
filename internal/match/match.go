@@ -54,6 +54,20 @@ func Same(a, b string) bool {
 	return Normalize(a) == Normalize(b)
 }
 
+// closeThreshold is the similarity from which two names count as close: two
+// edits in a name of ten letters.
+const closeThreshold = 0.8
+
+// Close reports whether a and b are probably the same name written
+// differently: equal after normalizing, or a few edits apart. Unlike Same,
+// it is a guess, so it must only ever lead to a question for the user.
+func Close(a, b string) bool {
+	if Normalize(a) == "" || Normalize(b) == "" {
+		return false
+	}
+	return Similarity(a, b) >= closeThreshold
+}
+
 func levenshtein(a, b []rune) int {
 	prev := make([]int, len(b)+1)
 	cur := make([]int, len(b)+1)

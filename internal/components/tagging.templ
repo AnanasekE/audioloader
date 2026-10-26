@@ -23,7 +23,7 @@ type TaggingStatus struct {
 	AcoustID bool           // fingerprint lookups available
 }
 
-templ TaggingPage(status TaggingStatus, reviews []TaggingReview) {
+templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion) {
 	@layout("Tagging", PageTagging) {
 		@pageHeader("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
 			status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])) {
@@ -46,6 +46,9 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview) {
 				</p>
 			}
 		</section>
+		if len(suggestions) > 0 {
+			@artistSuggestions(suggestions)
+		}
 		if len(reviews) == 0 {
 			@emptyState() {
 				Nothing to review.
@@ -67,6 +70,28 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview) {
 			</div>
 		}
 	}
+}
+
+// artistSuggestions asks about artists that matches credit under a similar
+// name. Nothing is linked unless the user picks a MusicBrainz artist.
+templ artistSuggestions(suggestions []db.ArtistSuggestion) {
+	<section class="card mb-6">
+		<h2 class="font-semibold">Link artists?</h2>
+		<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+			These artists have no MusicBrainz link, but applied matches credit a similar name.
+		</p>
+		<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			for _, s := range suggestions {
+				<li class="py-2">
+					<p class="mb-2 text-sm">
+						<a href={ artistURL(s.Artist) }>{ s.Artist.Name }</a>
+						<span class="text-zinc-500 dark:text-zinc-400">{ " · credited as “" + s.CreditedName + "”" }</span>
+					</p>
+					@artistLinkButton(s.Artist, "/tagging")
+				</li>
+			}
+		</ul>
+	</section>
 }
 
 templ taggingReview(rv TaggingReview) {

@@ -43,13 +43,19 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		reviews = append(reviews, components.TaggingReview{Track: t, Candidates: []db.Match{p.Match}})
 	}
 
+	suggestions, err := db.ArtistSuggestions(viewer(r))
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
 	tg := tagging.Default()
 	status := components.TaggingStatus{
 		Tracks:   trackCounts,
 		Jobs:     jobCounts,
 		AcoustID: tg.FPCalc != "" && tg.MB.AcoustIDKey != "",
 	}
-	render(w, r, components.TaggingPage(status, reviews))
+	render(w, r, components.TaggingPage(status, reviews, suggestions))
 }
 
 func getTaggingBadge(w http.ResponseWriter, r *http.Request) {

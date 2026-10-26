@@ -63,6 +63,11 @@ func secretLibrary(t *testing.T) map[string]string {
 	ids["playlist"] = p.ID.String()
 	db.SetPlaylistTracks(db.All, p.ID.String(), []string{ids["public track"], ids["secret track"]})
 	db.SaveMatches(ids["secret track"], []db.Match{{Source: "search", Score: 0.7, RecordingID: "rec", Title: "ZZSECRET"}}, db.TagReview)
+	// an applied match crediting the hidden artist under a close name feeds the "link artists?" list
+	if _, err := db.ApplyMatch(ids["secret track"], db.Match{RecordingID: "rec", Title: "ZZSECRET",
+		Artists: []db.MatchArtist{{ID: "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", Name: "ZZSECRET Artis"}}}); err != nil {
+		t.Fatal(err)
+	}
 
 	for _, id := range []string{ids["secret track"], ep} {
 		if err := db.SetSecret(id, true); err != nil {

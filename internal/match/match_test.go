@@ -28,3 +28,23 @@ func TestSimilarity(t *testing.T) {
 		t.Fatalf("different = %v", s)
 	}
 }
+
+func TestClose(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{
+		{"Massive Attack", "massive  attack", true},
+		{"Massive Attack", "Massive Attak", true},
+		{"Beyonce", "Beyoncé", true},
+		{"Massive Attack", "Massive", false},
+		{"Eve", "Eva", false},
+		{"Blur", "Bush", false},
+		{"", "", false},
+		{"!!!", "???", false},
+	} {
+		if got := Close(c.a, c.b); got != c.want {
+			t.Errorf("Close(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
+	}
+}

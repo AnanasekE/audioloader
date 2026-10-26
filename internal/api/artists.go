@@ -198,7 +198,7 @@ func getArtistLink(w http.ResponseWriter, r *http.Request) {
 		log.Println("search artists:", err)
 		searchErr = "Couldn't search MusicBrainz; paste the artist's ID or URL below instead."
 	}
-	render(w, r, components.ArtistLinkCandidates(a, candidates, searchErr))
+	render(w, r, components.ArtistLinkCandidates(a, candidates, searchErr, linkBack(r)))
 }
 
 // linkArtist sets the artist's MusicBrainz ID from a pick ("mbid") or a
@@ -248,5 +248,18 @@ func linkArtist(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	if back := linkBack(r); back != "" {
+		hxLocation(w, back)
+		return
+	}
 	hxLocation(w, "/artists/"+id.String())
+}
+
+// linkBack is the page to return to after linking ("back" in the request),
+// limited to the pages that offer links; "" means the artist's own page.
+func linkBack(r *http.Request) string {
+	if back := r.FormValue("back"); back == "/tagging" {
+		return back
+	}
+	return ""
 }

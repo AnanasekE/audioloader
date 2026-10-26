@@ -190,3 +190,47 @@ func TestPlaceholdersSkipped(t *testing.T) {
 		t.Fatalf("placeholder was tagged: %v", counts)
 	}
 }
+
+func TestCloseArtistNameIsNeverLinked(t *testing.T) {
+	dbtest.New(t)
+	tg := testTagger(t)
+	trackID, _ := addTrack(t, "Teardrop", "Massive Attak", 330*time.Second, teardrop, "Mezzanine", audio.ReleaseAlbum)
+	if err := tg.Tag(context.Background(), trackID); err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := db.GetTrack(db.All, trackID)
+	if tr.MBID != teardrop {
+		t.Fatalf("track mbid = %q", tr.MBID)
+	}
+	if got := tr.Artists[0].MBID; got != "" {
+		t.Fatalf("a close name got the MBID %q", got)
+	}
+	// the pick is offered instead
+	sugg, err := db.ArtistSuggestions(db.All)
+	if err != nil || len(sugg) != 1 || sugg[0].Artist.Name != "Massive Attak" || sugg[0].CreditedName != "Massive Attack" {
+		t.Fatalf("suggestions = %+v, %v", sugg, err)
+	}
+	// once linked, the question goes away
+	if err := db.SetArtistMBID(sugg[0].Artist.ID.String(), "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"); err != nil {
+		t.Fatal(err)
+	}
+	if sugg, _ := db.ArtistSuggestions(db.All); len(sugg) != 0 {
+		t.Fatalf("suggestions after linking = %+v", sugg)
+	}
+}
+
+func TestExactArtistNameIsLinkedWithoutAsking(t *testing.T) {
+	dbtest.New(t)
+	tg := testTagger(t)
+	trackID, _ := addTrack(t, "Teardrop", "massive attack", 330*time.Second, teardrop, "Mezzanine", audio.ReleaseAlbum)
+	if err := tg.Tag(context.Background(), trackID); err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := db.GetTrack(db.All, trackID)
+	if tr.Artists[0].MBID != "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8" {
+		t.Fatalf("artist mbid = %q", tr.Artists[0].MBID)
+	}
+	if sugg, _ := db.ArtistSuggestions(db.All); len(sugg) != 0 {
+		t.Fatalf("suggestions = %+v", sugg)
+	}
+}
