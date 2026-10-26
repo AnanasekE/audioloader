@@ -77,6 +77,20 @@ func TestDecodeFixtures(t *testing.T) {
 		t.Fatalf("release = %+v", rel.Title)
 	}
 
+	// url-rels: only the Spotify links are kept, in canonical form
+	if got := (*reqs)[len(*reqs)-1].URL.Query().Get("inc"); !strings.Contains(got, "url-rels") {
+		t.Fatalf("release inc = %q", got)
+	}
+	if got := SpotifyURL(rel.Relations, "album"); got != "https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj" {
+		t.Fatalf("album link = %q", got)
+	}
+	if got := SpotifyURL(rel.Relations, "track"); got != "" {
+		t.Fatalf("track link on the album = %q", got)
+	}
+	if got := SpotifyURL(rel.Media[0].Tracks[0].Recording.Relations, "track"); got != "https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb" {
+		t.Fatalf("track link = %q", got)
+	}
+
 	recs, err := c.SearchRecordings(ctx, "recording:"+Phrase("Teardrop"), 2)
 	if err != nil || len(recs) == 0 || recs[0].Score == 0 {
 		t.Fatalf("search = %v, %v", recs, err)
@@ -139,5 +153,27 @@ func TestRetryOn503(t *testing.T) {
 func TestPhrase(t *testing.T) {
 	if got := Phrase(`say "hi" \o/`); got != `"say \"hi\" \\o/"` {
 		t.Fatalf("Phrase = %s", got)
+	}
+}
+
+func TestParseSpotifyURL(t *testing.T) {
+	const id = "0sNOF9WDwhWunNAHPD3Baj"
+	for raw, want := range map[string]string{
+		"https://open.spotify.com/album/" + id:                   "https://open.spotify.com/album/" + id,
+		"https://open.spotify.com/album/" + id + "?si=abc":       "https://open.spotify.com/album/" + id,
+		"https://open.spotify.com/intl-de/track/" + id + "?si=x": "https://open.spotify.com/track/" + id,
+		"http://open.spotify.com/track/" + id + "/":              "https://open.spotify.com/track/" + id,
+		"https://open.spotify.com/artist/" + id:                  "",
+		"https://open.spotify.com/playlist/" + id:                "",
+		"https://open.spotify.com/album/short":                   "",
+		"https://spotify.com/album/" + id:                        "",
+		"https://evil.example/open.spotify.com/album/" + id:      "",
+		"https://open.spotify.com.evil.example/album/" + id:      "",
+		"spotify:album:" + id:                                    "",
+		"https://open.spotify.com/album/" + id + "/extra":        "",
+	} {
+		if got := ParseSpotifyURL(raw); got != want {
+			t.Errorf("ParseSpotifyURL(%q) = %q, want %q", raw, got, want)
+		}
 	}
 }

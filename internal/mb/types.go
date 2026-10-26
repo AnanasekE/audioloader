@@ -51,6 +51,15 @@ type Release struct {
 	ReleaseGroup ReleaseGroup `json:"release-group"`
 	Media        []Medium     `json:"media"`
 	TrackCount   int          `json:"track-count"`
+	Relations    []Relation   `json:"relations"`
+}
+
+// Relation is a link from an entity to something else; we only read URLs.
+type Relation struct {
+	Type string `json:"type"` // e.g. "free streaming", "purchase for download"
+	URL  struct {
+		Resource string `json:"resource"`
+	} `json:"url"`
 }
 
 type Medium struct {
@@ -69,12 +78,13 @@ type Track struct {
 }
 
 type Recording struct {
-	ID               string    `json:"id"`
-	Title            string    `json:"title"`
-	Length           int       `json:"length"` // milliseconds
-	ArtistCredit     Credits   `json:"artist-credit"`
-	Releases         []Release `json:"releases"`
-	ISRCs            []string  `json:"isrcs"`
-	FirstReleaseDate string    `json:"first-release-date"`
-	Score            int       `json:"score"` // search results only
+	ID               string     `json:"id"`
+	Title            string     `json:"title"`
+	Length           int        `json:"length"` // milliseconds
+	ArtistCredit     Credits    `json:"artist-credit"`
+	Releases         []Release  `json:"releases"`
+	ISRCs            []string   `json:"isrcs"`
+	FirstReleaseDate string     `json:"first-release-date"`
+	Relations        []Relation `json:"relations"`
+	Score            int        `json:"score"` // search results only
 }

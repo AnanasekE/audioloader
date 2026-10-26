@@ -27,9 +27,11 @@ type InboxRelease struct {
 }
 
 type InboxData struct {
-	CoverURL string        `json:"cover_url"`
-	Artists  []MatchArtist `json:"artists"`
-	Tracks   []InboxTrack  `json:"tracks"`
+	CoverURL string `json:"cover_url"`
+	// the album's Spotify link from MusicBrainz, if it has one
+	SpotifyURL string        `json:"spotify_url,omitempty"`
+	Artists    []MatchArtist `json:"artists"`
+	Tracks     []InboxTrack  `json:"tracks"`
 }
 
 type InboxTrack struct {
@@ -39,6 +41,7 @@ type InboxTrack struct {
 	RecordingMBID string        `json:"recording_mbid"`
 	ISRC          string        `json:"isrc,omitempty"`
 	LengthMs      int           `json:"length_ms"`
+	SpotifyURL    string        `json:"spotify_url,omitempty"`
 	Artists       []MatchArtist `json:"artists"`
 	// set when the library already has this track
 	OwnedTrackID string `json:"owned_track_id,omitempty"`
@@ -182,8 +185,8 @@ func ConfirmInboxRelease(releaseGroupMBID string) (releaseID string, placeholder
 	if !taken {
 		mbid = nullIfEmpty(ir.ReleaseMBID)
 	}
-	if _, err := tx.Exec(`UPDATE releases SET mbid = ?, release_group_mbid = ? WHERE uuid = ?;`,
-		mbid, ir.ReleaseGroupMBID, rel.ID.String()); err != nil {
+	if _, err := tx.Exec(`UPDATE releases SET mbid = ?, release_group_mbid = ?, spotify_url = ? WHERE uuid = ?;`,
+		mbid, ir.ReleaseGroupMBID, nullIfEmpty(ir.Data.SpotifyURL), rel.ID.String()); err != nil {
 		return "", nil, err
 	}
 
@@ -207,9 +210,9 @@ func ConfirmInboxRelease(releaseGroupMBID string) (releaseID string, placeholder
 
 		id := uuid.New().String()
 		_, err := tx.Exec(`
-			INSERT INTO tracks(uuid, title, duration_seconds, has_file, mbid, isrc, tag_status)
-			VALUES(?, ?, ?, 0, ?, ?, 'matched');`,
-			id, t.Title, t.LengthMs/1000, nullIfEmpty(t.RecordingMBID), nullIfEmpty(t.ISRC))
+			INSERT INTO tracks(uuid, title, duration_seconds, has_file, mbid, isrc, spotify_url, tag_status)
+			VALUES(?, ?, ?, 0, ?, ?, ?, 'matched');`,
+			id, t.Title, t.LengthMs/1000, nullIfEmpty(t.RecordingMBID), nullIfEmpty(t.ISRC), nullIfEmpty(t.SpotifyURL))
 		if err != nil {
 			return "", nil, err
 		}

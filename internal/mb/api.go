@@ -20,7 +20,7 @@ func (c *Client) GetRecording(ctx context.Context, id string) (*Recording, error
 // GetRelease looks up a release with its tracklist, credits and release group.
 func (c *Client) GetRelease(ctx context.Context, id string) (*Release, error) {
 	var r Release
-	q := url.Values{"inc": {"recordings artist-credits release-groups isrcs"}}
+	q := url.Values{"inc": {"recordings artist-credits release-groups isrcs url-rels recording-level-rels"}}
 	return &r, c.getJSON(ctx, "musicbrainz", c.mbURL("release/"+url.PathEscape(id), q), &r)
 }
 
@@ -63,7 +63,7 @@ func (c *Client) BrowseReleases(ctx context.Context, releaseGroupID string, offs
 	}
 	q := url.Values{
 		"release-group": {releaseGroupID},
-		"inc":           {"recordings isrcs artist-credits release-groups"},
+		"inc":           {"recordings isrcs artist-credits release-groups url-rels recording-level-rels"},
 		"limit":         {"100"},
 		"offset":        {strconv.Itoa(offset)},
 	}

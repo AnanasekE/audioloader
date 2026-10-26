@@ -211,6 +211,29 @@ var migrations = []func(tx *sql.Tx) error{
 			UPDATE search_state SET dirty = 1;`)
 		return err
 	},
+	// 12: downloads can wait for a pick ('needs_pick': only YouTube results
+	// are left); SQLite can't alter a CHECK, so the table is rebuilt.
+	// Streaming links from MusicBrainz let spotDL skip its search.
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE downloads_new (
+				track_id TEXT PRIMARY KEY REFERENCES tracks(uuid) ON DELETE CASCADE,
+				status TEXT NOT NULL DEFAULT 'queued'
+					CHECK (status IN ('queued', 'searching', 'downloading', 'done', 'not_found', 'failed', 'needs_pick')),
+				source TEXT,
+				progress REAL,
+				last_error TEXT,
+				updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			INSERT INTO downloads_new(track_id, status, source, progress, last_error, updated_at)
+				SELECT track_id, status, source, progress, last_error, updated_at FROM downloads;
+			DROP TABLE downloads;
+			ALTER TABLE downloads_new RENAME TO downloads;
+
+			ALTER TABLE releases ADD COLUMN spotify_url TEXT; -- album link from MusicBrainz url-rels
+			ALTER TABLE tracks ADD COLUMN spotify_url TEXT;   -- track link, from url-rels or the album mapping`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

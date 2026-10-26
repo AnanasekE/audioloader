@@ -82,6 +82,11 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("first = %+v, owned %d", first.Title, first.Owned())
 	}
 
+	if first.Data.SpotifyURL != "https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj" ||
+		first.Data.Tracks[0].SpotifyURL != "https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb" || first.Data.Tracks[1].SpotifyURL != "" {
+		t.Fatalf("spotify links = %q, %q", first.Data.SpotifyURL, first.Data.Tracks[0].SpotifyURL)
+	}
+
 	// ignored releases don't come back, and nothing is added twice
 	if err := db.IgnoreInboxRelease(first.ReleaseGroupMBID); err != nil {
 		t.Fatal(err)

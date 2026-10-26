@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -19,7 +20,7 @@ func TestConfirmInboxRelease(t *testing.T) {
 	library, _ := ListTracks(All)
 	credit := []MatchArtist{{ID: "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", Name: "Massive Attack"}}
 	tracks := []InboxTrack{
-		{Disc: 1, Position: 1, Title: "Angel", RecordingMBID: "r1", LengthMs: 380000, Artists: credit},
+		{Disc: 1, Position: 1, Title: "Angel", RecordingMBID: "r1", LengthMs: 380000, Artists: credit, SpotifyURL: "https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb"},
 		{Disc: 1, Position: 2, Title: "Teardrop", RecordingMBID: "r3", LengthMs: 61000, Artists: credit},
 		{Disc: 1, Position: 3, Title: "Group Four", LengthMs: 490000, Artists: append(credit, MatchArtist{ID: "x", Name: "Elizabeth Fraser"})},
 	}
@@ -31,7 +32,7 @@ func TestConfirmInboxRelease(t *testing.T) {
 	}
 	err := AddInboxRelease(InboxRelease{
 		ReleaseGroupMBID: "rg1", ArtistID: a.ID.String(), ReleaseMBID: "rel1", Title: "Mezzanine", Type: "album", Date: "1998-04-20",
-		Data: InboxData{Artists: credit, Tracks: tracks},
+		Data: InboxData{Artists: credit, Tracks: tracks, SpotifyURL: "https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -56,6 +57,14 @@ func TestConfirmInboxRelease(t *testing.T) {
 	}
 	if rel.Tracks[1].Track.ID.String() != owned || !rel.Tracks[1].Track.HasFile || rel.Tracks[0].Track.HasFile {
 		t.Fatalf("tracklist = %+v", rel.Tracks)
+	}
+	var albumLink, trackLink, noLink sql.NullString
+	DB.QueryRow(`SELECT spotify_url FROM releases WHERE uuid = ?;`, relID).Scan(&albumLink)
+	DB.QueryRow(`SELECT spotify_url FROM tracks WHERE uuid = ?;`, rel.Tracks[0].Track.ID.String()).Scan(&trackLink)
+	DB.QueryRow(`SELECT spotify_url FROM tracks WHERE uuid = ?;`, rel.Tracks[2].Track.ID.String()).Scan(&noLink)
+	if albumLink.String != "https://open.spotify.com/album/0sNOF9WDwhWunNAHPD3Baj" ||
+		trackLink.String != "https://open.spotify.com/track/2dgjBzSYiTVqlSc3u1Yosb" || noLink.Valid {
+		t.Fatalf("spotify links = %v, %v, %v", albumLink, trackLink, noLink)
 	}
 	if len(rel.Tracks[2].Track.Artists) != 2 {
 		t.Fatalf("featured artist missing: %+v", rel.Tracks[2].Track.Artists)

@@ -129,8 +129,9 @@ func Check(ctx context.Context, c *mb.Client, artistID string) error {
 			Type:             typ,
 			Date:             firstNonEmpty(rg.FirstReleaseDate, rel.Date),
 			Data: db.InboxData{
-				CoverURL: c.CoverArtURL + "/release-group/" + rg.ID + "/front-250",
-				Artists:  credits(rel.ArtistCredit),
+				CoverURL:   c.CoverArtURL + "/release-group/" + rg.ID + "/front-250",
+				Artists:    credits(rel.ArtistCredit),
+				SpotifyURL: mb.SpotifyURL(rel.Relations, "album"),
 			},
 		}
 		for _, m := range rel.Media {
@@ -142,6 +143,7 @@ func Check(ctx context.Context, c *mb.Client, artistID string) error {
 					RecordingMBID: t.Recording.ID,
 					LengthMs:      firstPositive(t.Length, t.Recording.Length),
 					Artists:       credits(t.Recording.ArtistCredit),
+					SpotifyURL:    mb.SpotifyURL(t.Recording.Relations, "track"),
 				}
 				if len(t.Recording.ISRCs) > 0 {
 					it.ISRC = t.Recording.ISRCs[0]
