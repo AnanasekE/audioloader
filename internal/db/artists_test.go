@@ -123,6 +123,9 @@ func TestRenameAndMergeArtists(t *testing.T) {
 	}
 	png := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 32)...)
 	SaveArtistImage(a.ID, bytes.NewReader(png))
+	if err := SetArtistTwitch(a.ID.String(), "alpha_band"); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := MergeArtists(a.ID.String(), a.ID.String()); !errors.Is(err, ErrBadMerge) {
 		t.Fatalf("self merge = %v", err)
@@ -144,6 +147,9 @@ func TestRenameAndMergeArtists(t *testing.T) {
 		t.Fatalf("release artists = %+v", rel.Artists)
 	}
 	got, _ := GetArtist(All, b.ID.String())
+	if got.TwitchLogin != "alpha_band" {
+		t.Fatalf("twitch after merge = %q", got.TwitchLogin)
+	}
 	if got.MBID != "mb-alpha" || !got.Followed || !strings.HasPrefix(got.ImgURL, "/artist-images/") {
 		t.Fatalf("kept artist = %+v", got)
 	}

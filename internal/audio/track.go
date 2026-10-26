@@ -56,6 +56,8 @@ type Artist struct {
 	Name   string
 	ImgURL string
 	MBID   string // MusicBrainz artist ID, "" if unknown
+	// TwitchLogin is the lowercase login of the artist's Twitch channel, "" if none
+	TwitchLogin string
 	// Followed is set by artist listings: new releases are tracked
 	Followed bool
 }

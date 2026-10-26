@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -32,4 +34,14 @@ func fakeMusicBrainz(t *testing.T, routes map[string]string) {
 		c.MusicBrainzURL, c.Sleep = oldURL, oldSleep
 		srv.Close()
 	})
+}
+
+// fileHas reports whether the file at path holds exactly want.
+func fileHas(t *testing.T, path string, want []byte) bool {
+	t.Helper()
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes.Equal(got, want)
 }

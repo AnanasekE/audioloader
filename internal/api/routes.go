@@ -77,6 +77,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /ui/artists/{artist_id}/link", linkArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/image", uploadArtistImage)
 	handle(mux, "POST /ui/artists/{artist_id}/image/remove", removeArtistImage)
+	handle(mux, "POST /ui/artists/{artist_id}/twitch", setArtistTwitch)
+	handle(mux, "POST /ui/artists/{artist_id}/twitch/picture", updateArtistTwitchPicture)
 	handle(mux, "POST /ui/artists/{artist_id}/follow", followArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/unfollow", unfollowArtist)
 	handle(mux, "POST /ui/artists/{artist_id}/check", checkArtistNow)

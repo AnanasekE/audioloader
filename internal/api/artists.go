@@ -70,7 +70,7 @@ func getArtistPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.ArtistPage(artist, releases, tracks, others))
+	render(w, r, components.ArtistPage(artist, releases, tracks, others, twitchClient() != nil))
 }
 
 func renameArtist(w http.ResponseWriter, r *http.Request) {

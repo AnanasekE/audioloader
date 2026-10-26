@@ -109,7 +109,7 @@ templ artistLinks(artists []*audio.Artist) {
 
 // ArtistPage shows an artist with their releases by type, then the tracks
 // that aren't on any of those releases.
-templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, others []*audio.Artist) {
+templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, others []*audio.Artist, twitchOn bool) {
 	@layout(a.Name, PageArtists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
 			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
@@ -119,6 +119,10 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				<p class="mt-1 text-sm">
 					if a.MBID != "" {
 						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
+						{ " · " }
+					}
+					if a.TwitchLogin != "" {
+						<a href={ templ.SafeURL("https://www.twitch.tv/" + a.TwitchLogin) } rel="noopener noreferrer">Twitch</a>
 						{ " · " }
 					}
 					<a href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
@@ -134,6 +138,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			</div>
 		</div>
 		@artistImageForm(a)
+		@artistTwitchForm(a, twitchOn)
 		if a.MBID == "" {
 			@artistLinkSection(a)
 		}
@@ -185,6 +190,42 @@ templ artistImageForm(a *audio.Artist) {
 					hx-confirm="Go back to the default picture?"
 				>Remove picture</button>
 				<span id="artist-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			</div>
+		</form>
+	</details>
+}
+
+// artistTwitchForm sets the artist's Twitch channel. Saving fetches the
+// channel's picture for an artist with the default picture; Update replaces
+// the picture on request only.
+templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
+	<details class="mb-8">
+		<summary class="cursor-pointer text-sm font-medium">Twitch channel</summary>
+		<form
+			class="card mt-2 grid max-w-lg gap-2"
+			hx-post={ "/ui/artists/" + a.ID.String() + "/twitch" }
+			hx-target="#artist-twitch-result"
+			hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-twitch-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+		>
+			<label for="artist-twitch" class="text-sm font-medium">Login or twitch.tv link (empty removes it)</label>
+			<input id="artist-twitch" class="input" type="text" name="twitch" value={ a.TwitchLogin } placeholder="e.g. cottontailva" maxlength="200"/>
+			if !twitchOn {
+				<p class="text-sm text-zinc-500 dark:text-zinc-400">
+					Pictures can't be fetched: set <code>TWITCH_CLIENT_ID</code> and <code>TWITCH_CLIENT_SECRET</code>.
+				</p>
+			}
+			<div class="flex flex-wrap items-center gap-4">
+				<button class="btn" type="submit">Save</button>
+				if a.TwitchLogin != "" && twitchOn {
+					<button
+						type="button"
+						class="btn"
+						hx-post={ "/ui/artists/" + a.ID.String() + "/twitch/picture" }
+						hx-target="#artist-twitch-result"
+						hx-confirm="Replace the picture with the channel's current one?"
+					>Update picture from Twitch</button>
+				}
+				<span id="artist-twitch-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
 			</div>
 		</form>
 	</details>

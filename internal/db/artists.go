@@ -40,9 +40,9 @@ func ListArtists(v Viewer) ([]*audio.Artist, error) {
 func GetArtist(v Viewer, id string) (*audio.Artist, error) {
 	var a audio.Artist
 	err := DB.QueryRow(`
-		SELECT a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
+		SELECT a.uuid, a.name, `+artistImgURL+`, COALESCE(a.mbid, ''), COALESCE(a.twitch_login, ''), f.artist_id IS NOT NULL
 		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
-		WHERE a.uuid = ? AND `+v.artistCond("a")+`;`, id).Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed)
+		WHERE a.uuid = ? AND `+v.artistCond("a")+`;`, id).Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.TwitchLogin, &a.Followed)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -171,8 +171,8 @@ func RenameArtist(id, name string) error {
 var ErrBadMerge = errors.New("can't merge an artist into itself")
 
 // MergeArtists folds artist from into artist into: tracks, releases and
-// inbox entries move over, and so do the follow, MusicBrainz ID and picture
-// when into has none of its own. from is deleted.
+// inbox entries move over, and so do the follow, MusicBrainz ID, Twitch
+// channel and picture when into has none of its own. from is deleted.
 func MergeArtists(from, into string) error {
 	if from == into {
 		return ErrBadMerge
@@ -184,11 +184,11 @@ func MergeArtists(from, into string) error {
 	defer tx.Rollback()
 
 	type artistRow struct {
-		mbid, image sql.NullString
+		mbid, image, twitch sql.NullString
 	}
 	read := func(id string) (artistRow, error) {
 		var a artistRow
-		err := tx.QueryRow(`SELECT mbid, image FROM artists WHERE uuid = ?;`, id).Scan(&a.mbid, &a.image)
+		err := tx.QueryRow(`SELECT mbid, image, twitch_login FROM artists WHERE uuid = ?;`, id).Scan(&a.mbid, &a.image, &a.twitch)
 		if errors.Is(err, sql.ErrNoRows) {
 			return a, ErrNotFound
 		}
@@ -222,6 +222,11 @@ func MergeArtists(from, into string) error {
 			return err
 		}
 	}
+	if src.twitch.Valid && !dst.twitch.Valid {
+		if _, err := tx.Exec(`UPDATE artists SET twitch_login = ? WHERE uuid = ?;`, src.twitch.String, into); err != nil {
+			return err
+		}
+	}
 	keepImage := src.image.Valid && !dst.image.Valid
 	if keepImage {
 		if _, err := tx.Exec(`UPDATE artists SET image = ? WHERE uuid = ?;`, src.image.String, into); err != nil {
@@ -245,6 +250,12 @@ func SetArtistMBID(id, mbid string) error {
 		return ErrMBIDTaken
 	}
 	return err
+}
+
+// SetArtistTwitch sets an artist's Twitch login (lowercase, validated by the
+// caller); "" removes it.
+func SetArtistTwitch(id, login string) error {
+	return expectRow(DB.Exec(`UPDATE artists SET twitch_login = ? WHERE uuid = ?;`, nullIfEmpty(login), id))
 }
 
 // ArtistByMBID returns the artist the viewer can see that has the

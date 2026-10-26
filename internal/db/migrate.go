@@ -240,6 +240,11 @@ var migrations = []func(tx *sql.Tx) error{
 		_, err := tx.Exec(`ALTER TABLE artists ADD COLUMN image TEXT;`)
 		return err
 	},
+	// 14: an artist's Twitch channel, as a lowercase login; NULL for none
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`ALTER TABLE artists ADD COLUMN twitch_login TEXT;`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.
