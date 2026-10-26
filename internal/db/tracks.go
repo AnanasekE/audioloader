@@ -63,6 +63,9 @@ func ListTracks(v Viewer) ([]*audio.Track, error) {
 	if err := attachReleases(tracks); err != nil {
 		return nil, err
 	}
+	if err := attachCovers(v, tracks); err != nil {
+		return nil, err
+	}
 	return tracks, nil
 }
 
@@ -78,6 +81,9 @@ func GetTrack(v Viewer, id string) (*audio.Track, error) {
 		return nil, err
 	}
 	if err := attachReleases([]*audio.Track{t}); err != nil {
+		return nil, err
+	}
+	if err := attachCovers(v, []*audio.Track{t}); err != nil {
 		return nil, err
 	}
 	return t, nil

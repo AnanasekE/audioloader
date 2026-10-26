@@ -26,9 +26,33 @@ type Track struct {
 	Finished bool
 	// Secret tracks are only shown once the vault is unlocked
 	Secret bool
+	// CoverOf is the original song this track covers, nil if none or if it
+	// is a secret track the viewer can't see
+	CoverOf *CoverRef
 	// false for a placeholder: the track is known (e.g. from a release's
 	// tracklist) but its file hasn't been added yet
 	HasFile bool
+}
+
+// CoverRef points a cover to its original, as a reference only: the
+// original's artists are text and never become credits of the cover.
+type CoverRef struct {
+	Title   string
+	Artists string // display text, e.g. "A & B"; may be empty
+	// TrackID is the original in the library; ReleaseID is the release to
+	// link to for it ("" if it is on none). Both are empty for a text
+	// reference, which may carry the MusicBrainz recording ID instead.
+	TrackID   string
+	ReleaseID string
+	MBID      string
+}
+
+// String is "Title by Artists", for places that only show text.
+func (c *CoverRef) String() string {
+	if c.Artists == "" {
+		return c.Title
+	}
+	return c.Title + " by " + c.Artists
 }
 
 // Track kinds.

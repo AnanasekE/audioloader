@@ -64,7 +64,7 @@
 		root.hidden = false;
 		cover.src = track.img;
 		title.textContent = track.title;
-		artists.textContent = track.artists;
+		artists.textContent = track.coverOf ? `${track.artists} · cover of ${track.coverOf}` : track.artists;
 		if ("mediaSession" in navigator) {
 			navigator.mediaSession.metadata = new MediaMetadata({
 				title: track.title,
@@ -230,6 +230,7 @@
 	function trackOf(btn) {
 		const d = btn.dataset;
 		const t = { id: d.id, title: d.title, artists: d.artists, img: d.img, src: d.src };
+		if (d.coverOf) t.coverOf = d.coverOf;
 		if (d.secret === "1") t.secret = true;
 		if (d.kind === "episode") Object.assign(t, { kind: "episode", show: d.show, position: d.position || 0 });
 		return t;

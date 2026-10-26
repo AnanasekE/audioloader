@@ -245,6 +245,16 @@ var migrations = []func(tx *sql.Tx) error{
 		_, err := tx.Exec(`ALTER TABLE artists ADD COLUMN twitch_login TEXT;`)
 		return err
 	},
+	// 15: a cover points to its original, either a track in the library or a
+	// text reference (never both). Reference artists are text, not artists rows.
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			ALTER TABLE tracks ADD COLUMN original_track_id TEXT REFERENCES tracks(uuid) ON DELETE SET NULL;
+			ALTER TABLE tracks ADD COLUMN original_title TEXT;
+			ALTER TABLE tracks ADD COLUMN original_artists TEXT; -- display text, e.g. "A & B"
+			ALTER TABLE tracks ADD COLUMN original_mbid TEXT;    -- MusicBrainz recording ID`)
+		return err
+	},
 }
 
 // Migrate brings db up to the latest schema version.

@@ -141,6 +141,7 @@ templ Track(t *audio.Track) {
 				@artistLinks(t.Artists)
 				@trackReleaseLabel(t)
 			</span>
+			@coverOfLine(t)
 		</div>
 		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(t.Duration) }</span>
 		@trackMenu(t)
@@ -215,6 +216,9 @@ templ playableButton(t *audio.Track, size string) {
 		data-artists={ artistNames(t.Artists) }
 		data-img={ t.ImgURL }
 		data-src={ "/api/tracks/" + t.ID.String() + "/stream" }
+		if t.CoverOf != nil {
+			data-cover-of={ t.CoverOf.String() }
+		}
 		if t.Secret {
 			data-secret="1"
 		}
@@ -226,6 +230,38 @@ templ playableButton(t *audio.Track, size string) {
 			}
 		}
 	>▶</button>
+}
+
+// coverOfLine says which song a cover is of, linking to the original in the
+// library or on MusicBrainz.
+templ coverOfLine(t *audio.Track) {
+	if c := t.CoverOf; c != nil {
+		<span class="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+			{ "Cover of " }
+			if u := coverOfURL(c); u != "" {
+				<a href={ u }>{ c.Title }</a>
+			} else {
+				<em>{ c.Title }</em>
+			}
+			if c.Artists != "" {
+				{ " by " + c.Artists }
+			}
+		</span>
+	}
+}
+
+// coverOfURL is where the original lives: its release page, or its
+// MusicBrainz recording. "" for a plain text reference.
+func coverOfURL(c *audio.CoverRef) templ.SafeURL {
+	switch {
+	case c.ReleaseID != "":
+		return templ.SafeURL("/releases/" + c.ReleaseID)
+	case c.TrackID != "":
+		return searchURL(c.Title)
+	case c.MBID != "":
+		return templ.SafeURL("https://musicbrainz.org/recording/" + c.MBID)
+	}
+	return ""
 }
 
 // trackReleaseLabel names where a track comes from. An album, EP or

@@ -110,6 +110,9 @@ func GetPlaylist(v Viewer, id string) (*audio.Playlist, error) {
 	if err := attachReleases(unique); err != nil {
 		return nil, err
 	}
+	if err := attachCovers(v, unique); err != nil {
+		return nil, err
+	}
 	p.Count = len(p.Tracks)
 	p.ImgURL = DefaultCover
 	if len(p.Tracks) > 0 {

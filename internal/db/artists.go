@@ -328,5 +328,8 @@ func ListArtistTracks(v Viewer, artistID string) ([]*audio.Track, error) {
 	if err := attachArtists(tracks); err != nil {
 		return nil, err
 	}
-	return tracks, attachReleases(tracks)
+	if err := attachReleases(tracks); err != nil {
+		return nil, err
+	}
+	return tracks, attachCovers(v, tracks)
 }

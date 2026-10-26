@@ -129,7 +129,10 @@ func GetRelease(v Viewer, id string) (*audio.Release, error) {
 		return nil, err
 	}
 	// lets a single's page link to the album its song is also on
-	return r, attachReleases(tracks)
+	if err := attachReleases(tracks); err != nil {
+		return nil, err
+	}
+	return r, attachCovers(v, tracks)
 }
 
 // renumber numbers each disc's tracks 1, 2, 3, ... in their order.

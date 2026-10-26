@@ -212,6 +212,9 @@ templ singleView(r *audio.Release) {
 				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Date }</p>
 			}
 			if len(r.Tracks) > 0 {
+				<p class="mt-1 text-sm">
+					@coverOfLine(r.Tracks[0].Track)
+				</p>
 				<div class="mt-6 flex items-center gap-4" id="release-tracks" data-track-list data-track-row>
 					@playButton(r.Tracks[0].Track, "size-14 text-xl")
 					<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
@@ -253,6 +256,7 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 			if artistNames(rt.Track.Artists) != artistNames(r.Artists) {
 				<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(rt.Track.Artists) }</span>
 			}
+			@coverOfLine(rt.Track)
 		</div>
 		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(rt.Track.Duration) }</span>
 		@trackMenu(rt.Track)

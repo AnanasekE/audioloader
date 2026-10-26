@@ -49,6 +49,12 @@ func secretLibrary(t *testing.T) map[string]string {
 		}
 	}
 
+	// a public cover of the secret track: its "Cover of" line must not show up
+	ids["cover of secret"] = add("Public Cover", "cover", pub.ID.String(), nil)
+	if _, err := db.DB.Exec(`UPDATE tracks SET original_track_id = ? WHERE uuid = ?;`, ids["secret track"], ids["cover of secret"]); err != nil {
+		t.Fatal(err)
+	}
+
 	show, _ := db.ResolveShow("ZZSECRET Show", "")
 	ids["secret show"] = show.ID.String()
 	ep, err := db.AddEpisode(show.ID.String(), &audio.Track{Title: "ZZSECRET Episode", Duration: time.Hour}, bytes.NewReader([]byte("episode")), ".mp3")
@@ -91,7 +97,7 @@ func TestNothingLeaksWhileLocked(t *testing.T) {
 	// IDs to try for each path parameter: the hidden ones, and pages that
 	// show public things next to hidden ones
 	params := map[string][]string{
-		"track_id":     {ids["secret track"], ids["secret episode"], ids["public track"]},
+		"track_id":     {ids["secret track"], ids["secret episode"], ids["public track"], ids["cover of secret"]},
 		"release_id":   {ids["secret single"], ids["mixed release"]},
 		"artist_id":    {ids["hidden artist"]},
 		"playlist_id":  {ids["playlist"]},
@@ -155,8 +161,15 @@ func TestNothingLeaksWhileLocked(t *testing.T) {
 		}
 	}
 
-	// the mixed release numbers its public tracks 1, 2
+	// the cover itself is listed, without its original
 	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/tracks", nil))
+	if !strings.Contains(rec.Body.String(), "Public Cover") || strings.Contains(rec.Body.String(), "Cover of") {
+		t.Error("tracks page should list the cover without a Cover of line")
+	}
+
+	// the mixed release numbers its public tracks 1, 2
+	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/releases/"+ids["mixed release"], nil))
 	if strings.Contains(rec.Body.String(), ">3<") {
 		t.Error("mixed release shows a gap in its numbering")
