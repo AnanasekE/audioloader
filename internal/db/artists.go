@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"uuid"
 
@@ -118,30 +120,121 @@ func mergeDuplicateArtists(tx *sql.Tx) error {
 	}
 
 	for dup, k := range dups {
-		stmts := []string{
-			`UPDATE track_artist_map SET artist_id = ? WHERE artist_id = ?;`,
-			// the release map has a primary key, so skip rows the kept artist already has
-			`UPDATE OR IGNORE release_artist_map SET artist_id = ? WHERE artist_id = ?;`,
-		}
-		for _, q := range stmts {
-			if _, err := tx.Exec(q, k, dup); err != nil {
-				return err
-			}
-		}
-		if _, err := tx.Exec(`DELETE FROM artists WHERE uuid = ?;`, dup); err != nil {
+		if err := moveArtistLinks(tx, dup, k); err != nil {
 			return err
 		}
 	}
-	// a track credited to both artists now has the kept one twice
-	_, err = tx.Exec(`
-		DELETE FROM track_artist_map WHERE rowid NOT IN (
-			SELECT MIN(rowid) FROM track_artist_map GROUP BY track_id, artist_id
-		);`)
-	if err != nil {
+	if err := dedupeTrackArtists(tx); err != nil {
 		return err
 	}
 	_, err = tx.Exec(`UPDATE artists SET name = trim(name) WHERE name != trim(name);`)
 	return err
+}
+
+// moveArtistLinks points the track and release links of artist dup at keep
+// and deletes dup. It only uses the oldest schema, so migration 3 can call it.
+func moveArtistLinks(tx *sql.Tx, dup, keep string) error {
+	stmts := []string{
+		`UPDATE track_artist_map SET artist_id = ? WHERE artist_id = ?;`,
+		// the release map has a primary key, so skip rows the kept artist already has
+		`UPDATE OR IGNORE release_artist_map SET artist_id = ? WHERE artist_id = ?;`,
+	}
+	for _, q := range stmts {
+		if _, err := tx.Exec(q, keep, dup); err != nil {
+			return err
+		}
+	}
+	_, err := tx.Exec(`DELETE FROM artists WHERE uuid = ?;`, dup)
+	return err
+}
+
+// dedupeTrackArtists drops repeated (track, artist) links: a track credited
+// to two merged artists has the kept one twice.
+func dedupeTrackArtists(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+		DELETE FROM track_artist_map WHERE rowid NOT IN (
+			SELECT MIN(rowid) FROM track_artist_map GROUP BY track_id, artist_id
+		);`)
+	return err
+}
+
+// RenameArtist changes an artist's name; names stay unique ignoring case.
+func RenameArtist(id, name string) error {
+	err := expectRow(DB.Exec(`UPDATE artists SET name = ? WHERE uuid = ?;`, name, id))
+	if isUniqueViolation(err) {
+		return ErrArtistExists
+	}
+	return err
+}
+
+// ErrBadMerge is returned when an artist is merged into itself.
+var ErrBadMerge = errors.New("can't merge an artist into itself")
+
+// MergeArtists folds artist from into artist into: tracks, releases and
+// inbox entries move over, and so do the follow, MusicBrainz ID and picture
+// when into has none of its own. from is deleted.
+func MergeArtists(from, into string) error {
+	if from == into {
+		return ErrBadMerge
+	}
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	type artistRow struct {
+		mbid, image sql.NullString
+	}
+	read := func(id string) (artistRow, error) {
+		var a artistRow
+		err := tx.QueryRow(`SELECT mbid, image FROM artists WHERE uuid = ?;`, id).Scan(&a.mbid, &a.image)
+		if errors.Is(err, sql.ErrNoRows) {
+			return a, ErrNotFound
+		}
+		return a, err
+	}
+	src, err := read(from)
+	if err != nil {
+		return err
+	}
+	dst, err := read(into)
+	if err != nil {
+		return err
+	}
+
+	// deleting from would cascade away its follow and inbox rows, so those move first
+	if _, err := tx.Exec(`UPDATE inbox_releases SET artist_id = ? WHERE artist_id = ?;`, into, from); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE OR IGNORE artist_follows SET artist_id = ? WHERE artist_id = ?;`, into, from); err != nil {
+		return err
+	}
+	if err := moveArtistLinks(tx, from, into); err != nil {
+		return err
+	}
+	if err := dedupeTrackArtists(tx); err != nil {
+		return err
+	}
+	// from is gone now, so its MBID is free to move
+	if src.mbid.Valid && !dst.mbid.Valid {
+		if _, err := tx.Exec(`UPDATE artists SET mbid = ? WHERE uuid = ?;`, src.mbid.String, into); err != nil {
+			return err
+		}
+	}
+	keepImage := src.image.Valid && !dst.image.Valid
+	if keepImage {
+		if _, err := tx.Exec(`UPDATE artists SET image = ? WHERE uuid = ?;`, src.image.String, into); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if src.image.Valid && !keepImage {
+		os.Remove(filepath.Join(ArtistImagesDir, filepath.Base(src.image.String)))
+	}
+	return nil
 }
 
 // ListArtistReleases returns the releases credited to an artist, newest

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"uuid"
 
 	"audioloader/internal/components"
 	"audioloader/internal/db"
@@ -62,7 +63,66 @@ func getArtistPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.ArtistPage(artist, releases, tracks))
+	others, err := db.ListArtists(viewer(r))
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.ArtistPage(artist, releases, tracks, others))
+}
+
+func renameArtist(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "artist_id")
+	if !ok || !visibleArtist(w, r, id.String()) {
+		return
+	}
+	name := strings.TrimSpace(r.FormValue("name"))
+	if name == "" {
+		http.Error(w, "name is required", http.StatusBadRequest)
+		return
+	}
+	err := db.RenameArtist(id.String(), name)
+	switch {
+	case errors.Is(err, db.ErrArtistExists):
+		http.Error(w, name+" is already in the library.", http.StatusConflict)
+		return
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/artists/"+id.String())
+}
+
+// mergeArtist folds the artist into the one named by "into".
+func mergeArtist(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "artist_id")
+	if !ok || !visibleArtist(w, r, id.String()) {
+		return
+	}
+	into, err := uuid.Parse(r.FormValue("into"))
+	if err != nil {
+		http.Error(w, "pick the artist to merge into", http.StatusBadRequest)
+		return
+	}
+	if !visibleArtist(w, r, into.String()) {
+		return
+	}
+	err = db.MergeArtists(id.String(), into.String())
+	switch {
+	case errors.Is(err, db.ErrBadMerge):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	case errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/artists/"+into.String())
 }
 
 func getArtists(w http.ResponseWriter, r *http.Request) {

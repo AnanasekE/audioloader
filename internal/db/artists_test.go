@@ -98,3 +98,53 @@ func TestArtistImage(t *testing.T) {
 		t.Fatalf("track artist ImgURL = %q", tr.Artists[0].ImgURL)
 	}
 }
+
+func TestRenameAndMergeArtists(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist("Alpha")
+	b, _ := AddArtist("Beta")
+	if err := RenameArtist(a.ID.String(), "beta"); !errors.Is(err, ErrArtistExists) {
+		t.Fatalf("rename to a taken name = %v", err)
+	}
+	if err := RenameArtist(a.ID.String(), "ALPHA Band"); err != nil {
+		t.Fatal(err)
+	}
+	if err := RenameArtist("nope", "x"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("rename missing = %v", err)
+	}
+
+	r, _ := CreateRelease("Split", audio.ReleaseAlbum, "", []string{a.ID.String(), b.ID.String()})
+	only := addTestTrack(t, "Only A", "1", a.ID.String())
+	both := addTestTrack(t, "Both", "2", a.ID.String(), b.ID.String())
+	PlaceTrack(both, ReleaseLink{ReleaseID: r.ID.String(), Disc: 1, Position: 1})
+	DB.Exec(`UPDATE artists SET mbid = 'mb-alpha' WHERE uuid = ?;`, a.ID.String())
+	if err := SetFollow(a.ID.String(), "mb-alpha", DefaultFilters()); err != nil {
+		t.Fatal(err)
+	}
+	png := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 32)...)
+	SaveArtistImage(a.ID, bytes.NewReader(png))
+
+	if err := MergeArtists(a.ID.String(), a.ID.String()); !errors.Is(err, ErrBadMerge) {
+		t.Fatalf("self merge = %v", err)
+	}
+	if err := MergeArtists(a.ID.String(), b.ID.String()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := GetArtist(All, a.ID.String()); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("merged artist = %v", err)
+	}
+	for _, id := range []string{only, both} {
+		tr, _ := GetTrack(All, id)
+		if len(tr.Artists) != 1 || tr.Artists[0].ID != b.ID {
+			t.Fatalf("%s artists = %+v", tr.Title, tr.Artists)
+		}
+	}
+	rel, _ := GetRelease(All, r.ID.String())
+	if len(rel.Artists) != 1 || rel.Artists[0].ID != b.ID {
+		t.Fatalf("release artists = %+v", rel.Artists)
+	}
+	got, _ := GetArtist(All, b.ID.String())
+	if got.MBID != "mb-alpha" || !got.Followed || !strings.HasPrefix(got.ImgURL, "/artist-images/") {
+		t.Fatalf("kept artist = %+v", got)
+	}
+}

@@ -107,7 +107,7 @@ templ artistLinks(artists []*audio.Artist) {
 
 // ArtistPage shows an artist with their releases by type, then the tracks
 // that aren't on any of those releases.
-templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track) {
+templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, others []*audio.Artist) {
 	@layout(a.Name, PageArtists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
 			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
@@ -132,6 +132,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			</div>
 		</div>
 		@artistImageForm(a)
+		@artistManageForm(a, others)
 		if len(releases) == 0 && len(tracks) == 0 {
 			@emptyState() {
 				Nothing by this artist yet.
@@ -181,5 +182,45 @@ templ artistImageForm(a *audio.Artist) {
 				<span id="artist-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
 			</div>
 		</form>
+	</details>
+}
+
+// artistManageForm renames an artist or merges them into another one.
+templ artistManageForm(a *audio.Artist, others []*audio.Artist) {
+	<details class="mb-8">
+		<summary class="cursor-pointer text-sm font-medium">Rename or merge</summary>
+		<div class="card mt-2 grid max-w-lg gap-4">
+			<form
+				class="flex gap-2"
+				hx-post={ "/ui/artists/" + a.ID.String() + "/rename" }
+				hx-target="#artist-manage-result"
+				hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-manage-result').textContent = event.detail.xhr.responseText || 'Could not rename.'"
+			>
+				<label for="artist-rename" class="sr-only">Name</label>
+				<input id="artist-rename" class="input flex-1" type="text" name="name" value={ a.Name } required/>
+				<button class="btn shrink-0" type="submit">Rename</button>
+			</form>
+			if len(others) > 1 {
+				<form
+					class="flex gap-2"
+					hx-post={ "/ui/artists/" + a.ID.String() + "/merge" }
+					hx-target="#artist-manage-result"
+					hx-confirm={ "Merge " + a.Name + " into the chosen artist? Their tracks and releases move over and " + a.Name + " is deleted." }
+					hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-manage-result').textContent = event.detail.xhr.responseText || 'Could not merge.'"
+				>
+					<label for="artist-merge" class="sr-only">Merge into</label>
+					<select id="artist-merge" class="input flex-1" name="into" required>
+						<option value="">Merge into…</option>
+						for _, o := range others {
+							if o.ID != a.ID {
+								<option value={ o.ID.String() }>{ o.Name }</option>
+							}
+						}
+					</select>
+					<button class="btn shrink-0" type="submit">Merge</button>
+				</form>
+			}
+			<span id="artist-manage-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+		</div>
 	</details>
 }
