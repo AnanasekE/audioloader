@@ -16,6 +16,11 @@
 - Release covers (JPEG, PNG, WebP); tracks show the cover of their album, else EP, single, compilation
 - Unique artist names (case-insensitive); existing duplicates merged
 - Placeholder tracks: known from a tracklist, shown greyed out until their file is added
+- Edit a track (title, artists, secret flag; an episode can become a song) from its menu; search follows the new title
+- Delete a track from its menu, with a confirm dialog naming its releases; its file, playlist entries, positions, downloads and tagging rows go with it, the releases stay
+- Artist pages (`/artists/<id>`): picture, MusicBrainz link, follow status, releases by type, and tracks not on any of their releases; artist names in track rows and on release pages link there
+- Artist profile pictures (JPEG, PNG, WebP, checked by content), "Remove picture" returns to the default
+- Rename an artist (still unique, case-insensitive) or merge it into another from the artist page; follow, MusicBrainz ID and picture move over when the target has none
 
 ### Uploading
 
@@ -111,8 +116,6 @@
 
 ### Library and editing
 
-- Edit and delete tracks
-- Artist pages and profile pictures
 - Turn the existing tracks without a release into singles
 
 ### Playback
