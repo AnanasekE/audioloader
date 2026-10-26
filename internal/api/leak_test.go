@@ -74,6 +74,7 @@ func secretLibrary(t *testing.T) map[string]string {
 
 func TestNothingLeaksWhileLocked(t *testing.T) {
 	dbtest.New(t)
+	fakeMusicBrainz(t, map[string]string{"/release-group": `{"release-groups": [{"id": "x", "title": "Public Album", "primary-type": "Album", "first-release-date": "2001"}], "release-group-count": 1}`})
 	ids := secretLibrary(t)
 	hash, _ := vault.Hash("pass")
 	v := vault.New([]byte(hash), []byte("0123456789abcdef0123456789abcdef"))
@@ -91,6 +92,7 @@ func TestNothingLeaksWhileLocked(t *testing.T) {
 		"playlist_id":  {ids["playlist"]},
 		"show_id":      {ids["secret show"]},
 		"recording_id": {"00000000-0000-0000-0000-000000000000"},
+		"mbid":         {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"},
 	}
 	extra := []string{
 		"/search?q=zzsecret", "/ui/search?q=zzsecret", "/search?q=secret", "/ui/search?q=artist",

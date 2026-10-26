@@ -99,9 +99,21 @@ func TestDecodeFixtures(t *testing.T) {
 	if err != nil || len(artists) == 0 || artists[0].Name != "Massive Attack" {
 		t.Fatalf("artists = %v, %v", artists, err)
 	}
+	if a := artists[0]; a.Area.Name != "United Kingdom" || a.LifeSpan.Begin != "1987" || a.LifeSpan.Ended {
+		t.Fatalf("artist details = %+v", a)
+	}
 	groups, count, err := c.BrowseReleaseGroups(ctx, "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", 0)
 	if err != nil || len(groups) == 0 || count < len(groups) || groups[0].PrimaryType == "" {
 		t.Fatalf("groups = %v, %d, %v", groups, count, err)
+	}
+	recent, err := c.RecentReleaseGroups(ctx, "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", 3)
+	if err != nil || len(recent) == 0 || len(recent) > 3 {
+		t.Fatalf("recent = %v, %v", recent, err)
+	}
+	for i := 1; i < len(recent); i++ {
+		if recent[i].FirstReleaseDate > recent[i-1].FirstReleaseDate {
+			t.Fatalf("recent not newest first: %v", recent)
+		}
 	}
 	releases, _, err := c.BrowseReleases(ctx, "6f9f6899-c0d3-311d-ae87-a10ae6bc53a9", 0)
 	if err != nil || len(releases) == 0 || len(releases[0].Media) == 0 {

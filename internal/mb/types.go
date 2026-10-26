@@ -5,13 +5,28 @@ import "strings"
 // The types mirror the parts of MusicBrainz's JSON that we use.
 
 type Artist struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	SortName       string `json:"sort-name"`
-	Disambiguation string `json:"disambiguation"`
-	Country        string `json:"country"`
-	Type           string `json:"type"`
-	Score          int    `json:"score"` // search results only
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	SortName       string   `json:"sort-name"`
+	Disambiguation string   `json:"disambiguation"`
+	Country        string   `json:"country"`
+	Type           string   `json:"type"`
+	Score          int      `json:"score"` // search results only
+	Area           Area     `json:"area"`
+	LifeSpan       LifeSpan `json:"life-span"`
+}
+
+// Area is where an artist is from, e.g. a country or a city.
+type Area struct {
+	Name string `json:"name"`
+}
+
+// LifeSpan is when an artist was active; the dates are "YYYY", "YYYY-MM" or
+// "YYYY-MM-DD", and may be empty when unknown.
+type LifeSpan struct {
+	Begin string `json:"begin"`
+	End   string `json:"end"`
+	Ended bool   `json:"ended"`
 }
 
 type ArtistCredit struct {

@@ -36,11 +36,9 @@ templ FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sea
 				}
 				for i, c := range candidates {
 					if c.ID != a.MBID {
-						<label class="flex items-center gap-2 text-sm">
-							<input type="radio" name="mbid" value={ c.ID } checked?={ a.MBID == "" && i == 0 }/>
-							<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
-							<span class="text-zinc-500">{ artistDetails(c) }</span>
-						</label>
+						@artistCandidate(c) {
+							<input type="radio" name="mbid" value={ c.ID } checked?={ a.MBID == "" && i == 0 } aria-label={ "Use " + c.Name } class="mt-1"/>
+						}
 					}
 				}
 				if searchErr != "" {
@@ -186,20 +184,6 @@ func trackNumber(t db.InboxTrack) string {
 		return fmt.Sprintf("%d-%d", t.Disc, t.Position)
 	}
 	return fmt.Sprint(t.Position)
-}
-
-func artistDetails(a mb.Artist) string {
-	s := ""
-	for _, part := range []string{a.Disambiguation, a.Type, a.Country} {
-		if part == "" {
-			continue
-		}
-		if s != "" {
-			s += ", "
-		}
-		s += part
-	}
-	return s
 }
 
 func lastChecked(at string) string {

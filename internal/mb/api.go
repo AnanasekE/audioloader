@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"sort"
 	"strconv"
 )
 
@@ -52,6 +53,27 @@ func (c *Client) BrowseReleaseGroups(ctx context.Context, artistID string, offse
 	q := url.Values{"artist": {artistID}, "limit": {"100"}, "offset": {strconv.Itoa(offset)}}
 	err := c.getJSON(ctx, "musicbrainz", c.mbURL("release-group", q), &res)
 	return res.ReleaseGroups, res.Count, err
+}
+
+// RecentReleaseGroups returns up to n of an artist's release groups, newest
+// first. It reads one page only, so a huge discography isn't complete.
+func (c *Client) RecentReleaseGroups(ctx context.Context, artistID string, n int) ([]ReleaseGroup, error) {
+	groups, _, err := c.BrowseReleaseGroups(ctx, artistID, 0)
+	if err != nil {
+		return nil, err
+	}
+	// dates sort as text ("2001" < "2001-05"); groups without one go last
+	sort.SliceStable(groups, func(i, j int) bool {
+		a, b := groups[i].FirstReleaseDate, groups[j].FirstReleaseDate
+		if (a == "") != (b == "") {
+			return b == ""
+		}
+		return a > b
+	})
+	if len(groups) > n {
+		groups = groups[:n]
+	}
+	return groups, nil
 }
 
 // BrowseReleases returns one page (up to 100) of a release group's releases

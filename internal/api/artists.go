@@ -3,12 +3,14 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"uuid"
 
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/mb"
 )
 
 func createArtist(w http.ResponseWriter, r *http.Request) {
@@ -158,4 +160,19 @@ func resolveArtists(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ids)
+}
+
+// getCandidateReleases answers a candidate's Expand button with that
+// MusicBrainz artist's newest release groups. It reads nothing from the
+// library, so any viewer may ask.
+func getCandidateReleases(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "mbid")
+	if !ok {
+		return
+	}
+	groups, err := mb.Default().RecentReleaseGroups(r.Context(), id.String(), 5)
+	if err != nil {
+		log.Println("browse release groups:", err)
+	}
+	render(w, r, components.CandidateReleases(groups, err != nil))
 }

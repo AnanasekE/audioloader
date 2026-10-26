@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/mb"
 )
 
 templ ArtistsPage(artists []*audio.Artist) {
@@ -223,4 +224,87 @@ templ artistManageForm(a *audio.Artist, others []*audio.Artist) {
 			<span id="artist-manage-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
 		</div>
 	</details>
+}
+
+// artistCandidate is a MusicBrainz artist with what tells namesakes apart:
+// disambiguation, type, country and active years. Expand loads a few of
+// their release groups. The children are the control that picks it.
+templ artistCandidate(c mb.Artist) {
+	<div class="flex items-start gap-2 text-sm">
+		{ children... }
+		<div class="min-w-0 flex-1">
+			<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
+			if d := candidateDetails(c); d != "" {
+				<span class="text-zinc-500 dark:text-zinc-400">{ " " + d }</span>
+			}
+			<button
+				type="button"
+				class="ml-2 text-xs underline"
+				hx-get={ "/ui/musicbrainz/artists/" + c.ID + "/releases" }
+				hx-target="next .candidate-releases"
+				hx-swap="innerHTML"
+				hx-disabled-elt="this"
+			>Expand</button>
+			<div class="candidate-releases text-zinc-600 dark:text-zinc-300" aria-live="polite"></div>
+		</div>
+	</div>
+}
+
+// CandidateReleases is the answer to Expand: an artist's newest release groups.
+templ CandidateReleases(groups []mb.ReleaseGroup, failed bool) {
+	if failed {
+		<p class="text-red-600 dark:text-red-400">Couldn't load releases from MusicBrainz.</p>
+	} else if len(groups) == 0 {
+		<p class="text-zinc-500">No releases listed.</p>
+	} else {
+		<ul class="mt-1 list-disc pl-5">
+			for _, g := range groups {
+				<li>
+					{ g.Title }
+					if g.PrimaryType != "" || g.FirstReleaseDate != "" {
+						<span class="text-zinc-500 dark:text-zinc-400">{ " (" + joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) + ")" }</span>
+					}
+				</li>
+			}
+		</ul>
+	}
+}
+
+func candidateDetails(a mb.Artist) string {
+	place := a.Area.Name
+	if place == "" {
+		place = a.Country
+	}
+	years := a.LifeSpan.Begin
+	if len(years) > 4 {
+		years = years[:4]
+	}
+	if end := a.LifeSpan.End; years != "" || end != "" {
+		if len(end) > 4 {
+			end = end[:4]
+		}
+		switch {
+		case end != "":
+			years += "–" + end
+		case a.LifeSpan.Ended:
+			years += "–?"
+		default:
+			years += "–"
+		}
+	}
+	return joinNonEmpty(" · ", a.Disambiguation, a.Type, place, years)
+}
+
+func joinNonEmpty(sep string, parts ...string) string {
+	s := ""
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		if s != "" {
+			s += sep
+		}
+		s += p
+	}
+	return s
 }
