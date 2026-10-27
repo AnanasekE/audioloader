@@ -130,3 +130,11 @@ Removing a confirmed release I don't care about takes three steps now: delete ea
 - **One action:** "Remove release" on the release page (and its edit page) deletes the release with its tracks, and the downloads queued for them. Tracks that are also on another release stay.
 - **Confirm first:** say how many tracks go and how many of them have files, since files are deleted too.
 - **Don't bring it back:** the release group's inbox entry becomes "ignored", so it shows under the Ignored tab and "Move back to New" can undo it. Ignoring should work from "confirmed" too, not only "new".
+
+## Parallel downloads
+
+Downloads run one at a time, so confirming a few releases queues up half an hour of waiting. Run a few at once.
+
+- **Workers:** run the download lane in N workers instead of 1, set by `AUDIOLOADER_DOWNLOAD_WORKERS`, default 2. Jobs are already claimed with one `UPDATE … RETURNING`, so workers can't take the same job.
+- **Keep it small:** YouTube throttles or asks "confirm you're not a bot" when one IP sends many requests at once. Cap N at about 4, and if yt-dlp reports a bot check, back off and retry later instead of failing the track.
+- **Watch SQLite:** more workers means more writes. If `database is locked` shows up, write progress less often or raise `busy_timeout`.
