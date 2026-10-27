@@ -1,0 +1,12 @@
+services:
+  audioloader:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    # AUDIOLOADER_SECRET, ACOUSTID_KEY, TWITCH_CLIENT_ID and the rest
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped

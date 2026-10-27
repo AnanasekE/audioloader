@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/glebarez/go-sqlite"
 )
@@ -58,13 +59,18 @@ CREATE TABLE IF NOT EXISTS release_tracks (
 
 var DB *sql.DB
 
-// Init opens ./database.db and migrates it.
+// Init opens the database at AUDIOLOADER_DB, ./database.db by default, and
+// migrates it.
 func Init() {
-	db, err := Open("./database.db")
+	path := os.Getenv("AUDIOLOADER_DB")
+	if path == "" {
+		path = "./database.db"
+	}
+	db, err := Open(path)
 	if err != nil {
 		panic(err)
 	}
-	if err := migrate(db, backupBeforeMigration(db, "./database.db")); err != nil {
+	if err := migrate(db, backupBeforeMigration(db, path)); err != nil {
 		panic(err)
 	}
 	DB = db

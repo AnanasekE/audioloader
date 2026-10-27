@@ -5,3 +5,4 @@ audioloader
 bin/
 tmp/
 database.db.bak-*
+.env

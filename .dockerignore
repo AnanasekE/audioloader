@@ -1,0 +1,9 @@
+.git
+audioloader
+backup-from-main
+bin
+data
+database.db*
+tmp
+*.mp3
+*.local.md
