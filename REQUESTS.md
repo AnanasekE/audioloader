@@ -113,3 +113,12 @@ The inbox is one long list of cards. Ideas, to be decided:
 - Compact rows instead of large cards, with the tracklist on demand
 - Mark how much is owned ("3 of 11 in library") and filter to "nothing owned yet"
 - Search within the inbox
+
+## YouTube Music instead of spotDL
+
+spotDL reads Spotify's metadata, searches YouTube Music, and downloads the match with yt-dlp. MusicBrainz already gives us better metadata for the artists I listen to, so do the YouTube Music search ourselves and drop spotDL.
+
+- **Search:** `yt-dlp -J --flat-playlist "https://music.youtube.com/search?q=<artist> <title>#songs"`. The `#songs` filter keeps only official songs ("Provided to YouTube by …"), which have clean audio.
+- **Match:** title, artists and length from MusicBrainz. Score the results the same way as the YouTube top-5 pick; a length within about 2 seconds is a strong match. With no confident match, fall back to "needs a pick", as now.
+- **Where:** a `ytmusic` source next to the YouTube one in `internal/sources/ytdlp`, tried before plain YouTube.
+- **Then remove spotDL:** once the new source proves itself, drop it from the source order and the image (no Python, about 400 MB smaller), and keep Spotify links from MusicBrainz only if they're still useful.
