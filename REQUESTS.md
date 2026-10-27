@@ -122,3 +122,11 @@ spotDL reads Spotify's metadata, searches YouTube Music, and downloads the match
 - **Match:** title, artists and length from MusicBrainz. Score the results the same way as the YouTube top-5 pick; a length within about 2 seconds is a strong match. With no confident match, fall back to "needs a pick", as now.
 - **Where:** a `ytmusic` source next to the YouTube one in `internal/sources/ytdlp`, tried before plain YouTube.
 - **Then remove spotDL:** once the new source proves itself, drop it from the source order and the image (no Python, about 400 MB smaller), and keep Spotify links from MusicBrainz only if they're still useful.
+
+## Remove a release I don't want
+
+Removing a confirmed release I don't care about takes three steps now: delete each track, delete the release, and the inbox still says "confirmed". Deleting only the release leaves its tracks behind as tracks without a release.
+
+- **One action:** "Remove release" on the release page (and its edit page) deletes the release with its tracks, and the downloads queued for them. Tracks that are also on another release stay.
+- **Confirm first:** say how many tracks go and how many of them have files, since files are deleted too.
+- **Don't bring it back:** the release group's inbox entry becomes "ignored", so it shows under the Ignored tab and "Move back to New" can undo it. Ignoring should work from "confirmed" too, not only "new".
