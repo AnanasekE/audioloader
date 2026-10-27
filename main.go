@@ -67,7 +67,13 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: api.WithViewer(mux)}
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: api.WithSecurityHeaders(api.WithViewer(mux)),
+		// no ReadTimeout or WriteTimeout: uploads and streams can take long
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)

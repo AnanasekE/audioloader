@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,9 +46,8 @@ func getShowPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func addEpisode(w http.ResponseWriter, r *http.Request) {
-	file, header, err := r.FormFile("track")
-	if err != nil {
-		http.Error(w, "missing or invalid audio file", http.StatusBadRequest)
+	file, ext, ok := trackUpload(w, r)
+	if !ok {
 		return
 	}
 	defer file.Close()
@@ -86,7 +84,7 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t := &audio.Track{Title: title, Duration: duration.Round(time.Second), Published: published}
-	id, err := db.AddEpisode(viewer(r), showID, t, file, filepath.Ext(header.Filename))
+	id, err := db.AddEpisode(viewer(r), showID, t, file, ext)
 	switch {
 	case errors.Is(err, db.ErrExists):
 		http.Error(w, "already exists", http.StatusConflict)

@@ -27,6 +27,7 @@
 
 ### Uploading
 
+- Track files must be MP3, FLAC, Ogg, Opus, M4A, MP4 or WAV (by extension, and the audio header is read), at most 4 GiB a request; every response is sent `nosniff`
 - Single upload: Single (creates the single release) or Album/EP/Compilation (creates the release, then batch upload)
 - Optional release date on singles
 - Artist picker with checkboxes and fuzzy search, multiple artists per track
@@ -159,7 +160,5 @@
 
 ### Robustness and security
 
-- File extension allowlist / content-type check on upload (an uploaded `.html` could run as the site), `nosniff`
-- Upload size limits (`http.MaxBytesReader`), large uploads streamed to disk, server timeouts
 - Faster MP3 duration from the Xing/VBRI header instead of walking every frame
 - Prefill single and batch uploads from embedded tags

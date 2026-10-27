@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"audioloader/internal/components"
@@ -183,14 +182,13 @@ func uploadTrackFile(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	file, header, err := r.FormFile("track")
-	if err != nil {
-		http.Error(w, "missing or invalid track file", http.StatusBadRequest)
+	file, ext, ok := trackUpload(w, r)
+	if !ok {
 		return
 	}
 	defer file.Close()
 
-	_, err = downloads.AttachReader(viewer(r), id.String(), file, filepath.Ext(header.Filename))
+	_, err := downloads.AttachReader(viewer(r), id.String(), file, ext)
 	switch {
 	case errors.Is(err, db.ErrNotFound):
 		http.NotFound(w, r)

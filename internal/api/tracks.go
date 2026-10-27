@@ -232,9 +232,8 @@ func deleteTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func addTrack(w http.ResponseWriter, r *http.Request) {
-	file, header, err := r.FormFile("track")
-	if err != nil {
-		http.Error(w, "missing or invalid track file", http.StatusBadRequest)
+	file, ext, ok := trackUpload(w, r)
+	if !ok {
 		return
 	}
 	defer file.Close()
@@ -300,7 +299,6 @@ func addTrack(w http.ResponseWriter, r *http.Request) {
 		}
 		track.Tags = db.NormalizeTags(strings.Split(r.FormValue("tags"), ","))
 	}
-	ext := filepath.Ext(header.Filename)
 	res, err := db.AddTrack(viewer(r), artistIDs, track, file, ext, link, singleDate)
 	switch {
 	case errors.Is(err, db.ErrExists):
