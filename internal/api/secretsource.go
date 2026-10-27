@@ -86,7 +86,7 @@ func secretSourceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, secret.ErrBadURL):
 		http.Error(w, "That isn't a page of the secret source.", http.StatusBadRequest)
 	case errors.Is(err, secret.ErrNoAudio):
-		http.Error(w, "No audio or recordings found on that page. Check the address: its case matters.", http.StatusUnprocessableEntity)
+		http.Error(w, "No audio or recordings found on that page. Some uploaders' pages are empty on the site itself.", http.StatusUnprocessableEntity)
 	case errors.Is(err, secret.ErrAudioHost), errors.Is(err, secret.ErrOffHost):
 		http.Error(w, "That page points to a host that isn't allowed.", http.StatusUnprocessableEntity)
 	case errors.Is(err, secret.ErrTooLarge):

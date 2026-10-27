@@ -29,15 +29,15 @@ Someone using the app in a locked browser must not be able to learn that a secre
 - **Derived hiding:** releases, artists and shows with zero visible tracks are left out of lists, and their pages return 404 for a locked viewer.
 
 ### 3. Close the remaining endpoints
-Work through each leak and add a test for each:
-- [ ] `GET /api/tracks/{id}/stream` returns 404 when locked.
-- [ ] `GET /ui/tracks/{id}`, the release, artist, show and playlist pages, and their `/edit` pages.
-- [ ] Search (filter at query time, or keep secret rows out of the FTS table and query them separately when unlocked).
-- [ ] `POST /api/tracks/exists` and the upload 409. When locked, a match against a secret track returns the same answer as a match against a non-existent one (`false`), and `AddTrack` then rejects with a generic "upload failed" error. That leaks less than a 409. The secret-only duplicate index still holds.
-- [ ] `NextPositions` (the batch upload page) uses the unfiltered max position, but returns only what the release's visible data implies. Simplest fix: when locked, don't offer existing releases that contain secret tracks as upload targets.
-- [ ] Playlists: secret entries are hidden when locked, and so are playlist counts.
-- [ ] Inbox, downloads and tagging review pages: hide rows for secret tracks.
-- [ ] Positions and continue listening.
+Work through each leak and add a test for each. All done; plan 11 later replaced "locked" with secret mode, and `internal/api/leak_test.go` checks every page in both modes:
+- [x] `GET /api/tracks/{id}/stream` returns 404 when locked.
+- [x] `GET /ui/tracks/{id}`, the release, artist, show and playlist pages, and their `/edit` pages.
+- [x] Search (filter at query time, or keep secret rows out of the FTS table and query them separately when unlocked).
+- [x] `POST /api/tracks/exists` and the upload 409. When locked, a match against a secret track returns the same answer as a match against a non-existent one (`false`), and `AddTrack` then rejects with a generic "upload failed" error. That leaks less than a 409. The secret-only duplicate index still holds.
+- [x] `NextPositions` (the batch upload page) uses the unfiltered max position, but returns only what the release's visible data implies. Simplest fix: when locked, don't offer existing releases that contain secret tracks as upload targets.
+- [x] Playlists: secret entries are hidden when locked, and so are playlist counts.
+- [x] Inbox, downloads and tagging review pages: hide rows for secret tracks.
+- [x] Positions and continue listening.
 
 ### 4. Client side
 - **Player:** on page load, the server renders `data-vault="0|1"` on `<body>`. If it's locked and the stored player state or queue has tracks marked `secret: true`, drop them. Include a `secret` field in the track JSON for this.
