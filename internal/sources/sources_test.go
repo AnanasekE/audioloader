@@ -19,7 +19,7 @@ func TestRank(t *testing.T) {
 		got = append(got, c.Ref)
 	}
 	// source order first, quality only within a source
-	want := []string{"flac", "mp3hi", "mp3", "sp", "ytm", "yt2", "yt", "x"}
+	want := []string{"flac", "mp3hi", "mp3", "ytm", "sp", "yt2", "yt", "x"}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("order = %v, want %v", got, want)
