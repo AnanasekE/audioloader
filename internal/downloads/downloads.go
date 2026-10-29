@@ -137,7 +137,8 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 		return err
 	}
 	if dl.Track.HasFile {
-		return nil
+		// e.g. a YouTube pick queued after another source got the file
+		return db.SetDownload(trackID, db.DownloadDone, "", 0, "")
 	}
 
 	var src sources.Source

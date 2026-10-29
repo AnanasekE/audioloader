@@ -86,6 +86,17 @@ func TestRunFromVideo(t *testing.T) {
 	if _, err := db.GetTrack(db.All, ph[1]); err == nil {
 		t.Fatal("placeholder wasn't merged")
 	}
+
+	// a pick queued after the file arrived ends as done, not stuck queued
+	if err := EnqueueVideo(ph[0], "AAAAAAAAAA2"); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Run(context.Background(), ph[0], "AAAAAAAAAA2"); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadDone {
+		t.Fatalf("download = %+v", dl)
+	}
 }
 
 func TestRunFailures(t *testing.T) {
