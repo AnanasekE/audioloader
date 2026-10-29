@@ -45,6 +45,8 @@
   - artists panel: new vs in library, add, rename everywhere, merge into existing
   - uploads 3 at a time; failed tracks can be retried
 
+- Trim silence at the end (track menu, both modes; needs `ffmpeg`): finds the last stretch of silence (-50 dB for 2 s or more) when it runs to the end of the file, shows "4:12 → 3:31" and, after a confirm, cuts the file 1 s after the silence starts. Stream copy where the cut lands within 0.5 s, otherwise re-encoded; savings under 1 s are not offered. Manual only: downloads and uploads are never trimmed. The stored length and saved positions follow the file; the fingerprint stays the original's, so the untrimmed file is still caught as a duplicate, and length matching against MusicBrainz uses the stored length. The original isn't kept
+
 ### Duplicates
 
 - Fingerprint: file size + SHA-256 of the first 64 KiB

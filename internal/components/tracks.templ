@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/trim"
 )
 
 // Sort orders of the track list in secret mode.
@@ -283,6 +284,12 @@ templ trackMenu(t *audio.Track) {
 				<button
 					type="button"
 					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					hx-get={ "/ui/tracks/" + t.ID.String() + "/trim" }
+					hx-swap="outerHTML"
+				>Trim silence…</button>
+				<button
+					type="button"
+					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
@@ -450,6 +457,32 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%d:%02d:%02d", s/3600, s%3600/60, s%60)
 	}
 	return fmt.Sprintf("%d:%02d", s/60, s%60)
+}
+
+// TrimPreview is swapped into the track menu: what a trim would do, with a
+// button to do it, or why it can't.
+templ TrimPreview(t *audio.Track, p trim.Plan, errMsg string) {
+	<div class="mt-1 grid gap-1 border-t border-zinc-200 px-2 pt-1 dark:border-zinc-700">
+		if errMsg != "" {
+			<p class="text-red-600 dark:text-red-400">{ errMsg }</p>
+		} else if p.None() {
+			<p>No silence at the end</p>
+		} else {
+			<p>{ formatDuration(p.Total) + " → " + formatDuration(p.CutAt) }</p>
+			<button
+				type="button"
+				class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+				hx-post={ "/ui/tracks/" + t.ID.String() + "/trim" }
+				hx-confirm={ trimConfirm(t, p) }
+				hx-indicator="next .htmx-indicator"
+			>Trim</button>
+			<span class="htmx-indicator text-zinc-500">Trimming…</span>
+		}
+	</div>
+}
+
+func trimConfirm(t *audio.Track, p trim.Plan) string {
+	return fmt.Sprintf("Cut %s of silence from the end of “%s”? This can't be undone.", formatDuration(p.Saved()), t.Title)
 }
 
 // secretConfirm is the question before a track moves to the other mode.

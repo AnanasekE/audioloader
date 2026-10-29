@@ -35,7 +35,7 @@ All optional; set as environment variables.
 | `ACOUSTID_KEY` | AcoustID API key, for identifying tracks by their audio. Also needs `fpcalc` (Chromaprint). |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Credentials of a Twitch app (dev.twitch.tv, client credentials), for fetching artists' channel pictures. Both are needed; without them a Twitch channel can still be saved but no picture is fetched. |
 | `FPCALC` | Path to `fpcalc`, if it isn't on `PATH`. |
-| `YTDLP`, `FFMPEG` | Paths to `yt-dlp` and `ffmpeg`, if they aren't on `PATH`. Without them YouTube downloads are off. |
+| `YTDLP`, `FFMPEG` | Paths to `yt-dlp` and `ffmpeg`, if they aren't on `PATH`. Without them YouTube downloads are off. `ffmpeg` is also what "Trim silence" uses. |
 | `SPOTDL` | Path to `spotdl`, if it isn't on `PATH`. Needs `ffmpeg` too. Without it spotDL downloads are off. |
 | `AUDIOLOADER_WATCH` | A folder searched for missing tracks (store downloads, free downloads), matched by MusicBrainz ID, ISRC or tags. |
 | `AUDIOLOADER_SECRET` | bcrypt hash of the vault passphrase; enables secret tracks. Make one with `./audioloader -hash-secret`. |

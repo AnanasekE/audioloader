@@ -314,6 +314,29 @@ func AttachFile(id string, file io.ReadSeeker, ext string, duration time.Duratio
 	return "", nil
 }
 
+// SetTrimmedLength stores a track's new length after its file was cut,
+// and moves saved positions past the end back to it.
+func SetTrimmedLength(id string, d time.Duration) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	secs := int(d.Round(time.Second).Seconds())
+	res, err := tx.Exec(`UPDATE tracks SET duration_seconds = ? WHERE uuid = ? AND has_file = 1;`, secs, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	if _, err := tx.Exec(`UPDATE playback_positions SET seconds = MIN(seconds, ?) WHERE track_id = ?;`, secs, id); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // trackByFingerprint returns the ID of the track stored with fp, or "".
 func trackByFingerprint(fp Fingerprint) (string, error) {
 	var id string
