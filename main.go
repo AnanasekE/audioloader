@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -55,13 +56,14 @@ func main() {
 	if err := jobs.ResetRunning(); err != nil {
 		log.Fatal(err)
 	}
-	// downloads get their own worker, so a long download and a long
+	// downloads get their own workers, so a long download and a long
 	// MusicBrainz check don't hold each other up
 	downloadJobs := []string{downloads.JobDownload, downloads.JobYouTubeImport, downloads.JobSecretDownload}
 	var workers sync.WaitGroup
-	for _, lane := range []jobs.Lane{{Only: downloadJobs}, {Except: downloadJobs}} {
-		workers.Go(func() { jobs.Run(ctx, lane) })
+	for range downloadWorkers() {
+		workers.Go(func() { jobs.Run(ctx, jobs.Lane{Only: downloadJobs}) })
 	}
+	workers.Go(func() { jobs.Run(ctx, jobs.Lane{Except: downloadJobs}) })
 
 	addr := os.Getenv("AUDIOLOADER_ADDR")
 	if addr == "" {
@@ -101,4 +103,15 @@ func printSecretHash() {
 		log.Fatal(err)
 	}
 	fmt.Println(hash)
+}
+
+// downloadWorkers is how many downloads run at once, from
+// AUDIOLOADER_DOWNLOAD_WORKERS: 2 by default, at most 4, since YouTube
+// starts asking for bot checks when one IP sends many requests.
+func downloadWorkers() int {
+	n, err := strconv.Atoi(os.Getenv("AUDIOLOADER_DOWNLOAD_WORKERS"))
+	if err != nil || n < 1 {
+		return 2
+	}
+	return min(n, 4)
 }

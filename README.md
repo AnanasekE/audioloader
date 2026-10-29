@@ -31,6 +31,7 @@ All optional; set as environment variables.
 |---|---|
 | `AUDIOLOADER_ADDR` | Address to listen on, default `:8080`. |
 | `AUDIOLOADER_DB` | Path of the SQLite database, default `./database.db`. |
+| `AUDIOLOADER_DOWNLOAD_WORKERS` | How many downloads run at once, default 2, at most 4 (YouTube asks for bot checks when one IP sends too many). |
 | `AUDIOLOADER_CONTACT` | Contact (email or URL) for the User-Agent MusicBrainz asks for. Defaults to the repository URL. |
 | `ACOUSTID_KEY` | AcoustID API key, for identifying tracks by their audio. Also needs `fpcalc` (Chromaprint). |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Credentials of a Twitch app (dev.twitch.tv, client credentials), for fetching artists' channel pictures. Both are needed; without them a Twitch channel can still be saved but no picture is fetched. |
