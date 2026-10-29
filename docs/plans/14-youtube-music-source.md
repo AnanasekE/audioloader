@@ -1,4 +1,4 @@
-# Plan 12: YouTube Music source
+# Plan 14: YouTube Music source
 
 **Goal:** before a download falls back to "needs a pick", search YouTube Music's official songs ourselves with yt-dlp and download the result automatically when it clearly is the track (title, artist, and a length within 2 s of MusicBrainz's).
 

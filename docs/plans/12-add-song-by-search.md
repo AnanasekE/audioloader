@@ -1,4 +1,4 @@
-# Plan 10: Add a song by search
+# Plan 12: Add a song by search
 
 **Goal:** type "Ella Red Muse" into one box and get the song: pick it from MusicBrainz's top 5 (a placeholder on its real release, downloaded in the usual source order), or, if MusicBrainz has nothing fitting, pick a YouTube video that becomes its own single.
 

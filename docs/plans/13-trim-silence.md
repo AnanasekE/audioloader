@@ -1,4 +1,4 @@
-# Plan 11: Trim silence at the end
+# Plan 13: Trim silence at the end
 
 **Goal:** "Trim silence" in the track menu shows how much silence the end of the file has ("4:12 → 3:31"), and on confirm cuts it off, keeping 1 s of tail, without re-encoding where possible. The track's stored length follows the file.
 
