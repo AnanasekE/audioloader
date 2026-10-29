@@ -104,3 +104,31 @@ func TestSearch(t *testing.T) {
 		}
 	}
 }
+
+// testdata/music_search.json is the flat list yt-dlp 2026.08.19 prints for
+// `-J --flat-playlist "https://music.youtube.com/search?q=...#songs"`: only
+// id and title per entry. The lengths come from video-<id>.json, which
+// fake-yt-dlp serves for the first three.
+func TestMusicSearch(t *testing.T) {
+	c := fake(t)
+	res, err := c.MusicSearch(context.Background(), "Massive Attack Teardrop", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 5 || res[1].ID != "u7qY1uQ2l0w" || res[1].Duration != 330 || ArtistName(res[1]) != "Massive Attack" ||
+		len(res[1].Artists) != 1 || res[1].Thumbnail != "https://i.ytimg.com/vi/u7qY1uQ2l0w/mqdefault.jpg" {
+		t.Fatalf("results = %+v", res)
+	}
+	// only the top 3 are looked up
+	if res[0].Duration != 243 || res[2].Duration != 380 || res[3].Duration != 0 || res[4].Duration != 0 {
+		t.Fatalf("durations = %v %v %v %v %v", res[0].Duration, res[1].Duration, res[2].Duration, res[3].Duration, res[4].Duration)
+	}
+	if res, _ := c.MusicSearch(context.Background(), "x", 2); len(res) != 2 {
+		t.Fatalf("limit ignored: %d results", len(res))
+	}
+	for _, bad := range []string{"", "  \n "} {
+		if _, err := c.MusicSearch(context.Background(), bad, 5); err == nil {
+			t.Errorf("MusicSearch(%q) accepted", bad)
+		}
+	}
+}

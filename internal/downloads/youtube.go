@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -114,35 +113,17 @@ func permanentIfBad(err error) error {
 	return err
 }
 
-var (
-	// "(Official Video)", "[Official Audio]", "(Lyrics)", "(HD)", ...
-	noise = regexp.MustCompile(`(?i)\s*[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|hd|hq|4k|mv)\b[^\)\]]*[\)\]]`)
-	dash  = regexp.MustCompile(`\s+[-–—|]\s+`)
-	// any bracketed part, e.g. "(Remastered 2019)"
-	parens = regexp.MustCompile(`\s*[\(\[][^\)\]]*[\)\]]`)
-)
-
 // CleanTitle turns a video title into a track title: it drops "(Official
 // Video)" and the like, and an "Artist - " prefix naming one of artists.
 func CleanTitle(videoTitle string, artists []string) string {
-	t := strings.TrimSpace(noise.ReplaceAllString(videoTitle, ""))
-	if loc := dash.FindStringIndex(t); loc != nil {
-		prefix := t[:loc[0]]
-		for _, a := range artists {
-			if match.Same(prefix, a) || strings.Contains(match.Normalize(prefix), match.Normalize(a)) && a != "" {
-				return strings.TrimSpace(t[loc[1]:])
-			}
-		}
-	}
-	return t
+	return match.CleanTitle(videoTitle, artists)
 }
 
 // GuessArtist is the artist a video is probably by: the "Artist - " prefix
 // of its title, else its channel without " - Topic".
 func GuessArtist(e ytdlp.Entry) string {
-	t := strings.TrimSpace(noise.ReplaceAllString(e.Title, ""))
-	if loc := dash.FindStringIndex(t); loc != nil && loc[0] > 0 {
-		return t[:loc[0]]
+	if a := match.TitlePrefix(e.Title); a != "" {
+		return a
 	}
 	return strings.TrimSpace(strings.TrimSuffix(cmp.Or(e.Channel, e.Uploader), " - Topic"))
 }
@@ -199,9 +180,7 @@ func MapTracks(r *audio.Release, videos []Entry) []Mapping {
 					continue
 				}
 			}
-			vt := CleanTitle(v.Title, artists)
-			// "Song (Remastered)" is still the song
-			s := max(match.Similarity(vt, rt.Track.Title), match.Similarity(parens.ReplaceAllString(vt, ""), parens.ReplaceAllString(rt.Track.Title, "")))
+			s := match.TitleScore(v.Title, rt.Track.Title, artists)
 			if s >= 0.6 {
 				pairs = append(pairs, pair{ti, vi, s})
 			}

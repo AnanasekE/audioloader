@@ -47,9 +47,9 @@ type Source interface {
 }
 
 // Order is the fixed order sources are tried in: the user's own files
-// first, then spotDL, then YouTube. A later source is only asked when the
-// earlier ones found nothing.
-var Order = []string{"folder", "spotdl", "yt-dlp"}
+// first, then spotDL, then YouTube Music, then YouTube. A later source is
+// only asked when the earlier ones found nothing.
+var Order = []string{"folder", "spotdl", "ytmusic", "yt-dlp"}
 
 // Position is a source's place in Order; unknown sources come last.
 func Position(name string) int {

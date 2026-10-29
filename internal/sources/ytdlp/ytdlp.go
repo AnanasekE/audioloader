@@ -8,6 +8,7 @@ package ytdlp
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -150,7 +151,9 @@ type Entry struct {
 	Duration float64 `json:"duration"` // seconds
 	Channel  string  `json:"channel"`
 	Uploader string  `json:"uploader"`
-	ABR      float64 `json:"abr"` // audio bitrate, kbit/s; only for single videos
+	// Artists are the credited artists of a YouTube Music song
+	Artists []string `json:"artists"`
+	ABR     float64  `json:"abr"` // audio bitrate, kbit/s; only for single videos
 	// ChannelIsVerified is set for verified channels (search results)
 	ChannelIsVerified bool `json:"channel_is_verified"`
 	// Thumbnail is set by Search, from the video ID: a picture on YouTube's
@@ -198,6 +201,45 @@ func (c *Client) Search(ctx context.Context, query string, n int) ([]Entry, erro
 		info.Entries[i].Thumbnail = "https://i.ytimg.com/vi/" + info.Entries[i].ID + "/mqdefault.jpg"
 	}
 	return info.Entries, nil
+}
+
+// MusicSearch returns up to n of YouTube Music's songs for query (the
+// "#songs" filter: official audio only), best first. Entries the flat
+// list gives without a length are looked up one by one (at most 3).
+func (c *Client) MusicSearch(ctx context.Context, query string, n int) ([]Entry, error) {
+	query = strings.Join(strings.Fields(query), " ")
+	if query == "" || n < 1 || n > 20 {
+		return nil, errors.New("yt-dlp: bad search")
+	}
+	info, err := c.info(ctx, "https://music.youtube.com/search?"+url.Values{"q": {query}}.Encode()+"#songs")
+	if err != nil {
+		return nil, err
+	}
+	if len(info.Entries) > n {
+		info.Entries = info.Entries[:n]
+	}
+	for i := range info.Entries {
+		e := &info.Entries[i]
+		e.Thumbnail = "https://i.ytimg.com/vi/" + e.ID + "/mqdefault.jpg"
+		if i >= maxMusicLookups || e.Duration > 0 {
+			continue
+		}
+		// the flat list has the title only; a lookup that fails leaves the
+		// entry without a length, which no one will pick
+		if v, err := c.info(ctx, VideoURL(e.ID)); err == nil {
+			e.Duration, e.Channel, e.Uploader, e.Artists = v.Duration, v.Channel, v.Uploader, v.Artists
+			e.ChannelIsVerified, e.ABR = v.ChannelIsVerified, v.ABR
+		}
+	}
+	return info.Entries, nil
+}
+
+// maxMusicLookups caps the one-by-one lookups of a music search.
+const maxMusicLookups = 3
+
+// ArtistName is the channel name without " - Topic", e.g. for a song's artist.
+func ArtistName(e Entry) string {
+	return strings.TrimSuffix(cmp.Or(e.Channel, e.Uploader), " - Topic")
 }
 
 func (c *Client) info(ctx context.Context, arg string) (*Info, error) {
@@ -295,12 +337,18 @@ func Candidate(id string, abr float64) sources.Candidate {
 }
 
 func (s Source) Fetch(ctx context.Context, c sources.Candidate, progress func(float64)) (sources.File, error) {
+	return fetch(ctx, s.C, c.Ref, progress)
+}
+
+// fetch downloads the video into a temporary directory, which the returned
+// file's Cleanup removes.
+func fetch(ctx context.Context, c *Client, id string, progress func(float64)) (sources.File, error) {
 	dir, err := os.MkdirTemp("", "audioloader-ytdlp-*")
 	if err != nil {
 		return sources.File{}, err
 	}
 	cleanup := func() { os.RemoveAll(dir) }
-	path, err := s.C.Download(ctx, c.Ref, dir, progress)
+	path, err := c.Download(ctx, id, dir, progress)
 	if err != nil {
 		cleanup()
 		return sources.File{}, err

@@ -30,7 +30,7 @@ func fakeDownloader(t *testing.T, extra ...sources.Source) *Downloader {
 		t.Fatal(err)
 	}
 	return &Downloader{
-		Sources: append(extra, spotdl.Source{C: sp}, ytdlp.Source{C: yt}),
+		Sources: append(extra, spotdl.Source{C: sp}, ytdlp.MusicSource{C: yt}, ytdlp.Source{C: yt}),
 		YT:      yt,
 		SP:      sp,
 	}
@@ -170,12 +170,90 @@ func TestRunNeedsPick(t *testing.T) {
 
 	// without yt-dlp there is nothing to pick from
 	d.YT, d.YTErr = nil, ytdlp.ErrUnavailable
-	d.Sources = d.Sources[:len(d.Sources)-1]
+	d.Sources = d.Sources[:len(d.Sources)-2] // YouTube Music and YouTube
 	if err := d.Run(context.Background(), ph[1], ""); err != nil {
 		t.Fatal(err)
 	}
 	if dl, _ := db.GetDownload(db.All, ph[1]); dl.Status != db.DownloadNotFound {
 		t.Fatalf("status = %s", dl.Status)
+	}
+}
+
+// teardropRelease confirms a release of n placeholders titled "Teardrop",
+// 331 s long as on Mezzanine.
+func teardropRelease(t *testing.T, n int) []string {
+	t.Helper()
+	titles := make([]string, n)
+	for i := range titles {
+		titles[i] = "Teardrop"
+	}
+	_, ph := confirmedRelease(t, titles...)
+	for _, id := range ph {
+		db.DB.Exec(`UPDATE tracks SET duration_seconds = 331 WHERE uuid = ?;`, id)
+	}
+	return ph
+}
+
+func TestRunFromYouTubeMusic(t *testing.T) {
+	dbtest.New(t)
+	d := fakeDownloader(t)
+	ph := teardropRelease(t, 2)
+
+	// the Topic song is 1 s off: confident, so no pick is needed
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	dl, _ := db.GetDownload(db.All, ph[0])
+	if dl.Status != db.DownloadDone || dl.Source != ytdlp.MusicName || !dl.Track.HasFile {
+		t.Fatalf("download = %+v", dl)
+	}
+	if id, _ := db.TrackBySourceURL(ytdlp.VideoURL("u7qY1uQ2l0w")); id != ph[0] {
+		t.Fatalf("source url not stored: %q", id)
+	}
+
+	// the same song for another placeholder merges instead of storing a second file
+	if err := d.Run(context.Background(), ph[1], ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.GetTrack(db.All, ph[1]); err == nil {
+		t.Fatal("placeholder wasn't merged")
+	}
+}
+
+func TestRunYouTubeMusicNeedsConfidence(t *testing.T) {
+	dbtest.New(t)
+	d := fakeDownloader(t)
+	ph := teardropRelease(t, 1)
+	db.DB.Exec(`UPDATE tracks SET duration_seconds = 351 WHERE uuid = ?;`, ph[0])
+
+	// 20 s off: the pick is left to the user
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Status != db.DownloadNeedsPick || dl.Track.HasFile {
+		t.Fatalf("download = %+v", dl)
+	}
+}
+
+func TestRunFolderBeforeYouTubeMusic(t *testing.T) {
+	dbtest.New(t)
+	log := filepath.Join(t.TempDir(), "calls")
+	t.Setenv("FAKE_YTDLP_LOG", log)
+	dir := t.TempDir()
+	data, _ := os.ReadFile("../tags/testdata/tagged.flac")
+	os.WriteFile(filepath.Join(dir, "teardrop.flac"), data, 0o644)
+	d := fakeDownloader(t, &folder.Source{Dir: dir})
+	ph := teardropRelease(t, 1)
+	db.DB.Exec(`UPDATE tracks SET mbid = 'f3bba4cd-8018-468b-902e-bc8f029593e5' WHERE uuid = ?;`, ph[0])
+
+	if err := d.Run(context.Background(), ph[0], ""); err != nil {
+		t.Fatal(err)
+	}
+	if dl, _ := db.GetDownload(db.All, ph[0]); dl.Source != folder.Name || dl.Status != db.DownloadDone {
+		t.Fatalf("download = %+v", dl)
+	}
+	if b, _ := os.ReadFile(log); len(b) != 0 {
+		t.Fatalf("yt-dlp was asked: %q", b)
 	}
 }
 
@@ -292,21 +370,6 @@ func TestImport(t *testing.T) {
 	}
 	if tracks, _ := db.ListTracks(db.All); len(tracks) != 1 || len(tracks[0].Releases) != 2 {
 		t.Fatalf("after second import: %+v", tracks)
-	}
-}
-
-func TestCleanTitle(t *testing.T) {
-	cases := map[string]string{
-		"Massive Attack - Teardrop (Official Video)": "Teardrop",
-		"Teardrop [Official Audio]":                  "Teardrop",
-		"Massive Attack – Angel (Lyrics) (HD)":       "Angel",
-		"Someone Else - Teardrop":                    "Someone Else - Teardrop",
-		"Teardrop (Remastered 2019)":                 "Teardrop (Remastered 2019)",
-	}
-	for in, want := range cases {
-		if got := CleanTitle(in, []string{"Massive Attack"}); got != want {
-			t.Errorf("CleanTitle(%q) = %q, want %q", in, got, want)
-		}
 	}
 }
 

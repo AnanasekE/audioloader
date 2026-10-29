@@ -1,6 +1,7 @@
 #!/bin/sh
 # Stands in for yt-dlp in tests: -J prints fixture JSON, otherwise it
-# "downloads" testdata/audio.opus (a ytsearchN: query gets search.json) to the -o template's directory.
+# "downloads" testdata/audio.opus (a ytsearchN: query gets search.json, a YouTube Music
+# search music_search.json) to the -o template's directory.
 here=$(dirname "$0")
 url=""
 out=""
@@ -15,10 +16,16 @@ while [ $# -gt 0 ]; do
 	shift
 done
 if [ "$json" = 1 ]; then
+	# FAKE_YTDLP_LOG: every URL asked about, one per line
+	if [ -n "$FAKE_YTDLP_LOG" ]; then echo "$url" >> "$FAKE_YTDLP_LOG"; fi
 	case "$url" in
 		ytsearch*) cat "$here/search.json" ;;
+		*music.youtube.com/search*) cat "$here/music_search.json" ;;
 		*playlist*) cat "$here/playlist.json" ;;
-		*) cat "$here/video.json" ;;
+		*)
+			# a video with a file of its own (video-<id>.json), else the default one
+			id=${url##*v=}
+			if [ -f "$here/video-$id.json" ]; then cat "$here/video-$id.json"; else cat "$here/video.json"; fi ;;
 	esac
 	exit 0
 fi

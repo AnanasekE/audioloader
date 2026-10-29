@@ -46,7 +46,8 @@ var (
 )
 
 // Default is configured from the environment: AUDIOLOADER_WATCH for the
-// watched folder, YTDLP, SPOTDL and FFMPEG for yt-dlp and spotDL. Sources are tried in the
+// watched folder, YTDLP, SPOTDL and FFMPEG for yt-dlp and spotDL (YouTube Music uses
+// yt-dlp too). Sources are tried in the
 // fixed order of sources.Order.
 func Default() *Downloader {
 	defaultOnce.Do(func() {
@@ -68,7 +69,7 @@ func Default() *Downloader {
 		}
 		d.YT, d.YTErr = ytdlp.Default()
 		if d.YT != nil {
-			d.Sources = append(d.Sources, ytdlp.Source{C: d.YT})
+			d.Sources = append(d.Sources, ytdlp.MusicSource{C: d.YT}, ytdlp.Source{C: d.YT})
 			if v, err := d.YT.Version(context.Background()); err == nil {
 				log.Println("yt-dlp", v)
 			}
@@ -183,6 +184,17 @@ func (d *Downloader) Run(ctx context.Context, trackID, videoID string) error {
 			sources.Rank(found)
 			src, cand = s, found[0]
 			break
+		}
+		if src != nil && cand.Source == ytdlp.MusicName {
+			// a video that was downloaded before is placed, not fetched again
+			sourceURL = ytdlp.VideoURL(cand.Ref)
+			existing, err := db.TrackBySourceURL(sourceURL)
+			if err != nil {
+				return err
+			}
+			if existing != "" {
+				return db.MergePlaceholder(trackID, existing)
+			}
 		}
 		if src == nil {
 			// YouTube is never used on a guess: with yt-dlp around, the user

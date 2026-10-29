@@ -5,6 +5,7 @@ import "testing"
 func TestRank(t *testing.T) {
 	cands := []Candidate{
 		{Source: "yt-dlp", Ref: "yt", Bitrate: 160},
+		{Source: "ytmusic", Ref: "ytm", Bitrate: 128},
 		{Source: "spotdl", Ref: "sp", Bitrate: 160},
 		{Source: "folder", Ref: "mp3", Bitrate: 128},
 		{Source: "folder", Ref: "flac", Lossless: true, Bitrate: 900},
@@ -18,7 +19,7 @@ func TestRank(t *testing.T) {
 		got = append(got, c.Ref)
 	}
 	// source order first, quality only within a source
-	want := []string{"flac", "mp3hi", "mp3", "sp", "yt2", "yt", "x"}
+	want := []string{"flac", "mp3hi", "mp3", "sp", "ytm", "yt2", "yt", "x"}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("order = %v, want %v", got, want)

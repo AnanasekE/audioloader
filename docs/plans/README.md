@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–13 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–14 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -20,6 +20,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 11 | [Secret mode](11-secret-mode.md) | Secret mode, secret source (REQUESTS.md) |
 | 12 | [Add a song by search](12-add-song-by-search.md) | Add a song by search (REQUESTS.md) |
 | 13 | [Trim silence](13-trim-silence.md) | Trim silence at the end (REQUESTS.md) |
+| 14 | [YouTube Music source](14-youtube-music-source.md) | YouTube Music instead of spotDL, without removing spotDL (REQUESTS.md) |
 
 ## Rules for every plan
 
