@@ -154,3 +154,61 @@ func TestRenameAndMergeArtists(t *testing.T) {
 		t.Fatalf("kept artist = %+v", got)
 	}
 }
+
+func TestAddMBArtist(t *testing.T) {
+	newTestDB(t)
+	const ma = "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"
+	count := func() int {
+		list, err := ListArtists(All)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(list)
+	}
+
+	// nothing is written by a lookup
+	if a, m, err := FindMBArtist(Normal, ma, "Massive Attack"); err != nil || a != nil || m != MBArtistNew || count() != 0 {
+		t.Fatalf("find = %v, %v, %v", a, m, err)
+	}
+	a, m, err := AddMBArtist(Normal, ma, "Massive Attack")
+	if err != nil || m != MBArtistNew || a.MBID != ma {
+		t.Fatalf("add = %+v, %v, %v", a, m, err)
+	}
+	b, m, err := AddMBArtist(Normal, ma, "Massive Attack")
+	if err != nil || m != MBArtistLinked || b.ID != a.ID || count() != 1 {
+		t.Fatalf("add again = %+v, %v, %v (%d artists)", b, m, err, count())
+	}
+	if f, m, _ := FindMBArtist(Normal, ma, "whatever"); m != MBArtistLinked || f.ID != a.ID {
+		t.Fatalf("find linked = %v, %v", f, m)
+	}
+
+	// a same-name artist without an ID gets the ID
+	p, _ := AddArtist(All, "portishead")
+	const pid = "8f6bd1e4-fbe1-4f50-aa9b-94c450ec0f11"
+	if f, m, _ := FindMBArtist(Normal, pid, "Portishead"); m != MBArtistSameName || f.ID != p.ID {
+		t.Fatalf("find same name = %v, %v", f, m)
+	}
+	got, m, err := AddMBArtist(Normal, pid, "Portishead")
+	if err != nil || m != MBArtistSameName || got.ID != p.ID || got.MBID != pid || count() != 2 {
+		t.Fatalf("link = %+v, %v, %v (%d artists)", got, m, err, count())
+	}
+
+	// a name held by an artist with another ID changes nothing
+	tr, _ := AddArtist(All, "Tricky")
+	if err := SetArtistMBID(tr.ID.String(), "11111111-1111-1111-1111-111111111111"); err != nil {
+		t.Fatal(err)
+	}
+	const other = "22222222-2222-2222-2222-222222222222"
+	if f, m, _ := FindMBArtist(Normal, other, "tricky"); m != MBArtistNameTaken || f.ID != tr.ID {
+		t.Fatalf("find taken = %v, %v", f, m)
+	}
+	if _, _, err := AddMBArtist(Normal, other, "tricky"); !errors.Is(err, ErrArtistExists) {
+		t.Fatalf("taken err = %v", err)
+	}
+	if count() != 3 {
+		t.Fatalf("%d artists, want 3", count())
+	}
+	if again, _ := GetArtist(All, tr.ID.String()); again.MBID != "11111111-1111-1111-1111-111111111111" {
+		t.Fatalf("Tricky's ID changed to %s", again.MBID)
+	}
+}

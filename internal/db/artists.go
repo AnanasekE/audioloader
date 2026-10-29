@@ -284,6 +284,90 @@ func ArtistByMBID(v Viewer, mbid string) (*audio.Artist, error) {
 	return GetArtist(v, id)
 }
 
+// MBArtistMatch is how a MusicBrainz artist relates to the library.
+type MBArtistMatch int
+
+const (
+	MBArtistNew       MBArtistMatch = iota // not in the library
+	MBArtistLinked                         // an artist has this MBID
+	MBArtistSameName                       // an artist has this name and no MBID
+	MBArtistNameTaken                      // an artist has this name and another MBID
+)
+
+// FindMBArtist reports which library artist, if any, stands for the
+// MusicBrainz artist (mbid, name), among the artists v can see.
+func FindMBArtist(v Viewer, mbid, name string) (*audio.Artist, MBArtistMatch, error) {
+	id, m, err := findMBArtist(DB, v, mbid, name)
+	if err != nil || m == MBArtistNew {
+		return nil, m, err
+	}
+	a, err := GetArtist(v, id)
+	return a, m, err
+}
+
+func findMBArtist(q querier, v Viewer, mbid, name string) (id string, m MBArtistMatch, err error) {
+	err = q.QueryRow(`SELECT a.uuid FROM artists a WHERE a.mbid = ? AND `+v.artistCond("a")+`;`, mbid).Scan(&id)
+	if err == nil {
+		return id, MBArtistLinked, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return "", MBArtistNew, err
+	}
+	var other string
+	err = q.QueryRow(`SELECT a.uuid, COALESCE(a.mbid, '') FROM artists a WHERE lower(a.name) = lower(?) AND `+v.artistCond("a")+`;`, name).Scan(&id, &other)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", MBArtistNew, nil
+	}
+	if err != nil {
+		return "", MBArtistNew, err
+	}
+	if other == "" {
+		return id, MBArtistSameName, nil
+	}
+	return id, MBArtistNameTaken, nil
+}
+
+// AddMBArtist adds the MusicBrainz artist, or links the same-name artist
+// without an ID, or returns the artist that has the ID. It returns what it
+// found before the change. ErrArtistExists: the name belongs to an artist
+// with another MBID.
+func AddMBArtist(v Viewer, mbid, name string) (*audio.Artist, MBArtistMatch, error) {
+	tx, err := DB.Begin()
+	if err != nil {
+		return nil, MBArtistNew, err
+	}
+	defer tx.Rollback()
+
+	id, m, err := findMBArtist(tx, v, mbid, name)
+	if err != nil {
+		return nil, m, err
+	}
+	switch m {
+	case MBArtistNameTaken:
+		return nil, m, ErrArtistExists
+	case MBArtistNew, MBArtistSameName:
+		id, err = resolveArtistTx(tx, MatchArtist{ID: mbid, Name: name})
+		if isUniqueViolation(err) {
+			return nil, m, ErrMBIDTaken
+		}
+		if err != nil {
+			return nil, m, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, m, err
+	}
+	a, err := GetArtist(All, id)
+	if err != nil {
+		return nil, m, err
+	}
+	if a.MBID != mbid {
+		// a same-name artist v can't see has another ID
+		return nil, m, ErrArtistExists
+	}
+	return a, m, nil
+}
+
 // ListArtistReleases returns the releases credited to an artist, newest
 // first, as ListReleases orders them.
 func ListArtistReleases(v Viewer, artistID string) ([]*audio.Release, error) {

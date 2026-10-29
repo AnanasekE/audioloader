@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–15 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–16 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -22,6 +22,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 13 | [Trim silence](13-trim-silence.md) | Trim silence at the end (REQUESTS.md) |
 | 14 | [YouTube Music source](14-youtube-music-source.md) | YouTube Music instead of spotDL, without removing spotDL (REQUESTS.md) |
 | 15 | [Remove a release](15-remove-release.md) | Remove a release I don't want (REQUESTS.md) |
+| 16 | [Add an artist from MusicBrainz](16-add-artist-from-musicbrainz.md) | Add an artist from MusicBrainz (REQUESTS.md) |
 
 ## Rules for every plan
 

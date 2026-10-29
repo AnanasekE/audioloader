@@ -391,6 +391,7 @@ func TestSecretModeHidesReleaseControls(t *testing.T) {
 		{"/upload", []string{`name="date"`, `name="secret"`, "From YouTube", "new-release-form"}, []string{`name="description"`, `name="tags"`, "Podcast episode"}},
 		{"/upload/batch", []string{`name="secret"`, "Release for all tracks", "Disc</span>"}, []string{"Creators"}},
 		{"/upload/import", []string{`import-secret`}, []string{"Each file becomes a secret track"}},
+		{"/artists", []string{"Add from MusicBrainz"}, nil},
 	} {
 		secret := a.do(true, "GET", c.path, nil).Body.String()
 		normal := a.do(false, "GET", c.path, nil).Body.String()
@@ -403,6 +404,9 @@ func TestSecretModeHidesReleaseControls(t *testing.T) {
 			if !strings.Contains(secret, p) {
 				t.Errorf("%s in secret mode lacks %q", c.path, p)
 			}
+		}
+		if c.path == "/artists" && !strings.Contains(normal, "Add from MusicBrainz") {
+			t.Errorf("/artists in normal mode lacks the MusicBrainz box")
 		}
 		if strings.Contains(normal, `name="secret"`) || strings.Contains(normal, "import-secret") {
 			t.Errorf("%s in normal mode has a secret checkbox", c.path)

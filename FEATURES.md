@@ -6,6 +6,7 @@
 
 - Track list with play buttons, artists and where each track comes from ("Album · also a single")
 - Artists page: add artists, artist cards with a "Batch upload" link
+- Add an artist from MusicBrainz (normal mode): search by name, the top 5 with the same details and Expand as the Follow page; picking adds it with its MusicBrainz name and ID, links a same-name artist without an ID, or links to the one already there; then Follow
 - Releases: album, EP, single and compilation, always typed explicitly (never guessed from track count)
 - Releases page with separate shelves per type; singles shown as song rows, not album covers
 - Album page: discs, track numbers, total length; single page centred on the song, with B-sides and "Also on <album>"

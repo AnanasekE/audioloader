@@ -8,6 +8,7 @@ import (
 	"strings"
 	"uuid"
 
+	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/mb"
@@ -29,16 +30,91 @@ func createArtist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// the event carries the new artist, so pages can add it without refetching
+	if err := triggerArtistsChanged(w, artist); err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.Notice("Added "+name+"."))
+}
+
+// triggerArtistsChanged tells the page an artist was added. The event
+// carries the artist, so pages can add it without refetching.
+func triggerArtistsChanged(w http.ResponseWriter, a *audio.Artist) error {
 	trigger, err := json.Marshal(map[string]any{
-		"artistsChanged": map[string]string{"id": artist.ID.String(), "name": artist.Name},
+		"artistsChanged": map[string]string{"id": a.ID.String(), "name": a.Name},
 	})
+	if err != nil {
+		return err
+	}
+	w.Header().Set("HX-Trigger", string(trigger))
+	return nil
+}
+
+// searchArtistsMusicBrainz lists MusicBrainz's top artists for a name, each
+// with how it relates to the library.
+func searchArtistsMusicBrainz(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.FormValue("q"))
+	if q == "" {
+		http.Error(w, "type a name", http.StatusBadRequest)
+		return
+	}
+	results, err := mb.Default().SearchArtists(r.Context(), q, 5)
+	searchErr := ""
+	if err != nil {
+		log.Println("search artists:", err)
+		searchErr = "Couldn't search MusicBrainz."
+	}
+	found := make([]components.MBArtistCandidate, 0, len(results))
+	for _, c := range results {
+		lib, match, err := db.FindMBArtist(viewer(r), c.ID, c.Name)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		cand := components.MBArtistCandidate{Artist: c, Match: match, Library: lib, AddName: c.Name}
+		if match == db.MBArtistNameTaken {
+			cand.AddName = ""
+			if c.Disambiguation != "" {
+				named := c.Name + " (" + c.Disambiguation + ")"
+				if _, m, err := db.FindMBArtist(viewer(r), c.ID, named); err == nil && m == db.MBArtistNew {
+					cand.AddName = named
+				}
+			}
+		}
+		found = append(found, cand)
+	}
+	render(w, r, components.MBArtistCandidates(found, searchErr))
+}
+
+// addArtistFromMusicBrainz adds the picked artist under the picked name and
+// ID, or links or finds the one already in the library.
+func addArtistFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
+	mbid := strings.ToLower(validMBID(r.FormValue("mbid")))
+	name := strings.TrimSpace(r.FormValue("name"))
+	if mbid == "" || name == "" {
+		http.Error(w, "pick an artist from the list", http.StatusBadRequest)
+		return
+	}
+	a, match, err := db.AddMBArtist(viewer(r), mbid, name)
+	if errors.Is(err, db.ErrArtistExists) {
+		http.Error(w, name+" is already in the library as another artist.", http.StatusConflict)
+		return
+	}
+	if errors.Is(err, db.ErrMBIDTaken) {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	w.Header().Set("HX-Trigger", string(trigger))
-	render(w, r, components.Notice("Added "+name+"."))
+	if match != db.MBArtistLinked {
+		if err := triggerArtistsChanged(w, a); err != nil {
+			serverError(w, err)
+			return
+		}
+	}
+	render(w, r, components.MBArtistAdded(a, match))
 }
 
 func getArtistPage(w http.ResponseWriter, r *http.Request) {

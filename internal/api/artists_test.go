@@ -107,3 +107,79 @@ func TestLinkArtist(t *testing.T) {
 		t.Fatalf("duplicate mbid set: %q", got.MBID)
 	}
 }
+
+func TestAddArtistFromMusicBrainz(t *testing.T) {
+	dbtest.New(t)
+	const (
+		ma = "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"
+		po = "8f6bd1e4-fbe1-4f50-aa9b-94c450ec0f11"
+		tr = "3fef8d1f-2a9a-4b1f-9f9b-0e6a8d5d8a11"
+	)
+	fakeMusicBrainz(t, map[string]string{"/artist": `{"artists": [
+		{"id": "` + ma + `", "name": "Massive Attack", "type": "Group", "country": "GB"},
+		{"id": "` + po + `", "name": "Portishead", "type": "Group", "country": "GB"},
+		{"id": "` + tr + `", "name": "Tricky", "disambiguation": "UK rapper", "type": "Person", "country": "GB"}]}`})
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	h := WithViewer(mux)
+
+	db.AddArtist(db.All, "portishead")
+	tricky, _ := db.AddArtist(db.All, "Tricky")
+	db.SetArtistMBID(tricky.ID.String(), "11111111-1111-1111-1111-111111111111")
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/ui/artists/musicbrainz?q=Massive", nil))
+	body := rec.Body.String()
+	for _, want := range []string{">Add<", "Link portishead", "Add as Tricky (UK rapper)", "/ui/musicbrainz/artists/" + ma + "/releases"} {
+		if rec.Code != 200 || !strings.Contains(body, want) {
+			t.Fatalf("search = %d, lacks %q: %s", rec.Code, want, body)
+		}
+	}
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/ui/artists/musicbrainz?q=", nil))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("empty q = %d", rec.Code)
+	}
+
+	count := func(name string) int {
+		n := 0
+		list, _ := db.ListArtists(db.All)
+		for _, a := range list {
+			if a.Name == name {
+				n++
+			}
+		}
+		return n
+	}
+	rec = postForm(h, "/ui/artists/musicbrainz", "mbid="+ma+"&name=Massive Attack")
+	a, err := db.ArtistByMBID(db.All, ma)
+	if err != nil {
+		t.Fatalf("add = %d %s, err %v", rec.Code, rec.Body.String(), err)
+	}
+	if rec.Code != 200 || !strings.Contains(rec.Header().Get("HX-Trigger"), "artistsChanged") || !strings.Contains(rec.Body.String(), "/artists/"+a.ID.String()+"/follow") {
+		t.Fatalf("add = %d %v %s", rec.Code, rec.Header(), rec.Body.String())
+	}
+	rec = postForm(h, "/ui/artists/musicbrainz", "mbid="+ma+"&name=Massive Attack")
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "already in your library") || count("Massive Attack") != 1 {
+		t.Fatalf("again = %d %s", rec.Code, rec.Body.String())
+	}
+
+	before, _ := db.ListArtists(db.All)
+	if rec := postForm(h, "/ui/artists/musicbrainz", "mbid="+po+"&name=Portishead"); rec.Code != 200 {
+		t.Fatalf("link = %d %s", rec.Code, rec.Body.String())
+	}
+	after, _ := db.ListArtists(db.All)
+	if p, err := db.ArtistByMBID(db.All, po); err != nil || p.Name != "portishead" || len(after) != len(before) {
+		t.Fatalf("link: %+v, %v, %d -> %d artists", p, err, len(before), len(after))
+	}
+
+	if rec := postForm(h, "/ui/artists/musicbrainz", "mbid="+tr+"&name=Tricky"); rec.Code != http.StatusConflict {
+		t.Fatalf("taken = %d", rec.Code)
+	}
+	if rec := postForm(h, "/ui/artists/musicbrainz", "mbid="+tr+"&name=Tricky (UK rapper)"); rec.Code != 200 || count("Tricky (UK rapper)") != 1 {
+		t.Fatalf("disambiguated = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := postForm(h, "/ui/artists/musicbrainz", "mbid=nope&name=X"); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad mbid = %d", rec.Code)
+	}
+}

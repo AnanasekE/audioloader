@@ -51,6 +51,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 
 	handle(mux, "POST /ui/artists", createArtist)
 	handle(mux, "GET /ui/artists", getArtists)
+	handleNormal(mux, "GET /ui/artists/musicbrainz", searchArtistsMusicBrainz)
+	handleNormal(mux, "POST /ui/artists/musicbrainz", addArtistFromMusicBrainz)
 	handleNormal(mux, "GET /ui/musicbrainz/artists/{mbid}/releases", getCandidateReleases)
 	handle(mux, "GET /ui/tracks", getTracks)
 	handleNormal(mux, "GET /ui/tracks/pick", pickCoverTracks)
