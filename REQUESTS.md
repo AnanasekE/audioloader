@@ -121,3 +121,13 @@ Removing a confirmed release I don't care about takes three steps now: delete ea
 - **One action:** "Remove release" on the release page (and its edit page) deletes the release with its tracks, and the downloads queued for them. Tracks that are also on another release stay.
 - **Confirm first:** say how many tracks go and how many of them have files, since files are deleted too.
 - **Don't bring it back:** the release group's inbox entry becomes "ignored", so it shows under the Ignored tab and "Move back to New" can undo it. Ignoring should work from "confirmed" too, not only "new".
+
+## Add an artist from MusicBrainz
+
+Adding an artist now takes typing a name, then linking it to MusicBrainz from the artist page or the Follow page. I want to search MusicBrainz directly and add the artist I pick.
+
+- **One box:** "Add from MusicBrainz" on the artists page. Type a name and see the top 5 artists with disambiguation, type, country and active years, and "Expand" for their newest release groups, like the existing artist picker.
+- **Pick:** creates the artist with the MusicBrainz name and ID. Then "Follow" is offered right away, opening the Follow page with that ID chosen.
+- **Already there:** if an artist with that ID or name exists, link to it instead of adding a duplicate. A same-name artist without an ID can be linked to the picked ID.
+- **Typing a name still works** for artists that aren't on MusicBrainz.
+- **Where:** reuse the artist search and candidate list in `internal/mb` and the Follow page's picker, so the 1 req/s limit and the "Expand" lookups stay as they are.
