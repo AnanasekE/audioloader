@@ -341,35 +341,43 @@ templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
 		} else {
 			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
 				for _, c := range found {
-					<li class="flex flex-wrap items-center gap-3 py-2">
-						<img class="h-14 w-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
-						<span class="min-w-0 flex-1">
-							<span class="block truncate">{ c.Title }</span>
-							<span class="block truncate text-zinc-500 dark:text-zinc-400">
-								{ channelName(c) } · { formatSeconds(c.Duration) }
-								if d := lengthDiff(c.Duration, t.Duration); d != "" {
-									{ " (" + d + ")" }
-								}
-								for _, b := range channelBadges(c) {
-									<span class="ml-1 rounded bg-zinc-200 px-1.5 text-xs dark:bg-zinc-700">{ b }</span>
-								}
-							</span>
-						</span>
-						<span class="flex items-center gap-2">
-							<a class="btn" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
-							<button
-								type="button"
-								class="btn"
-								hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube" }
-								hx-vals={ fmt.Sprintf(`{"video_id": %q}`, c.ID) }
-							>Use this</button>
-						</span>
-					</li>
+					@youTubeCandidate(c, t.Duration) {
+						<button
+							type="button"
+							class="btn"
+							hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube" }
+							hx-vals={ fmt.Sprintf(`{"video_id": %q}`, c.ID) }
+						>Use this</button>
+					}
 				}
 			</ul>
 		}
 		<button type="button" class="btn mt-2" hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube/none" }>None of these</button>
 	</div>
+}
+
+// youTubeCandidate is one search result: thumbnail, title, channel, length
+// (against expected, if known) and a Preview link, then the caller's buttons.
+templ youTubeCandidate(c ytdlp.Entry, expected time.Duration) {
+	<li class="flex flex-wrap items-center gap-3 py-2">
+		<img class="h-14 w-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
+		<span class="min-w-0 flex-1">
+			<span class="block truncate">{ c.Title }</span>
+			<span class="block truncate text-zinc-500 dark:text-zinc-400">
+				{ channelName(c) } · { formatSeconds(c.Duration) }
+				if d := lengthDiff(c.Duration, expected); d != "" {
+					{ " (" + d + ")" }
+				}
+				for _, b := range channelBadges(c) {
+					<span class="ml-1 rounded bg-zinc-200 px-1.5 text-xs dark:bg-zinc-700">{ b }</span>
+				}
+			</span>
+		</span>
+		<span class="flex items-center gap-2">
+			<a class="btn" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
+			{ children... }
+		</span>
+	</li>
 }
 
 func channelName(e ytdlp.Entry) string {

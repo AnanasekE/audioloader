@@ -402,6 +402,10 @@ func pickRelease(releases []mb.Release, t *audio.Track, hintID string) *mb.Relea
 	return best
 }
 
+// PickRelease is the release a search result is shown on: official, album
+// first, earliest.
+func PickRelease(releases []mb.Release) *mb.Release { return pickRelease(releases, &audio.Track{}, "") }
+
 func earlier(a, b string) bool {
 	if a == "" {
 		return false
@@ -427,6 +431,9 @@ func ReleaseType(rg mb.ReleaseGroup) string {
 	}
 	return ""
 }
+
+// MatchArtists maps a credit list to the artists a match carries.
+func MatchArtists(credits mb.Credits) []db.MatchArtist { return matchArtists(credits) }
 
 func matchArtists(credits mb.Credits) []db.MatchArtist {
 	out := make([]db.MatchArtist, 0, len(credits))

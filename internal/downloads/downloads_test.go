@@ -310,6 +310,21 @@ func TestCleanTitle(t *testing.T) {
 	}
 }
 
+func TestGuessArtist(t *testing.T) {
+	cases := []struct{ title, channel, want string }{
+		{"Massive Attack - Teardrop (Official Video)", "Some Channel", "Massive Attack"},
+		{"Massive Attack – Angel", "", "Massive Attack"},
+		{"Teardrop", "Massive Attack - Topic", "Massive Attack"},
+		{"Teardrop", "Massive Attack", "Massive Attack"},
+		{"Teardrop", "", ""},
+	}
+	for _, c := range cases {
+		if got := GuessArtist(ytdlp.Entry{Title: c.title, Channel: c.channel}); got != c.want {
+			t.Errorf("GuessArtist(%q, %q) = %q, want %q", c.title, c.channel, got, c.want)
+		}
+	}
+}
+
 func TestMapPlaylist(t *testing.T) {
 	r := &audio.Release{Artists: []*audio.Artist{{Name: "Massive Attack"}}}
 	for i, tt := range []struct {

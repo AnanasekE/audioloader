@@ -74,6 +74,7 @@
 - Downloads page: progress, needs a pick, failed (with the tool's error), couldn't find; paste a YouTube URL or upload the file by hand
 - Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
 - Import from YouTube: a video or playlist as new tracks, onto a release or as singles
+- Add a song by search (`/add`, normal mode only; "Add song" on the Tracks page, and a link on the Search page): "Artist - Title" or free words. MusicBrainz's top 5 recordings show length, release and year, and the cover; "Add" puts a placeholder on its real release (reused if the library has it, else created with its artists and IDs) and queues the download in the usual source order. A song already in the library links to it, a queued one links to Downloads. "None of these", or no results, shows the top 5 YouTube results: "Use this" opens a form with the title and artist guessed and editable, and imports the video as a single
 - Downloaded files go through the usual fingerprint and duration checks; a file already in the library merges the placeholder into it
 
 ### Playback

@@ -1,6 +1,7 @@
 package downloads
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"os"
@@ -134,6 +135,16 @@ func CleanTitle(videoTitle string, artists []string) string {
 		}
 	}
 	return t
+}
+
+// GuessArtist is the artist a video is probably by: the "Artist - " prefix
+// of its title, else its channel without " - Topic".
+func GuessArtist(e ytdlp.Entry) string {
+	t := strings.TrimSpace(noise.ReplaceAllString(e.Title, ""))
+	if loc := dash.FindStringIndex(t); loc != nil && loc[0] > 0 {
+		return t[:loc[0]]
+	}
+	return strings.TrimSpace(strings.TrimSuffix(cmp.Or(e.Channel, e.Uploader), " - Topic"))
 }
 
 // Entry is something that may fill a track: a playlist video or a song of

@@ -12,6 +12,11 @@ templ SearchPage(q string, res *db.SearchResults) {
 	@layout("Search", "") {
 		@pageHeader("Search", searchSubtitle(q)) {
 		}
+		if q != "" && !secretMode(ctx) {
+			<p class="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+				Not in your library? <a href={ templ.SafeURL("/add?q=" + url.QueryEscape(q)) }>Add “{ q }” as a song</a>
+			</p>
+		}
 		if q != "" && res.Empty() {
 			@emptyState() {
 				Nothing matches.

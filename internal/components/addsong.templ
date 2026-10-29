@@ -1,0 +1,142 @@
+package components
+
+import (
+	"fmt"
+	"net/url"
+	"time"
+
+	"audioloader/internal/sources/ytdlp"
+)
+
+const PageAddSong = "add"
+
+// SongCandidate is a MusicBrainz recording offered for "Add a song".
+type SongCandidate struct {
+	RecordingID, Title, Artists             string
+	Length                                  time.Duration
+	ReleaseID, ReleaseTitle, Year, CoverURL string // the release it would go on; "" if none
+	// set when the library has the song, or has it queued
+	OwnedTrackID, OwnedReleaseID string
+	OwnedHasFile                 bool
+}
+
+// Owned reports whether the library already has the song.
+func (c SongCandidate) Owned() bool { return c.OwnedTrackID != "" }
+
+// AddSongPage is one box for artist and title. A q pre-fills it and
+// searches at once.
+templ AddSongPage(q string) {
+	@layout("Add a song", PageAddSong) {
+		@pageHeader("Add a song", "Search MusicBrainz, then YouTube") {
+			<a class="btn" href="/upload">Upload</a>
+		}
+		<div hx-on::after-request="document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText">
+			<form
+				class="card flex flex-wrap items-center gap-2"
+				hx-get="/ui/add/musicbrainz"
+				hx-target="#add-results"
+				hx-indicator="#add-loading"
+			>
+				<input class="input flex-1" type="text" name="q" value={ q } placeholder="Artist - Title, e.g. Ella Red - Muse" aria-label="Song" autocomplete="off" required/>
+				<button class="btn" type="submit">Search</button>
+				<span id="add-loading" class="htmx-indicator text-sm text-zinc-500">Searching…</span>
+			</form>
+			<p id="add-status" class="mt-4 text-sm text-red-600 empty:hidden dark:text-red-400" role="alert"></p>
+			<div
+				id="add-results"
+				class="mt-6"
+				if q != "" {
+					hx-get="/ui/add/musicbrainz"
+					hx-vals={ fmt.Sprintf(`{"q": %q}`, q) }
+					hx-trigger="load"
+				}
+			></div>
+		</div>
+	}
+}
+
+// SongCandidates lists MusicBrainz's best recordings for q.
+templ SongCandidates(q string, found []SongCandidate) {
+	<div class="text-zinc-900 dark:text-zinc-100">
+		if len(found) == 0 {
+			<p class="mb-3 text-zinc-500 dark:text-zinc-400">MusicBrainz found nothing. Looking on YouTube…</p>
+			<div hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>
+		} else {
+			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+				for _, c := range found {
+					<li class="flex flex-wrap items-center gap-3 py-2">
+						<img
+							class="size-14 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800"
+							src={ c.CoverURL }
+							alt=""
+							loading="lazy"
+							onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+						/>
+						<span class="min-w-0 flex-1">
+							<span class="block truncate">{ c.Title }</span>
+							<span class="block truncate text-zinc-500 dark:text-zinc-400">
+								{ c.Artists }
+								if c.Length > 0 {
+									{ " · " + formatDuration(c.Length) }
+								}
+							</span>
+							if c.ReleaseTitle != "" {
+								<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+									{ c.ReleaseTitle }
+									if c.Year != "" {
+										{ " · " + c.Year }
+									}
+								</span>
+							}
+						</span>
+						if c.Owned() && c.OwnedHasFile {
+							<a href={ templ.SafeURL("/releases/" + c.OwnedReleaseID) }>In your library</a>
+						} else if c.Owned() {
+							<a href="/downloads">Already queued</a>
+						} else {
+							<button
+								type="button"
+								class="btn"
+								hx-post="/ui/add/musicbrainz"
+								hx-vals={ fmt.Sprintf(`{"recording_id": %q, "release_id": %q}`, c.RecordingID, c.ReleaseID) }
+							>Add</button>
+						}
+					</li>
+				}
+			</ul>
+			<button type="button" class="btn mt-2" hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-target="#add-results">None of these</button>
+		}
+	</div>
+}
+
+// SongYouTubeCandidates lists YouTube results for q. titles and artists are
+// the guessed track title and artist of each result, for the person to
+// correct; owned holds the link to the library's track when it has the video.
+templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string) {
+	<div class="text-zinc-900 dark:text-zinc-100">
+		if len(found) == 0 {
+			<p class="text-zinc-500 dark:text-zinc-400">YouTube found nothing.</p>
+		} else {
+			<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">The picked video becomes a single you can tag later.</p>
+			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+				for i, c := range found {
+					@youTubeCandidate(c, 0) {
+						if owned[i] != "" {
+							<a href={ templ.SafeURL(owned[i]) }>In your library</a>
+						} else {
+							<details>
+								<summary class="btn cursor-pointer">Use this</summary>
+								<form class="mt-2 grid gap-2" hx-post="/ui/add/youtube">
+									<input type="hidden" name="video_id" value={ c.ID }/>
+									<input class="input" type="text" name="title" value={ titles[i] } aria-label="Title" required/>
+									<input class="input" type="text" name="artist" value={ artists[i] } aria-label="Artist" required/>
+									<button class="btn" type="submit">Add</button>
+								</form>
+							</details>
+						}
+					}
+				}
+			</ul>
+		}
+	</div>
+}

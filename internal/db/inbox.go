@@ -283,14 +283,6 @@ func ConfirmInboxRelease(releaseGroupMBID string) (releaseID string, placeholder
 			}
 		}
 
-		id := uuid.New().String()
-		_, err := tx.Exec(`
-			INSERT INTO tracks(uuid, title, duration_seconds, has_file, mbid, isrc, spotify_url, tag_status)
-			VALUES(?, ?, ?, 0, ?, ?, ?, 'matched');`,
-			id, t.Title, t.LengthMs/1000, nullIfEmpty(t.RecordingMBID), nullIfEmpty(t.ISRC), nullIfEmpty(t.SpotifyURL))
-		if err != nil {
-			return "", nil, err
-		}
 		credits := t.Artists
 		if len(credits) == 0 {
 			credits = ir.Data.Artists
@@ -306,15 +298,11 @@ func ConfirmInboxRelease(releaseGroupMBID string) (releaseID string, placeholder
 		if len(trackArtists) == 0 {
 			trackArtists = artistIDs
 		}
-		for _, aid := range trackArtists {
-			if _, err := tx.Exec(`INSERT INTO track_artist_map(track_id, artist_id) VALUES(?, ?);`, id, aid); err != nil {
-				return "", nil, err
-			}
-		}
-		if err := insertReleaseTrack(tx, id, link); err != nil {
+		id, err := insertPlaceholderTx(tx, t, trackArtists)
+		if err != nil {
 			return "", nil, err
 		}
-		if _, err := tx.Exec(`INSERT INTO downloads(track_id) VALUES(?);`, id); err != nil {
+		if err := insertReleaseTrack(tx, id, link); err != nil {
 			return "", nil, err
 		}
 		placeholders = append(placeholders, id)
@@ -324,6 +312,28 @@ func ConfirmInboxRelease(releaseGroupMBID string) (releaseID string, placeholder
 		return "", nil, err
 	}
 	return rel.ID.String(), placeholders, tx.Commit()
+}
+
+// insertPlaceholderTx inserts a track without a file, matched to t, with its
+// artists and a queued download. It returns the track's ID.
+func insertPlaceholderTx(tx *sql.Tx, t InboxTrack, artistIDs []string) (string, error) {
+	id := uuid.New().String()
+	_, err := tx.Exec(`
+		INSERT INTO tracks(uuid, title, duration_seconds, has_file, mbid, isrc, spotify_url, tag_status)
+		VALUES(?, ?, ?, 0, ?, ?, ?, 'matched');`,
+		id, t.Title, t.LengthMs/1000, nullIfEmpty(t.RecordingMBID), nullIfEmpty(t.ISRC), nullIfEmpty(t.SpotifyURL))
+	if err != nil {
+		return "", err
+	}
+	for _, aid := range artistIDs {
+		if _, err := tx.Exec(`INSERT INTO track_artist_map(track_id, artist_id) VALUES(?, ?);`, id, aid); err != nil {
+			return "", err
+		}
+	}
+	if _, err := tx.Exec(`INSERT INTO downloads(track_id) VALUES(?);`, id); err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 // resolveArtistTx finds the artist by MusicBrainz ID, else by name (giving
@@ -374,15 +384,19 @@ func appendUnique(ids []string, id string) []string {
 // for a MusicBrainz release group: one with its ID, else one by the artist
 // with the same title (which then gets the ID). "" if there is none.
 func LibraryReleaseFor(artistID, releaseGroupMBID, title string) (string, error) {
+	return libraryReleaseForTx(DB, artistID, releaseGroupMBID, title)
+}
+
+func libraryReleaseForTx(q querier, artistID, releaseGroupMBID, title string) (string, error) {
 	var id string
-	err := DB.QueryRow(`SELECT uuid FROM releases WHERE release_group_mbid = ? LIMIT 1;`, releaseGroupMBID).Scan(&id)
+	err := q.QueryRow(`SELECT uuid FROM releases WHERE release_group_mbid = ? LIMIT 1;`, releaseGroupMBID).Scan(&id)
 	if err == nil {
 		return id, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return "", err
 	}
-	rows, err := DB.Query(`
+	rows, err := q.Query(`
 		SELECT r.uuid, r.title FROM releases r
 		JOIN release_artist_map m ON m.release_id = r.uuid
 		WHERE m.artist_id = ? AND r.release_group_mbid IS NULL;`, artistID)
@@ -404,7 +418,7 @@ func LibraryReleaseFor(artistID, releaseGroupMBID, title string) (string, error)
 	if err := rows.Err(); err != nil || id == "" {
 		return "", err
 	}
-	_, err = DB.Exec(`UPDATE releases SET release_group_mbid = ? WHERE uuid = ?;`, releaseGroupMBID, id)
+	_, err = q.Exec(`UPDATE releases SET release_group_mbid = ? WHERE uuid = ?;`, releaseGroupMBID, id)
 	return id, err
 }
 

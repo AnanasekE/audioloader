@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // inc values are space-separated here: url.Values encodes a space as "+",
@@ -40,6 +41,25 @@ func (c *Client) SearchRecordings(ctx context.Context, query string, limit int) 
 		Recordings []Recording `json:"recordings"`
 	}
 	q := url.Values{"query": {query}, "limit": {strconv.Itoa(limit)}}
+	return res.Recordings, c.getJSON(ctx, "musicbrainz", c.mbURL("recording", q), &res)
+}
+
+// SearchSongs finds recordings for what a person typed: "Artist - Title"
+// as a fielded query, anything else as free text (dismax).
+func (c *Client) SearchSongs(ctx context.Context, text string, limit int) ([]Recording, error) {
+	text = strings.Join(strings.Fields(text), " ")
+	if text == "" {
+		return nil, nil
+	}
+	var res struct {
+		Recordings []Recording `json:"recordings"`
+	}
+	q := url.Values{"query": {text}, "limit": {strconv.Itoa(limit)}}
+	if artist, title, ok := strings.Cut(text, " - "); ok && artist != "" && title != "" {
+		q.Set("query", "artist:"+Phrase(artist)+" AND recording:"+Phrase(title))
+	} else {
+		q.Set("dismax", "true")
+	}
 	return res.Recordings, c.getJSON(ctx, "musicbrainz", c.mbURL("recording", q), &res)
 }
 

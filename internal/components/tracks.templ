@@ -22,6 +22,9 @@ const (
 templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy string) {
 	@layout("Tracks", PageTracks) {
 		@pageHeader("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
+			if !secretMode(ctx) {
+				<a class="btn" href="/add">Add song</a>
+			}
 			<a class="btn" href="/upload">Upload track</a>
 		}
 		@ContinueListening(continueListening)

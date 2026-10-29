@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–11 are implemented, which covers `REQUESTS.md`. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–12 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -18,6 +18,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 9 | [Cover songs](09-cover-songs.md) | Covers: link to the original (REQUESTS.md) |
 | 10 | [Inbox organization](10-inbox-organization.md) | Better inbox organization (REQUESTS.md) |
 | 11 | [Secret mode](11-secret-mode.md) | Secret mode, secret source (REQUESTS.md) |
+| 12 | [Add a song by search](12-add-song-by-search.md) | Add a song by search (REQUESTS.md) |
 
 ## Rules for every plan
 

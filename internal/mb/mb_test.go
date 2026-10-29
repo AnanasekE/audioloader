@@ -247,3 +247,30 @@ func TestCoverWorkAndOriginal(t *testing.T) {
 		t.Error("an empty work has no original")
 	}
 }
+
+func TestSearchSongs(t *testing.T) {
+	c, reqs := fixtureServer(t, map[string]string{"/ws/2/recording": "recording_search.json"})
+	ctx := context.Background()
+
+	recs, err := c.SearchSongs(ctx, "  Ella  Red - Muse ", 5)
+	if err != nil || len(recs) != 2 || len(recs[0].Releases) == 0 {
+		t.Fatalf("recs = %v, err = %v", recs, err)
+	}
+	q := (*reqs)[0].URL.Query()
+	if q.Get("query") != `artist:"Ella Red" AND recording:"Muse"` || q.Has("dismax") || q.Get("limit") != "5" {
+		t.Fatalf("fielded query = %v", q)
+	}
+
+	if _, err := c.SearchSongs(ctx, "Ella Red Muse", 5); err != nil {
+		t.Fatal(err)
+	}
+	q = (*reqs)[1].URL.Query()
+	if q.Get("query") != "Ella Red Muse" || q.Get("dismax") != "true" {
+		t.Fatalf("free query = %v", q)
+	}
+
+	n := len(*reqs)
+	if recs, err := c.SearchSongs(ctx, "   ", 5); recs != nil || err != nil || len(*reqs) != n {
+		t.Fatalf("empty = %v, %v", recs, err)
+	}
+}
