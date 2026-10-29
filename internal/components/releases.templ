@@ -158,7 +158,52 @@ templ releaseActions(r *audio.Release) {
 		}
 		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
 		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
+		@removeReleaseButton(r)
 	</div>
+}
+
+templ removeReleaseButton(r *audio.Release) {
+	<button
+		type="button"
+		class="btn"
+		hx-post={ "/ui/releases/" + r.ID.String() + "/remove" }
+		hx-confirm={ removeReleaseConfirm(r) }
+	>Remove release</button>
+}
+
+// removeReleaseConfirm counts what removing r takes with it: its tracks that
+// are on no other release go, the rest stay.
+func removeReleaseConfirm(r *audio.Release) string {
+	gone, withFiles, stay := 0, 0, 0
+	for _, rt := range r.Tracks {
+		if len(rt.Track.Releases) <= 1 {
+			gone++
+			if rt.Track.HasFile {
+				withFiles++
+			}
+		} else {
+			stay++
+		}
+	}
+	plural := func(n int) string {
+		if n == 1 {
+			return "1 track"
+		}
+		return fmt.Sprintf("%d tracks", n)
+	}
+	msg := "Remove " + r.Title + "? "
+	if gone == 0 {
+		return msg + "Its tracks are all on other releases and stay."
+	}
+	verb := "go"
+	if gone == 1 {
+		verb = "goes"
+	}
+	msg += plural(gone) + " " + verb + ", " + fmt.Sprintf("%d", withFiles) + " of them with files, which are deleted."
+	if stay > 0 {
+		msg += " " + plural(stay) + " on other releases stay."
+	}
+	return msg
 }
 
 templ albumView(r *audio.Release) {
@@ -305,14 +350,15 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 			@editRow("", "", "", 1)
 		</template>
 		<section class="card mt-8">
-			<h2 class="mb-2 text-lg font-semibold">Delete release</h2>
-			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">The tracks stay in your library.</p>
+			<h2 class="mb-2 text-lg font-semibold">Remove release</h2>
+			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Deletes the release and its tracks that aren't on another release, with their files. It moves to Ignored in the inbox.</p>
+			@removeReleaseButton(r)
 			<button
 				type="button"
-				class="btn"
+				class="btn ml-2"
 				hx-post={ "/ui/releases/" + r.ID.String() + "/delete" }
 				hx-confirm={ "Delete " + r.Title + "? Its tracks stay in your library." }
-			>Delete release</button>
+			>Delete the release only</button>
 		</section>
 		<script src="/assets/js/release-edit.js" defer></script>
 		<script src="/assets/js/artist-picker.js" defer></script>

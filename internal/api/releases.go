@@ -12,6 +12,7 @@ import (
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/mb"
 )
 
 // releaseDate accepts "YYYY", "YYYY-MM" and "YYYY-MM-DD".
@@ -173,6 +174,23 @@ func deleteRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := db.DeleteRelease(id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/releases")
+}
+
+func removeRelease(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathUUID(w, r, "release_id")
+	if !ok || !visibleRelease(w, r, id.String()) {
+		return
+	}
+	_, err := db.RemoveRelease(viewer(r), id.String(), mb.Default().CoverArtURL)
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return

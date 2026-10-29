@@ -114,14 +114,6 @@ The inbox is one long list of cards. Ideas, to be decided:
 - Mark how much is owned ("3 of 11 in library") and filter to "nothing owned yet"
 - Search within the inbox
 
-## Remove a release I don't want
-
-Removing a confirmed release I don't care about takes three steps now: delete each track, delete the release, and the inbox still says "confirmed". Deleting only the release leaves its tracks behind as tracks without a release.
-
-- **One action:** "Remove release" on the release page (and its edit page) deletes the release with its tracks, and the downloads queued for them. Tracks that are also on another release stay.
-- **Confirm first:** say how many tracks go and how many of them have files, since files are deleted too.
-- **Don't bring it back:** the release group's inbox entry becomes "ignored", so it shows under the Ignored tab and "Move back to New" can undo it. Ignoring should work from "confirmed" too, not only "new".
-
 ## Add an artist from MusicBrainz
 
 Adding an artist now takes typing a name, then linking it to MusicBrainz from the artist page or the Follow page. I want to search MusicBrainz directly and add the artist I pick.

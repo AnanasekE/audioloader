@@ -182,9 +182,10 @@ func InboxCount() (int, error) {
 	return n, err
 }
 
-// IgnoreInboxRelease hides a release for good ("don't ask again").
+// IgnoreInboxRelease hides a release for good ("don't ask again"), whether
+// it is new or was already confirmed (removing a release does the latter).
 func IgnoreInboxRelease(releaseGroupMBID string) error {
-	res, err := DB.Exec(`UPDATE inbox_releases SET status = 'ignored' WHERE release_group_mbid = ? AND status = 'new';`, releaseGroupMBID)
+	res, err := DB.Exec(`UPDATE inbox_releases SET status = 'ignored' WHERE release_group_mbid = ? AND status IN ('new', 'confirmed');`, releaseGroupMBID)
 	if err != nil {
 		return err
 	}

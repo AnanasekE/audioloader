@@ -474,16 +474,27 @@ func DeleteTrack(v Viewer, id string) error {
 	if err := expectRow(res, err); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM jobs WHERE status = 'queued' AND instr(payload, ?) > 0;`, id); err != nil {
+	if err := dropQueuedJobsTx(tx, id); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
+	removeTrackFiles(tid)
+	return nil
+}
+
+// dropQueuedJobsTx removes queued jobs whose payload mentions id.
+func dropQueuedJobsTx(tx *sql.Tx, id string) error {
+	_, err := tx.Exec(`DELETE FROM jobs WHERE status = 'queued' AND instr(payload, ?) > 0;`, id)
+	return err
+}
+
+// removeTrackFiles deletes a removed track's audio file and images.
+func removeTrackFiles(id uuid.UUID) {
 	// the track is gone either way; a leftover file is only wasted space
-	if path, err := TrackFilePath(tid); err == nil {
+	if path, err := TrackFilePath(id); err == nil {
 		os.Remove(path)
 	}
-	removeTrackImages(tid)
-	return nil
+	removeTrackImages(id)
 }

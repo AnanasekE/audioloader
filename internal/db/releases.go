@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -257,6 +258,118 @@ func DeleteRelease(id string) error {
 		removeCover(rid)
 	}
 	return nil
+}
+
+// ReleaseRemoval is what removing a release takes with it.
+type ReleaseRemoval struct {
+	Tracks    int // deleted: visible, and on no other release
+	WithFiles int // of those, how many had a file
+}
+
+// RemoveRelease deletes a release, its tracks that are on no other
+// release (with their files and queued jobs), and marks its release group
+// ignored in the inbox. coverArtURL is the Cover Art Archive base URL
+// (mb.Client.CoverArtURL), for an inbox row it has to create. Secret
+// tracks a normal viewer can't see only lose their slot.
+func RemoveRelease(v Viewer, id, coverArtURL string) (ReleaseRemoval, error) {
+	var out ReleaseRemoval
+	rel, err := GetRelease(v, id)
+	if err != nil {
+		return out, err
+	}
+
+	tx, err := DB.Begin()
+	if err != nil {
+		return out, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(`
+		SELECT t.uuid, t.has_file FROM release_tracks rt JOIN tracks t ON t.uuid = rt.track_id
+		WHERE rt.release_id = ? AND `+v.trackCond("t")+`
+			AND NOT EXISTS (SELECT 1 FROM release_tracks o WHERE o.track_id = t.uuid AND o.release_id <> rt.release_id);`, id)
+	if err != nil {
+		return out, err
+	}
+	var doomed []uuid.UUID
+	for rows.Next() {
+		var tid uuid.UUID
+		var hasFile bool
+		if err := rows.Scan(&tid, &hasFile); err != nil {
+			rows.Close()
+			return out, err
+		}
+		doomed = append(doomed, tid)
+		out.Tracks++
+		if hasFile {
+			out.WithFiles++
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return out, err
+	}
+	rows.Close()
+
+	gone := map[string]bool{}
+	for _, tid := range doomed {
+		gone[tid.String()] = true
+		if _, err := tx.Exec(`DELETE FROM tracks WHERE uuid = ?;`, tid.String()); err != nil {
+			return out, err
+		}
+		if err := dropQueuedJobsTx(tx, tid.String()); err != nil {
+			return out, err
+		}
+	}
+	if err := dropQueuedJobsTx(tx, id); err != nil {
+		return out, err
+	}
+	if _, err := tx.Exec(`DELETE FROM releases WHERE uuid = ?;`, id); err != nil {
+		return out, err
+	}
+
+	if rg := rel.ReleaseGroupMBID; rg != "" {
+		res, err := tx.Exec(`UPDATE inbox_releases SET status = 'ignored' WHERE release_group_mbid = ?;`, rg)
+		if err != nil {
+			return out, err
+		}
+		if n, _ := res.RowsAffected(); n == 0 && len(rel.Artists) > 0 {
+			// came from an upload: the daily check would list it as new
+			data := InboxData{CoverURL: coverArtURL + "/release-group/" + rg + "/front-250"}
+			for _, a := range rel.Artists {
+				data.Artists = append(data.Artists, MatchArtist{ID: a.MBID, Name: a.Name})
+			}
+			for _, rt := range rel.Tracks {
+				it := InboxTrack{Disc: rt.Disc, Position: rt.Position, Title: rt.Track.Title,
+					RecordingMBID: rt.Track.MBID, ISRC: rt.Track.ISRC, LengthMs: int(rt.Track.Duration.Milliseconds())}
+				for _, a := range rt.Track.Artists {
+					it.Artists = append(it.Artists, MatchArtist{ID: a.MBID, Name: a.Name})
+				}
+				if !gone[rt.Track.ID.String()] {
+					it.OwnedTrackID = rt.Track.ID.String()
+				}
+				data.Tracks = append(data.Tracks, it)
+			}
+			b, err := json.Marshal(data)
+			if err != nil {
+				return out, err
+			}
+			if _, err := tx.Exec(`
+				INSERT OR IGNORE INTO inbox_releases(release_group_mbid, artist_id, release_mbid, title, type, date, data, status)
+				VALUES(?, ?, ?, ?, ?, ?, ?, 'ignored');`,
+				rg, rel.Artists[0].ID.String(), nullIfEmpty(rel.MBID), rel.Title, string(rel.Type), nullIfEmpty(rel.Date), string(b)); err != nil {
+				return out, err
+			}
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return out, err
+	}
+	for _, tid := range doomed {
+		removeTrackFiles(tid)
+	}
+	removeCover(rel.ID)
+	return out, nil
 }
 
 // SetReleaseTracks replaces a release's tracklist. A viewer who can't see

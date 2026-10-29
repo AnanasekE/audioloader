@@ -203,6 +203,29 @@ func TestRestoreInboxRelease(t *testing.T) {
 	}
 }
 
+func TestIgnoreConfirmed(t *testing.T) {
+	newTestDB(t)
+	a, _ := AddArtist(All, "Artist")
+	if err := AddInboxRelease(InboxRelease{ReleaseGroupMBID: "rg", ArtistID: a.ID.String(), Title: "Album", Type: "album"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := ConfirmInboxRelease("rg"); err != nil {
+		t.Fatal(err)
+	}
+	if err := IgnoreInboxRelease("rg"); err != nil {
+		t.Fatal(err)
+	}
+	if n, ig, _ := InboxCounts(); n != 0 || ig != 1 {
+		t.Fatalf("counts = %d, %d", n, ig)
+	}
+	if err := RestoreInboxRelease("rg"); err != nil {
+		t.Fatal(err)
+	}
+	if n, ig, _ := InboxCounts(); n != 1 || ig != 0 {
+		t.Fatalf("counts after restore = %d, %d", n, ig)
+	}
+}
+
 func TestListInboxFilter(t *testing.T) {
 	newTestDB(t)
 	a, _ := AddArtist(All, "Massive Attack")

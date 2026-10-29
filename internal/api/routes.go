@@ -65,6 +65,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handleNormal(mux, "POST /ui/releases", createRelease)
 	handleNormal(mux, "POST /ui/releases/{release_id}", updateRelease)
 	handleNormal(mux, "POST /ui/releases/{release_id}/delete", deleteRelease)
+	handleNormal(mux, "POST /ui/releases/{release_id}/remove", removeRelease)
 	handleNormal(mux, "POST /ui/releases/{release_id}/cover", uploadCover)
 	handleNormal(mux, "POST /ui/releases/{release_id}/tracks", saveReleaseTracks)
 

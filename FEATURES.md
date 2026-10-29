@@ -12,7 +12,7 @@
 - Multi-disc releases
 - Edit tracklist: reorder, change disc, add from library, remove
 - One track can be on several releases (e.g. the single and the album)
-- Edit a release's title, type, date and artists; delete a release (its tracks stay)
+- Edit a release's title, type, date and artists; delete a release (its tracks stay), or "Remove release" on the release and edit pages: deletes the release with its tracks that are on no other release (files and queued downloads too, after a confirm with the counts) and moves its release group to Ignored in the inbox
 - Release covers (JPEG, PNG, WebP); tracks show the cover of their album, else EP, single, compilation
 - Unique artist names (case-insensitive); existing duplicates merged
 - Placeholder tracks: known from a tracklist, shown greyed out until their file is added
@@ -67,7 +67,7 @@
 - Follow an artist (linked to their MusicBrainz ID, picked from the top 5 search results) with filters: release types, secondary types to skip (live, remix, ...)
 - Daily background check of followed artists' discographies; "Check now"
 - Inbox of releases missing from the library, one compact row each with "3 of 11 in library"; cover and tracklist (owned tracks marked) open on demand
-- Inbox tabs New and Ignored (move an ignored release back), grouped by artist in collapsible groups (remembered in the browser); Confirm, Confirm all (also per artist), Don't ask again
+- Inbox tabs New and Ignored (move an ignored release back), grouped by artist in collapsible groups (remembered in the browser); Confirm, Confirm all (also per artist), Don't ask again (also works on confirmed releases, which Remove release uses)
 - Inbox filters by type and "nothing owned yet", sort by date, search by title or artist; all kept in the URL
 - Confirming creates the release, its artists and tracklist; owned tracks are linked, the rest become placeholders with queued downloads
 - Download sources, tried in a fixed order (the first with a candidate wins; quality only breaks ties within a source): your own files (a watched folder, `AUDIOLOADER_WATCH`, matched by MusicBrainz ID, ISRC or tags; or a manual upload), then YouTube Music, then spotDL, then YouTube (yt-dlp)
