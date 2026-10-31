@@ -10,7 +10,7 @@
 
 - [x] 1. Suggest a creator for a page URL
 - [x] 2. Pre-fill it in the form
-- [ ] 3. Docs
+- [x] 3. Docs
 
 ## Rules
 

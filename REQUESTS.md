@@ -22,7 +22,5 @@ Sharing a page from the secret source in Safari (or another app) through the iOS
 - **Endpoint:** a POST that takes the page URL and queues the same job as the secret-mode "Download from URL" form. The same rules apply: only the configured host, https only, only the checked URL is fetched, and dedupe by `source_url` and fingerprint.
 - **Never name the site** in the repo, as for the existing secret source.
 - **Auth:** it must work without a browser session. A long random token in an env var (e.g. `AUDIOLOADER_SHARE_TOKEN`), sent as a header and compared in constant time. It is only valid for this one endpoint and always creates secret tracks.
-- **Conflicts with today's rule:** creators are always picked by hand and the form can't be submitted without one. Decide between:
-  - a "needs creators" state, where shared tracks wait in secret mode until creators are picked, the same way Downloads holds "needs a pick";
-  - taking the creator from the page, which today's rule forbids.
+- **Creator question decided:** from the URL, as the Download from URL form does since plan 19. A "needs creators" state, where shared tracks wait in secret mode until creators are picked (as Downloads holds "needs a pick"), stays only as the fallback for URLs without an uploader.
 - **Feedback:** the share responds quickly with "queued" or a clear error (wrong host, already in library). The track appears in secret mode when the job finishes.
