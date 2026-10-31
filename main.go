@@ -46,6 +46,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	api.Register(mux, v)
+	api.SetShareToken(os.Getenv("AUDIOLOADER_SHARE_TOKEN"))
 
 	tagging.Register()
 	tracking.Register()

@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Share token config
+- [x] 1. Share token config
 - [ ] 2. The share endpoint
 - [ ] 3. Shortcut setup and docs
 
