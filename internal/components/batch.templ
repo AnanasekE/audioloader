@@ -46,7 +46,7 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 		</details>
 		<section
 			id="batch"
-			class="card"
+			class="form-panel max-w-none!"
 			data-cancel-url={ batchCancelURL(release) }
 			data-done-url={ batchExitURL(release) }
 			data-next-positions={ toJSON(nextPositions) }
@@ -93,7 +93,7 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 					}
 					<span class="sr-only">Actions</span>
 				</div>
-				<div id="batch-rows" class="divide-y divide-line"></div>
+				<div id="batch-rows" class="list"></div>
 				<div class="mt-4 flex flex-wrap items-center gap-4">
 					<button type="button" class="btn" data-action="pick">Add tracks</button>
 					<p id="batch-result" class="flex-1 text-sm" aria-live="polite"></p>
@@ -114,7 +114,7 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 // track is uploaded by its own request to the normal upload endpoint.
 templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.Release, release *audio.Release) {
 	<form
-		class={ "batch-row grid items-start gap-2 py-3", batchColsFor(ctx) }
+		class={ "row batch-row grid items-start gap-2 py-3", batchColsFor(ctx) }
 		hx-post="/ui/tracks"
 		hx-encoding="multipart/form-data"
 		hx-trigger="batch-submit"
@@ -135,7 +135,7 @@ templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.
 		// disabled (and so not submitted) while the row is a new single
 		<input class="input px-2 disabled:opacity-40" type="number" name="disc" min="1" value="1" aria-label="Disc" required disabled?={ release == nil } hidden?={ secretMode(ctx) }/>
 		<button type="button" class="btn px-2.5" data-action="remove" title="Remove from batch" aria-label="Remove from batch">✕</button>
-		<div class="row-status col-span-full text-sm empty:hidden data-[state=error]:text-st-failed data-[state=exists]:text-st-review data-[state=link]:text-accent data-[state=pending]:text-fg-muted"></div>
+		<div class="row-status stat col-span-full"></div>
 	</form>
 }
 

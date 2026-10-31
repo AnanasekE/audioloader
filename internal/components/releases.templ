@@ -51,7 +51,7 @@ func releaseFilters(filter string) []SegOption {
 // version: the type comes from the page's radio buttons and the browser
 // continues to batch upload for the new release.
 templ NewReleaseForm(artists []*audio.Artist, upload bool) {
-	<section class="card">
+	<section class="form-panel">
 		if upload {
 			<p class="mb-4 text-sm text-fg-muted">Create the release first, then upload all of its tracks together.</p>
 		}
@@ -311,23 +311,24 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 		@pageHead("Edit release", r.Type.Label()+": "+r.Title) {
 			<a class="btn btn-ghost" href={ releaseURL(r) }>Cancel</a>
 		}
-		@releaseDetailsForm(r, artists)
-		@releaseCoverForm(r)
-		<h2 class="mt-8 mb-3 text-lg font-semibold">Tracklist</h2>
+		<div class="mb-8 grid items-start gap-4 min-[1024px]:grid-cols-2">
+			@releaseDetailsForm(r, artists)
+			@releaseCoverForm(r)
+		</div>
+		@sectionLabel("Tracklist")
 		<form
 			id="release-edit"
-			class="card"
 			hx-post={ "/ui/releases/" + r.ID.String() + "/tracks" }
 			hx-target="#release-edit-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('release-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
-			<ol id="release-edit-rows" class="divide-y divide-line">
+			<div id="release-edit-rows" class="list">
 				for _, rt := range r.Tracks {
 					@editRow(rt.Track.ID.String(), rt.Track.Title, artistNames(rt.Track.Artists), rt.Disc)
 				}
-			</ol>
+			</div>
 			<p class="py-4 text-sm text-fg-muted" data-edit-empty hidden?={ len(r.Tracks) > 0 }>No tracks on this release.</p>
-			<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+			<div class="mt-4 flex flex-wrap items-center gap-2">
 				<label for="release-add-track" class="text-xs font-medium text-fg-muted">Add from library</label>
 				<select id="release-add-track" class="input w-auto min-w-64 flex-1">
 					<option value="">Choose a track…</option>
@@ -339,7 +340,7 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 				</select>
 				<button type="button" class="btn" data-action="add">Add</button>
 			</div>
-			<div class="mt-6 flex items-center gap-4">
+			<div class="mt-4 flex items-center gap-4">
 				<button type="submit" class="btn">Save tracklist</button>
 				<span id="release-edit-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
@@ -347,13 +348,13 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 		<template id="release-edit-row">
 			@editRow("", "", "", 1)
 		</template>
-		<section class="card mt-8">
-			<h2 class="mb-2 text-lg font-semibold">Remove release</h2>
+		<section class="mt-10">
+			@sectionLabel("Remove release")
 			<p class="mb-4 text-sm text-fg-muted">Deletes the release and its tracks that aren't on another release, with their files. It moves to Ignored in the inbox.</p>
 			@removeReleaseButton(r)
 			<button
 				type="button"
-				class="btn ml-2"
+				class="btn btn-danger ml-2"
 				hx-post={ "/ui/releases/" + r.ID.String() + "/delete" }
 				hx-confirm={ "Delete " + r.Title + "? Its tracks stay in your library." }
 			>Delete the release only</button>
@@ -365,26 +366,23 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 
 templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 	<form
-		class="card grid max-w-lg gap-4"
+		class="form-panel"
 		hx-post={ "/ui/releases/" + r.ID.String() }
 		hx-target="#release-details-result"
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-details-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 	>
-		<div>
-			<label for="release-title" class="mb-1 block text-xs font-medium text-fg-muted">Title</label>
+		@field("Title", "") {
 			<input id="release-title" class="input" type="text" name="title" value={ r.Title } required/>
-		</div>
+		}
 		<div class="grid grid-cols-2 gap-4">
-			<div>
-				<label for="release-type" class="mb-1 block text-xs font-medium text-fg-muted">Type</label>
+			@field("Type", "") {
 				<select id="release-type" class="input" name="type">
 					for _, typ := range audio.ReleaseTypes {
 						<option value={ string(typ) } selected?={ typ == r.Type }>{ typ.Label() }</option>
 					}
 				</select>
-			</div>
-			<div>
-				<label for="release-date" class="mb-1 block text-xs font-medium text-fg-muted">Release date</label>
+			}
+			@field("Release date", "") {
 				<input
 					id="release-date"
 					class="input"
@@ -395,7 +393,7 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 					pattern="\d{4}(-\d{2}(-\d{2})?)?"
 					title="YYYY, YYYY-MM or YYYY-MM-DD"
 				/>
-			</div>
+			}
 		</div>
 		<div>
 			<span class="mb-1 block text-sm font-medium">Artists</span>
@@ -410,16 +408,17 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 
 templ releaseCoverForm(r *audio.Release) {
 	<form
-		class="card mt-8 flex flex-col gap-4 sm:flex-row sm:items-center"
+		class="form-panel flex-col sm:flex-row sm:items-center"
 		hx-post={ "/ui/releases/" + r.ID.String() + "/cover" }
 		hx-encoding="multipart/form-data"
 		hx-target="#release-cover-result"
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-cover-result').textContent = event.detail.xhr.responseText || 'Could not upload the cover.'"
 	>
-		<img class="pixelated size-24 shrink-0 rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
+		@cover(r.ImgURL, 96)
 		<div class="grid gap-2">
-			<label for="release-cover" class="text-xs font-medium text-fg-muted">Cover (JPEG, PNG or WebP, up to 10 MiB)</label>
-			<input id="release-cover" type="file" name="cover" accept="image/jpeg,image/png,image/webp" required/>
+			@field("Cover (JPEG, PNG or WebP, up to 10 MiB)", "") {
+				<input id="release-cover" type="file" name="cover" accept="image/jpeg,image/png,image/webp" required/>
+			}
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Upload cover</button>
 				<span id="release-cover-result" class="text-sm text-st-failed" aria-live="polite"></span>
@@ -439,23 +438,23 @@ func artistIDs(artists []*audio.Artist) []string {
 // editRow is one tracklist entry. Positions aren't stored in the form: they
 // follow the row order within each disc and are shown by release-edit.js.
 templ editRow(trackID, title, artists string, disc int) {
-	<li class="release-edit-row grid grid-cols-[2rem_5.5rem_1fr_auto] items-center gap-3 py-2">
+	<div class="row row-redit release-edit-row">
 		<input type="hidden" name="track_id" value={ trackID }/>
-		<span class="text-right text-sm text-fg-muted tabular-nums" data-number></span>
+		<span class="mono text-right text-fg-muted" data-number></span>
 		<label class="flex items-center gap-1 text-sm">
 			Disc
 			<input class="input w-14 px-2" type="number" name="disc" min="1" value={ fmt.Sprint(disc) } required/>
 		</label>
-		<div class="min-w-0">
-			<strong class="block truncate" data-title>{ title }</strong>
-			<span class="block truncate text-sm text-fg-muted" data-artists>{ artists }</span>
+		<div class="stack">
+			<b data-title>{ title }</b>
+			<span data-artists>{ artists }</span>
 		</div>
 		<div class="flex gap-1">
-			<button type="button" class="btn px-2.5" data-action="up" aria-label="Move up">↑</button>
-			<button type="button" class="btn px-2.5" data-action="down" aria-label="Move down">↓</button>
-			<button type="button" class="btn px-2.5" data-action="remove" aria-label="Remove from release">✕</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">↑</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">↓</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from release">✕</button>
 		</div>
-	</li>
+	</div>
 }
 
 func releaseURL(r *audio.Release) templ.SafeURL {

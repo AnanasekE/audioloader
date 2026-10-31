@@ -99,7 +99,7 @@ func SecretSourcePage(prefill string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</details><section id=\"secret-source\" class=\"card grid max-w-2xl grid-cols-1 gap-4\"><form class=\"flex flex-wrap items-center gap-2\" hx-post=\"/ui/secret-source/check\" hx-target=\"#secret-source-result\" hx-indicator=\"#secret-source-loading\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</details><section id=\"secret-source\" class=\"form-panel\"><form class=\"flex flex-wrap items-center gap-2\" hx-post=\"/ui/secret-source/check\" hx-target=\"#secret-source-result\" hx-indicator=\"#secret-source-loading\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

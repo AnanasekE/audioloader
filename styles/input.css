@@ -383,6 +383,47 @@
 			grid-column: 1 / -1;
 		}
 	}
+	/* a tracklist editor row: number, disc, title over artists, buttons */
+	.row-redit {
+		grid-template-columns: 2rem 5.5rem minmax(0, 1fr) auto;
+		padding-block: 6px;
+	}
+	@media (max-width: 719px) {
+		.row-redit {
+			grid-template-columns: 2rem minmax(0, 1fr) auto;
+		}
+		.row-redit > label {
+			grid-column: 2;
+			grid-row: 2;
+		}
+		.row-redit > .stack {
+			grid-column: 2;
+			grid-row: 1;
+		}
+		.row-redit > :last-child {
+			grid-column: 3;
+			grid-row: 1 / span 2;
+		}
+	}
+	/* a form row's mono status: pending, done, error, exists, link */
+	.stat {
+		@apply justify-self-start font-mono text-xs empty:hidden;
+	}
+	.stat[data-state] {
+		@apply inline-flex items-center rounded-full bg-panel-2 px-2 py-0.5 text-fg-muted;
+	}
+	.stat[data-state="done"] {
+		@apply text-st-done;
+	}
+	.stat[data-state="error"] {
+		@apply text-st-failed;
+	}
+	.stat[data-state="exists"] {
+		@apply text-st-review;
+	}
+	.stat[data-state="link"] {
+		@apply text-accent;
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
 	}

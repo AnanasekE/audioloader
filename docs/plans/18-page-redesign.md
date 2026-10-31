@@ -17,7 +17,7 @@ Each step ticks its own box in the same commit. The last ticked step is always a
 - [x] 7. Playlists and podcasts
 - [x] 8. Inbox and follow
 - [x] 9. Downloads and tagging
-- [ ] 10. Forms and edit pages
+- [x] 10. Forms and edit pages
 - [ ] 11. Tags page, secret track list
 - [ ] 12. Final pass
 

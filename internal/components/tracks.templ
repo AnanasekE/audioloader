@@ -133,25 +133,16 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 				<div class="flex flex-wrap gap-2">
 					if secretMode(ctx) {
 						// secret tracks have no releases
-						<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
-							<input id="kind-single" class="sr-only" type="radio" name="type" value="single" form="episode-form" checked/>
-							Track
-						</label>
+						@kindChoice("kind-single", "single", "Track", "episode-form", true)
 					}
 					for _, typ := range audio.ReleaseTypes {
 						if !secretMode(ctx) {
-							<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
-								// form= ties the choice to the release form, which needs the type
-								<input id={ "kind-" + string(typ) } class="sr-only" type="radio" name="type" value={ string(typ) } form="new-release-form" checked?={ typ == audio.ReleaseSingle }/>
-								{ typ.Label() }
-							</label>
+							// form= ties the choice to the release form, which needs the type
+							@kindChoice("kind-"+string(typ), string(typ), typ.Label(), "new-release-form", typ == audio.ReleaseSingle)
 						}
 					}
-					<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
-						// not part of the release form: an episode isn't a release
-						<input id="kind-episode" class="sr-only" type="radio" name="type" value="episode" form="episode-form"/>
-						Podcast episode
-					</label>
+					// not part of the release form: an episode isn't a release
+					@kindChoice("kind-episode", "episode", "Podcast episode", "episode-form", false)
 				</div>
 			</fieldset>
 			<div class="hidden group-has-[#kind-single:checked]:block">
@@ -170,7 +161,7 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 }
 
 templ AddTrackForm(artists []*audio.Artist) {
-	<section class="card">
+	<section class="form-panel">
 		<form
 			id="upload-form"
 			class="grid max-w-lg gap-4"
@@ -587,7 +578,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 			<p class="mb-4 text-sm">@UploaderLink(uploader)</p>
 		}
 		<form
-			class="card grid max-w-lg gap-4"
+			class="form-panel"
 			hx-post={ "/ui/tracks/" + t.ID.String() }
 			hx-target="#track-edit-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('track-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
@@ -651,7 +642,7 @@ templ secretTrackFields(description string, tags []string) {
 // trackImageForm sets the picture of a secret track.
 templ trackImageForm(t *audio.Track) {
 	<form
-		class="card mt-6 grid max-w-lg gap-2"
+		class="form-panel mt-6"
 		hx-post={ "/ui/tracks/" + t.ID.String() + "/image" }
 		hx-encoding="multipart/form-data"
 		hx-target="#track-image-result"

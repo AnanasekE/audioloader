@@ -88,7 +88,7 @@ func AddSongPage(q string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div hx-on::after-request=\"document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText\"><form class=\"card flex flex-wrap items-center gap-2\" hx-get=\"/ui/add/musicbrainz\" hx-target=\"#add-results\" hx-indicator=\"#add-loading\"><input class=\"input flex-1\" type=\"text\" name=\"q\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div hx-on::after-request=\"document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText\"><form class=\"form-panel max-w-none! flex-row! flex-wrap items-center\" hx-get=\"/ui/add/musicbrainz\" hx-target=\"#add-results\" hx-indicator=\"#add-loading\"><input class=\"input flex-1\" type=\"text\" name=\"q\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

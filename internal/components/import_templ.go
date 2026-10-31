@@ -71,7 +71,7 @@ func ImportPage(artists []*audio.Artist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<section id=\"import\" class=\"card\"><input id=\"import-folder\" class=\"hidden\" type=\"file\" webkitdirectory multiple> <input id=\"import-files\" class=\"hidden\" type=\"file\" multiple accept=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<section id=\"import\" class=\"form-panel max-w-none!\"><input id=\"import-folder\" class=\"hidden\" type=\"file\" webkitdirectory multiple> <input id=\"import-files\" class=\"hidden\" type=\"file\" multiple accept=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -129,7 +129,7 @@ func ImportPage(artists []*audio.Artist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"group-selected\" disabled>Group into release</button> <select id=\"import-move\" class=\"input w-auto max-w-64\" aria-label=\"Move selected tracks to a release\" disabled><option value=\"\">Move to release…</option></select> <button type=\"button\" class=\"btn btn-ghost\" data-action=\"singles-selected\" disabled>Make singles</button></span> <button type=\"button\" class=\"btn btn-ghost\" data-action=\"remove-selected\" disabled>Remove</button></div><section class=\"mb-6 rounded-lg border border-line bg-panel p-4\"><div class=\"mb-1 flex flex-wrap items-center justify-between gap-2\"><h2 class=\"text-lg font-semibold\">Artists <span id=\"import-artists-count\" class=\"text-sm font-normal text-fg-muted\"></span></h2><button type=\"button\" class=\"btn\" data-action=\"add-all-artists\">Add all new</button></div><p class=\"mb-3 text-sm text-fg-muted\">New artists are also created when you import. Edit a name to change it everywhere, or type an existing artist's name to use that artist.</p><ul id=\"import-artist-rows\" class=\"divide-y divide-line\"></ul><div class=\"mt-3 flex gap-2 border-t border-line pt-3\"><label for=\"import-new-artist\" class=\"sr-only\">New artist name</label> <input id=\"import-new-artist\" class=\"input\" type=\"text\" placeholder=\"New artist name\" autocomplete=\"off\"> <button type=\"button\" class=\"btn shrink-0\" data-action=\"add-artist\">Add artist</button></div><p id=\"import-artist-status\" class=\"mt-2 text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></p></section><div id=\"import-groups\"></div><section id=\"import-singles-section\"><h2 class=\"mt-6 mb-2 text-lg font-semibold\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"group-selected\" disabled>Group into release</button> <select id=\"import-move\" class=\"input w-auto max-w-64\" aria-label=\"Move selected tracks to a release\" disabled><option value=\"\">Move to release…</option></select> <button type=\"button\" class=\"btn btn-ghost\" data-action=\"singles-selected\" disabled>Make singles</button></span> <button type=\"button\" class=\"btn btn-ghost\" data-action=\"remove-selected\" disabled>Remove</button></div><section class=\"mb-6 rounded-lg border border-line bg-panel p-4\"><div class=\"mb-1 flex flex-wrap items-center justify-between gap-2\"><h2 class=\"text-lg font-semibold\">Artists <span id=\"import-artists-count\" class=\"text-sm font-normal text-fg-muted\"></span></h2><button type=\"button\" class=\"btn\" data-action=\"add-all-artists\">Add all new</button></div><p class=\"mb-3 text-sm text-fg-muted\">New artists are also created when you import. Edit a name to change it everywhere, or type an existing artist's name to use that artist.</p><ul id=\"import-artist-rows\" class=\"list\"></ul><div class=\"mt-3 flex gap-2 border-t border-line pt-3\"><label for=\"import-new-artist\" class=\"sr-only\">New artist name</label> <input id=\"import-new-artist\" class=\"input\" type=\"text\" placeholder=\"New artist name\" autocomplete=\"off\"> <button type=\"button\" class=\"btn shrink-0\" data-action=\"add-artist\">Add artist</button></div><p id=\"import-artist-status\" class=\"mt-2 text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></p></section><div id=\"import-groups\"></div><section id=\"import-singles-section\"><h2 class=\"mt-6 mb-2 text-lg font-semibold\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -154,7 +154,7 @@ func ImportPage(artists []*audio.Artist) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<ol id=\"import-singles\" class=\"divide-y divide-line\"></ol></section><section id=\"import-episodes-section\" hidden><h2 class=\"mt-6 mb-2 text-lg font-semibold\">Podcast episodes <span id=\"import-episodes-count\" class=\"text-sm font-normal text-fg-muted\"></span></h2><p class=\"mb-2 text-sm text-fg-muted\">Tagged as podcasts. Each goes into the show named by its album tag.</p><ol id=\"import-episodes\" class=\"divide-y divide-line\"></ol></section><div class=\"mt-6 flex flex-wrap items-center gap-4 border-t border-line pt-4\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"pick-files\">Add more files</button><p id=\"import-result\" class=\"flex-1 text-sm\" aria-live=\"polite\"></p><button type=\"button\" class=\"btn\" data-action=\"import\">Import everything</button></div></div><template id=\"import-group-template\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<ol id=\"import-singles\" class=\"list\"></ol></section><section id=\"import-episodes-section\" hidden><h2 class=\"mt-6 mb-2 text-lg font-semibold\">Podcast episodes <span id=\"import-episodes-count\" class=\"text-sm font-normal text-fg-muted\"></span></h2><p class=\"mb-2 text-sm text-fg-muted\">Tagged as podcasts. Each goes into the show named by its album tag.</p><ol id=\"import-episodes\" class=\"list\"></ol></section><div class=\"mt-6 flex flex-wrap items-center gap-4 border-t border-line pt-4\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"pick-files\">Add more files</button><p id=\"import-result\" class=\"flex-1 text-sm\" aria-live=\"polite\"></p><button type=\"button\" class=\"btn\" data-action=\"import\">Import everything</button></div></div><template id=\"import-group-template\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -274,7 +274,7 @@ func importGroup() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><p class=\"mb-2 text-sm text-st-failed empty:hidden\" data-group-status></p><ol class=\"divide-y divide-line\" data-rows></ol></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><p class=\"mb-2 text-sm text-st-failed empty:hidden\" data-group-status></p><ol class=\"list\" data-rows></ol></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -306,7 +306,7 @@ func importRow() templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var12 = []any{"import-row grid items-center gap-2 py-1.5", importRowCols}
+		var templ_7745c5c3_Var12 = []any{"row import-row grid items-center gap-2 py-1.5", importRowCols}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -332,7 +332,7 @@ func importRow() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"col-span-full text-sm empty:hidden data-[state=done]:text-st-done data-[state=error]:text-st-failed data-[state=exists]:text-st-review data-[state=link]:text-accent data-[state=pending]:text-fg-muted\" data-status></span></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -362,7 +362,7 @@ func importArtist() templ.Component {
 			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<li class=\"import-artist grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 py-1.5\"><input class=\"input\" type=\"text\" list=\"import-artist-list\" data-artist-name aria-label=\"Artist name\" autocomplete=\"off\"> <span class=\"text-sm text-fg-muted tabular-nums\" data-count></span> <span class=\"rounded px-2 py-0.5 text-xs font-medium data-[state=known]:bg-panel-2 data-[state=known]:text-st-done data-[state=new]:bg-panel-2 data-[state=new]:text-st-review/40/40\" data-badge></span> <button type=\"button\" class=\"btn\" data-action=\"add-detected\">Add</button></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<li class=\"row import-artist grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 py-1.5\"><input class=\"input\" type=\"text\" list=\"import-artist-list\" data-artist-name aria-label=\"Artist name\" autocomplete=\"off\"> <span class=\"text-sm text-fg-muted tabular-nums\" data-count></span> <span class=\"rounded px-2 py-0.5 text-xs font-medium data-[state=known]:bg-panel-2 data-[state=known]:text-st-done data-[state=new]:bg-panel-2 data-[state=new]:text-st-review/40/40\" data-badge></span> <button type=\"button\" class=\"btn\" data-action=\"add-detected\">Add</button></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -467,7 +467,7 @@ func importSingle() templ.Component {
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var18 = []any{"import-row grid items-center gap-2 py-1.5", importSingleColsFor(ctx)}
+		var templ_7745c5c3_Var18 = []any{"row import-row grid items-center gap-2 py-1.5", importSingleColsFor(ctx)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -511,7 +511,7 @@ func importSingle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" type=\"text\" data-field=\"date\" aria-label=\"Release date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"> <span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"col-span-full text-sm empty:hidden data-[state=done]:text-st-done data-[state=error]:text-st-failed data-[state=exists]:text-st-review data-[state=pending]:text-fg-muted\" data-status></span></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" type=\"text\" data-field=\"date\" aria-label=\"Release date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"> <span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
