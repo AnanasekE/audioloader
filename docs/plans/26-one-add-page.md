@@ -13,7 +13,7 @@
 - [x] 3. Backfill songs added before
 - [x] 4. One box that routes links
 - [x] 5. Merge the pages
-- [ ] 6. Docs
+- [x] 6. Docs
 
 ## Rules
 

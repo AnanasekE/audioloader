@@ -29,7 +29,7 @@
 ### Uploading
 
 - Track files must be MP3, FLAC, Ogg, Opus, M4A, MP4 or WAV (by extension, and the audio header is read), at most 4 GiB a request; every response is sent `nosniff`
-- Single upload: Single (creates the single release) or Album/EP/Compilation (creates the release, then batch upload)
+- Upload a file (on the Add page): Single (creates the single release) or Album/EP/Compilation (creates the release, then batch upload)
 - Optional release date on singles
 - Artist picker with checkboxes and fuzzy search, multiple artists per track
 - Batch upload: pick many files, one row each, title from the filename
@@ -78,9 +78,21 @@
 - YouTube search for missing tracks: when nothing else has the track, the download waits as "Needs a pick" (also counted in the nav). "Pick from YouTube" shows the top 5 results (thumbnail, channel, length and difference from the expected length, Topic and verified badges) with Use this, Preview and None of these; also on release pages
 - Downloads page: progress, needs a pick, failed (with the tool's error), couldn't find; paste a YouTube URL or upload the file by hand
 - Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
-- Import from YouTube: a video or playlist as new tracks, onto a release or as singles
-- Add a song by search (`/add`, normal mode only; "Add song" on the Tracks page, and a link on the Search page): "Artist - Title" or free words. MusicBrainz's top 5 recordings show length, release and year, and the cover; "Add" puts a placeholder on its real release (reused if the library has it, else created with its artists and IDs) and queues the download in the usual source order. A song already in the library links to it, a queued one links to Downloads. "None of these", or no results, shows the top 5 YouTube results: "Use this" opens a form with the title and artist guessed and editable, and imports the video as a single
-- Add from a MusicBrainz link: paste a release or recording link into the same box on `/add` to list exactly its tracks (disc and position shown, owned ones marked); "Add" per track puts it on that release, "Add all (n)" queues every track the library doesn't have (at most 100). Track and release-group links are refused; a bare ID is still a text search
+- Import from YouTube (paste the link into the Add box): a video or playlist as new tracks, onto a release or as singles; the latest imports are listed on the Add page
+- One Add page (`/add`, both modes; the sidebar "Add" button, the phone header icon and "Add" on the Tracks page; `/upload` redirects here, and `/upload/youtube` and `/upload/secret-source` redirect to `/add?q=<address>`): one box, "Search, or paste a link", sends what you type to the right place, and the result shows right below it. `/add?q=...` fills the box and looks it up on load, so links from the Search page and the uploader pages work. Below a divider, "Or upload a file" holds the upload forms (see below), with links to Batch mode and Import library. Where the box sends things:
+
+  | Input | Mode | Goes to |
+  |---|---|---|
+  | MusicBrainz release or recording link | normal | the track list of that release or recording |
+  | other MusicBrainz link | normal | "Paste a release or recording link." |
+  | YouTube or YouTube Music video or playlist link | normal | the import preview (Import from YouTube) |
+  | a link of the secret source | secret | Download from URL's check |
+  | any other link (in normal mode that includes the secret source) | any | "Audioloader can't add from that site." |
+  | text | normal | MusicBrainz song search, then YouTube |
+  | text | secret | "Paste a link from the secret source, or upload a file." (no source configured: "Upload a file.", and the box is hidden) |
+  Hosts match in any case, with `www.` or `m.`, with or without `https://`.
+- Song search: "Artist - Title" or free words. MusicBrainz's top 5 recordings show length, release and year, and the cover; "Add" puts a placeholder on its real release (reused if the library has it, else created with its artists and IDs) and queues the download in the usual source order. A song already in the library links to it, a queued one links to Downloads. "None of these", or no results, shows the top 5 YouTube results: "Use this" opens a form with the title and artist guessed and editable, and imports the video as a single
+- Add from a MusicBrainz link: paste a release or recording link into the Add box to list exactly its tracks (disc and position shown, owned ones marked); "Add" per track puts it on that release, "Add all (n)" queues every track the library doesn't have (at most 100). Track and release-group links are refused; a bare ID is still a text search
 - Downloaded files go through the usual fingerprint and duration checks; a file already in the library merges the placeholder into it
 
 ### Playback
@@ -116,7 +128,7 @@
 - Uploads in secret mode (single, batch, import, episodes) create secret tracks; the server sets the flag from the mode, never from the form. The forms show title, creators, description and tags, with no release controls
 - "Make secret" / "Make public" in the track menu moves a track to the other mode. Going secret takes it off its releases (the confirm dialog lists them; a release left empty is deleted) and off playlists of the other mode; going public leaves it without a release
 - The player's saved state and queue belong to the mode they were saved in: a page of the other mode drops them, and Lock clears the player at once, with its lock screen metadata
-- Download from URL (secret mode, needs `AUDIOLOADER_SECRET_SOURCE`): paste a page of the secret source, Check fills in title and description to edit, the creator is filled in from the uploader in the address (an earlier track from the same uploader's page, else a creator with the uploader's name, else a "New: <name>" option created only when the download is submitted with it still checked); it can be changed, and at least one creator is required (checked on the server). One page request and one file request, only to the configured host and media hosts, https only, redirects off those hosts refused; the page URL is the track's source URL and an existing one is reported first; the usual fingerprint and duration checks apply. It runs as a background job that the page polls and that the Downloads page never lists
+- Download from URL (the Add box in secret mode, needs `AUDIOLOADER_SECRET_SOURCE`): paste a page of the secret source, Check fills in title and description to edit, the creator is filled in from the uploader in the address (an earlier track from the same uploader's page, else a creator with the uploader's name, else a "New: <name>" option created only when the download is submitted with it still checked); it can be changed, and at least one creator is required (checked on the server). One page request and one file request, only to the configured host and media hosts, https only, redirects off those hosts refused; the page URL is the track's source URL and an existing one is reported first; the usual fingerprint and duration checks apply. It runs as a background job that the page polls and that the Downloads page never lists
   - tags are prefilled from `[Tag]` markers in the title and description
   - addresses as pasted from a browser work too: http, no scheme, or `www.` in front; they're always fetched over https
   - a page without audio, such as an uploader's page, lists the pages it links one level below it: the ones not in the library first, each with a Download button, the ones already downloaded folded away. Only the listing is fetched until one is picked
@@ -138,6 +150,7 @@
 - An original on the other side of the mode (secret or normal) is not shown, linked, indexed or listed
 - Search also matches the original's title and artists (ranked lower); artist pages list "Covered by"
 - Auto-tagging suggests the original from MusicBrainz (a recording's `cover` performance relation on a work); Apply or Reject on the Tagging page, never overwrites a set original
+- Songs added from MusicBrainz (Add page, release or recording link, search) get "Cover of" from MusicBrainz: when the picked recording is a cover, a background job sets the original as text (title, artists, MusicBrainz ID), or links the library track that has that recording; it never overwrites a set original and skips secret tracks. Songs matched or added before are checked once at startup (a one-off job, in the non-download lane) and their covers become suggestions on the Tagging page
 
 ### UI
 
@@ -146,7 +159,7 @@
 - Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, More; in secret mode Tracks, Tags, Creators) and a More sheet for Playlists, Podcasts, Tagging and Downloads
 - Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
 - Vault button in the sidebar and the phone top strip (when a vault is configured); in secret mode the same place has Lock
-- Icons next to every sidebar link, the Upload button, the phone tab bar and the More sheet, one icon per page
+- Icons next to every sidebar link, the Add button, the phone tab bar and the More sheet, one icon per page
 - Home-screen icon and web app manifest (Safari "Add to Home Screen", standalone, start page `/tracks`)
 - Player with a play button, seek bar and elapsed/remaining time
 

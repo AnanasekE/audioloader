@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–25 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–26 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -32,6 +32,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 23 | [Add songs from a MusicBrainz link](23-add-from-musicbrainz-url.md) | Paste a MusicBrainz release or recording link on the Add page to list its tracks; add one or all |
 | 24 | [Queue panel](24-queue-panel.md) | On wide screens the queue is always shown on the right (now playing, up next, chapters) |
 | 25 | [Icons](25-icons.md) | Tab and header icons and an app icon on mobile; sidebar icons and a home-screen icon on the web |
+| 26 | [One Add page, and covers from MusicBrainz](26-one-add-page.md) | Upload and Add merged into one page with a box that routes links; songs added from MusicBrainz get "Cover of" |
 
 ## Rules for every plan
 
