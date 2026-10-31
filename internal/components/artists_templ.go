@@ -423,14 +423,14 @@ func MBArtistAdded(a *audio.Artist, m db.MBArtistMatch) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<a class=\"btn\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<a class=\"btn btn-ghost\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 templ.SafeURL
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(artistURL(a))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 123, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 123, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -1220,7 +1220,7 @@ func artistImageForm(a *audio.Artist) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\" hx-encoding=\"multipart/form-data\" hx-target=\"#artist-image-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('artist-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'\"><label for=\"artist-image\" class=\"text-sm font-medium\">Picture (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"artist-image\" type=\"file\" name=\"image\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex flex-wrap items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload picture</button> <button type=\"button\" class=\"btn\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\" hx-encoding=\"multipart/form-data\" hx-target=\"#artist-image-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('artist-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'\"><label for=\"artist-image\" class=\"text-xs font-medium text-fg-muted\">Picture (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"artist-image\" type=\"file\" name=\"image\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex flex-wrap items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload picture</button> <button type=\"button\" class=\"btn\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1278,7 +1278,7 @@ func artistTwitchForm(a *audio.Artist, twitchOn bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "\" hx-target=\"#artist-twitch-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('artist-twitch-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><label for=\"artist-twitch\" class=\"text-sm font-medium\">Login or twitch.tv link (empty removes it)</label> <input id=\"artist-twitch\" class=\"input\" type=\"text\" name=\"twitch\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "\" hx-target=\"#artist-twitch-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('artist-twitch-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><label for=\"artist-twitch\" class=\"text-xs font-medium text-fg-muted\">Login or twitch.tv link (empty removes it)</label> <input id=\"artist-twitch\" class=\"input\" type=\"text\" name=\"twitch\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

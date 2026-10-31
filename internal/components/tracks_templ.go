@@ -271,18 +271,18 @@ func UploadPage(artists []*audio.Artist, shows []*audio.Show) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"flex flex-wrap gap-2\"><a class=\"btn\" href=\"/upload/import\">Import library</a> <a class=\"btn\" href=\"/upload/batch\">Batch mode</a> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"flex flex-wrap gap-2\"><a class=\"btn btn-ghost\" href=\"/upload/import\">Import library</a> <a class=\"btn btn-ghost\" href=\"/upload/batch\">Batch mode</a> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if !secretMode(ctx) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<a class=\"btn\" href=\"/upload/youtube\">From YouTube</a> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<a class=\"btn btn-ghost\" href=\"/upload/youtube\">From YouTube</a> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if secretMode(ctx) && secretSourceOn(ctx) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<a class=\"btn\" href=\"/upload/secret-source\">Download from URL</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<a class=\"btn btn-ghost\" href=\"/upload/secret-source\">Download from URL</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -433,7 +433,7 @@ func AddTrackForm(artists []*audio.Artist) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<section class=\"card\"><form id=\"upload-form\" class=\"grid max-w-lg gap-4\" hx-post=\"/ui/tracks\" hx-encoding=\"multipart/form-data\" hx-target=\"#result-tracks\" hx-on::after-request=\"\n\t\t\t\tif (event.detail.successful) this.reset();\n\t\t\t\telse document.getElementById('result-tracks').textContent = event.detail.xhr.responseText || 'Upload failed.';\n\t\t\t\"><div><label for=\"track-title\" class=\"mb-1 block text-sm font-medium\">Title</label> <input id=\"track-title\" class=\"input\" type=\"text\" name=\"title\" placeholder=\"Track name\" required></div><div><span class=\"mb-1 block text-sm font-medium\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<section class=\"card\"><form id=\"upload-form\" class=\"grid max-w-lg gap-4\" hx-post=\"/ui/tracks\" hx-encoding=\"multipart/form-data\" hx-target=\"#result-tracks\" hx-on::after-request=\"\n\t\t\t\tif (event.detail.successful) this.reset();\n\t\t\t\telse document.getElementById('result-tracks').textContent = event.detail.xhr.responseText || 'Upload failed.';\n\t\t\t\"><div><label for=\"track-title\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Title</label> <input id=\"track-title\" class=\"input\" type=\"text\" name=\"title\" placeholder=\"Track name\" required></div><div><span class=\"mb-1 block text-sm font-medium\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -472,12 +472,12 @@ func AddTrackForm(artists []*audio.Artist) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div><label for=\"track-date\" class=\"mb-1 block text-sm font-medium\">Release date <span class=\"font-normal text-fg-muted\">(optional)</span></label> <input id=\"track-date\" class=\"input\" type=\"text\" name=\"date\" placeholder=\"YYYY or YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div><label for=\"track-date\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Release date <span class=\"font-normal text-fg-muted\">(optional)</span></label> <input id=\"track-date\" class=\"input\" type=\"text\" name=\"date\" placeholder=\"YYYY or YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div><label for=\"track-file\" class=\"mb-1 block text-sm font-medium\">Audio file</label> <input id=\"track-file\" class=\"input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm\" type=\"file\" name=\"track\" required accept=\"audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac\"> <small id=\"track-file-status\" class=\"mt-1 block empty:hidden data-[state=exists]:text-st-review data-[state=pending]:text-fg-muted\" aria-live=\"polite\"></small></div><div><button class=\"btn disabled:cursor-not-allowed disabled:opacity-50\" type=\"submit\">Upload</button></div></form><div id=\"result-tracks\" class=\"mt-4 text-sm\" aria-live=\"polite\"></div></section><script src=\"/assets/js/artist-picker.js\" defer></script><script src=\"/assets/js/track-hash.js\" defer></script><script src=\"/assets/js/upload.js\" defer></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div><label for=\"track-file\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Audio file</label> <input id=\"track-file\" class=\"input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm\" type=\"file\" name=\"track\" required accept=\"audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac\"> <small id=\"track-file-status\" class=\"mt-1 block empty:hidden data-[state=exists]:text-st-review data-[state=pending]:text-fg-muted\" aria-live=\"polite\"></small></div><div><button class=\"btn disabled:cursor-not-allowed disabled:opacity-50\" type=\"submit\">Upload</button></div></form><div id=\"result-tracks\" class=\"mt-4 text-sm\" aria-live=\"polite\"></div></section><script src=\"/assets/js/artist-picker.js\" defer></script><script src=\"/assets/js/track-hash.js\" defer></script><script src=\"/assets/js/upload.js\" defer></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1650,7 +1650,7 @@ func TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) tem
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<a class=\"btn\" href=\"/tracks\">Cancel</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<a class=\"btn btn-ghost\" href=\"/tracks\">Cancel</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1687,7 +1687,7 @@ func TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) tem
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" hx-target=\"#track-edit-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('track-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><div><label for=\"track-title\" class=\"mb-1 block text-sm font-medium\">Title</label> <input id=\"track-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" hx-target=\"#track-edit-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('track-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><div><label for=\"track-title\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Title</label> <input id=\"track-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1734,7 +1734,7 @@ func TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) tem
 				}
 			}
 			if t.IsEpisode() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<div><label for=\"track-kind\" class=\"mb-1 block text-sm font-medium\">Kind</label> <select id=\"track-kind\" class=\"input\" name=\"kind\"><option value=\"episode\" selected>Podcast episode</option> <option value=\"music\">Song (needs an artist)</option></select></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<div><label for=\"track-kind\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Kind</label> <select id=\"track-kind\" class=\"input\" name=\"kind\"><option value=\"episode\" selected>Podcast episode</option> <option value=\"music\">Song (needs an artist)</option></select></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1797,7 +1797,7 @@ func secretTrackFields(description string, tags []string) templ.Component {
 			templ_7745c5c3_Var71 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "<div><label for=\"track-description\" class=\"mb-1 block text-sm font-medium\">Description <span class=\"font-normal text-fg-muted\">(optional)</span></label> <textarea id=\"track-description\" class=\"input\" name=\"description\" rows=\"4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "<div><label for=\"track-description\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Description <span class=\"font-normal text-fg-muted\">(optional)</span></label> <textarea id=\"track-description\" class=\"input\" name=\"description\" rows=\"4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1810,7 +1810,7 @@ func secretTrackFields(description string, tags []string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</textarea></div><div><label for=\"track-tags\" class=\"mb-1 block text-sm font-medium\">Tags <span class=\"font-normal text-fg-muted\">(optional, separated by commas)</span></label> <input id=\"track-tags\" class=\"input\" type=\"text\" name=\"tags\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</textarea></div><div><label for=\"track-tags\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Tags <span class=\"font-normal text-fg-muted\">(optional, separated by commas)</span></label> <input id=\"track-tags\" class=\"input\" type=\"text\" name=\"tags\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1879,7 +1879,7 @@ func trackImageForm(t *audio.Track) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "\" alt=\"\"> <label for=\"track-image\" class=\"text-sm font-medium\">Picture (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"track-image\" type=\"file\" name=\"image\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex flex-wrap items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload picture</button> <button type=\"button\" class=\"btn\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "\" alt=\"\"> <label for=\"track-image\" class=\"text-xs font-medium text-fg-muted\">Picture (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"track-image\" type=\"file\" name=\"image\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex flex-wrap items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload picture</button> <button type=\"button\" class=\"btn\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

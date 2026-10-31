@@ -17,7 +17,7 @@ Each step ticks its own box in the same commit, so `git log` and this list alway
 - [x] 5. Player
 - [x] 6. Library pages: tracks, releases, artists, playlists, podcasts
 - [x] 7. Queue pages: inbox, tagging, downloads
-- [ ] 8. Forms: upload, batch, import, edit pages
+- [x] 8. Forms: upload, batch, import, edit pages
 - [ ] 9. ⌘K search
 - [ ] 10. Tags page (secret mode)
 - [ ] 11. Docs

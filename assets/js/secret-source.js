@@ -15,7 +15,7 @@
 		if (!id) return;
 		for (const options of root.querySelectorAll("[data-artist-options]")) {
 			const label = document.createElement("label");
-			label.className = "flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700";
+			label.className = "flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2";
 			const input = document.createElement("input");
 			input.type = "checkbox";
 			input.name = "artist_id";

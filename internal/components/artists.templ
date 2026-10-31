@@ -120,7 +120,7 @@ templ MBArtistAdded(a *audio.Artist, m db.MBArtistMatch) {
 			default:
 				<span>Added { a.Name }.</span>
 		}
-		<a class="btn" href={ artistURL(a) }>Open</a>
+		<a class="btn btn-ghost" href={ artistURL(a) }>Open</a>
 		if a.Followed {
 			<span class="text-fg-muted">Following</span>
 		} else {
@@ -295,7 +295,7 @@ templ artistImageForm(a *audio.Artist) {
 			hx-target="#artist-image-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'"
 		>
-			<label for="artist-image" class="text-sm font-medium">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
+			<label for="artist-image" class="text-xs font-medium text-fg-muted">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
 			<input id="artist-image" type="file" name="image" accept="image/jpeg,image/png,image/webp" required/>
 			<div class="flex flex-wrap items-center gap-4">
 				<button class="btn" type="submit">Upload picture</button>
@@ -323,7 +323,7 @@ templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
 			hx-target="#artist-twitch-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-twitch-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
-			<label for="artist-twitch" class="text-sm font-medium">Login or twitch.tv link (empty removes it)</label>
+			<label for="artist-twitch" class="text-xs font-medium text-fg-muted">Login or twitch.tv link (empty removes it)</label>
 			<input id="artist-twitch" class="input" type="text" name="twitch" value={ a.TwitchLogin } placeholder="e.g. cottontailva" maxlength="200"/>
 			if !twitchOn {
 				<p class="text-sm text-fg-muted">

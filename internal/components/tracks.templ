@@ -116,13 +116,13 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 	@layout("Upload", PageUpload) {
 		@pageHeader("Upload", "Add music to the library") {
 			<div class="flex flex-wrap gap-2">
-				<a class="btn" href="/upload/import">Import library</a>
-				<a class="btn" href="/upload/batch">Batch mode</a>
+				<a class="btn btn-ghost" href="/upload/import">Import library</a>
+				<a class="btn btn-ghost" href="/upload/batch">Batch mode</a>
 				if !secretMode(ctx) {
-					<a class="btn" href="/upload/youtube">From YouTube</a>
+					<a class="btn btn-ghost" href="/upload/youtube">From YouTube</a>
 				}
 				if secretMode(ctx) && secretSourceOn(ctx) {
-					<a class="btn" href="/upload/secret-source">Download from URL</a>
+					<a class="btn btn-ghost" href="/upload/secret-source">Download from URL</a>
 				}
 			</div>
 		}
@@ -182,7 +182,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 			"
 		>
 			<div>
-				<label for="track-title" class="mb-1 block text-sm font-medium">Title</label>
+				<label for="track-title" class="mb-1 block text-xs font-medium text-fg-muted">Title</label>
 				<input id="track-title" class="input" type="text" name="title" placeholder="Track name" required/>
 			</div>
 			<div>
@@ -202,7 +202,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 				@secretTrackFields("", nil)
 			} else {
 				<div>
-					<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-fg-muted">(optional)</span></label>
+					<label for="track-date" class="mb-1 block text-xs font-medium text-fg-muted">Release date <span class="font-normal text-fg-muted">(optional)</span></label>
 					<input
 						id="track-date"
 						class="input"
@@ -215,7 +215,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 				</div>
 			}
 			<div>
-				<label for="track-file" class="mb-1 block text-sm font-medium">Audio file</label>
+				<label for="track-file" class="mb-1 block text-xs font-medium text-fg-muted">Audio file</label>
 				<input
 					id="track-file"
 					class="input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm"
@@ -521,7 +521,7 @@ templ secretTrackDetails(t *audio.Track) {
 templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 	@layout("Edit "+t.Title, PageTracks) {
 		@pageHeader("Edit track", t.Title) {
-			<a class="btn" href="/tracks">Cancel</a>
+			<a class="btn btn-ghost" href="/tracks">Cancel</a>
 		}
 		if uploader != "" {
 			<p class="mb-4 text-sm">@UploaderLink(uploader)</p>
@@ -533,7 +533,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('track-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
 			<div>
-				<label for="track-title" class="mb-1 block text-sm font-medium">Title</label>
+				<label for="track-title" class="mb-1 block text-xs font-medium text-fg-muted">Title</label>
 				<input id="track-title" class="input" type="text" name="title" value={ t.Title } required/>
 			</div>
 			<div>
@@ -551,7 +551,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 			}
 			if t.IsEpisode() {
 				<div>
-					<label for="track-kind" class="mb-1 block text-sm font-medium">Kind</label>
+					<label for="track-kind" class="mb-1 block text-xs font-medium text-fg-muted">Kind</label>
 					<select id="track-kind" class="input" name="kind">
 						<option value="episode" selected>Podcast episode</option>
 						<option value="music">Song (needs an artist)</option>
@@ -579,11 +579,11 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 // and a cover: a description and comma separated tags.
 templ secretTrackFields(description string, tags []string) {
 	<div>
-		<label for="track-description" class="mb-1 block text-sm font-medium">Description <span class="font-normal text-fg-muted">(optional)</span></label>
+		<label for="track-description" class="mb-1 block text-xs font-medium text-fg-muted">Description <span class="font-normal text-fg-muted">(optional)</span></label>
 		<textarea id="track-description" class="input" name="description" rows="4">{ description }</textarea>
 	</div>
 	<div>
-		<label for="track-tags" class="mb-1 block text-sm font-medium">Tags <span class="font-normal text-fg-muted">(optional, separated by commas)</span></label>
+		<label for="track-tags" class="mb-1 block text-xs font-medium text-fg-muted">Tags <span class="font-normal text-fg-muted">(optional, separated by commas)</span></label>
 		<input id="track-tags" class="input" type="text" name="tags" value={ strings.Join(tags, ", ") } maxlength="800"/>
 	</div>
 }
@@ -598,7 +598,7 @@ templ trackImageForm(t *audio.Track) {
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('track-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'"
 	>
 		<img class="pixelated size-24 rounded bg-panel-2 object-cover" src={ t.ImgURL } alt=""/>
-		<label for="track-image" class="text-sm font-medium">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
+		<label for="track-image" class="text-xs font-medium text-fg-muted">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
 		<input id="track-image" type="file" name="image" accept="image/jpeg,image/png,image/webp" required/>
 		<div class="flex flex-wrap items-center gap-4">
 			<button class="btn" type="submit">Upload picture</button>

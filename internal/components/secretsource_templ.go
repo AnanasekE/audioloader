@@ -81,7 +81,7 @@ func SecretSourcePage(prefill string) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn\" href=\"/upload\">Upload a file</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn btn-ghost\" href=\"/upload\">Upload a file</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -122,7 +122,7 @@ func SecretSourcePage(prefill string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" placeholder=\"Page address\" autocomplete=\"off\" required> <button class=\"btn\" type=\"submit\">Check</button> <span id=\"secret-source-loading\" class=\"htmx-indicator text-sm text-zinc-500\">Loading…</span></form><div id=\"secret-source-result\" class=\"text-sm\" aria-live=\"polite\"></div></section><script src=\"/assets/js/artist-picker.js\" defer></script> <script src=\"/assets/js/secret-source.js\" defer></script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" placeholder=\"Page address\" autocomplete=\"off\" required> <button class=\"btn\" type=\"submit\">Check</button> <span id=\"secret-source-loading\" class=\"htmx-indicator text-sm text-fg-muted\">Loading…</span></form><div id=\"secret-source-result\" class=\"text-sm\" aria-live=\"polite\"></div></section><script src=\"/assets/js/artist-picker.js\" defer></script> <script src=\"/assets/js/secret-source.js\" defer></script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -191,7 +191,7 @@ func SecretSourceDetails(page *secret.Page, artists []*audio.Artist, uploader st
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div><label for=\"ss-title\" class=\"mb-1 block text-sm font-medium\">Title</label> <input id=\"ss-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div><label for=\"ss-title\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Title</label> <input id=\"ss-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -212,7 +212,7 @@ func SecretSourceDetails(page *secret.Page, artists []*audio.Artist, uploader st
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<small class=\"mt-1 block text-zinc-500\">Pick at least one. Add a new creator above if they aren't listed.</small></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<small class=\"mt-1 block text-fg-muted\">Pick at least one. Add a new creator above if they aren't listed.</small></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -253,7 +253,7 @@ func SecretSourceStatus(pageURL string, state SecretDownloadState, trackID strin
 		ctx = templ.ClearChildren(ctx)
 		switch state {
 		case SecretDownloadWorking:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"rounded-md border-l-4 border-zinc-400 bg-white px-3 py-2 text-sm dark:bg-zinc-900\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<p class=\"rounded-md border-l-4 border-line bg-panel px-3 py-2 text-sm\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -271,7 +271,7 @@ func SecretSourceStatus(pageURL string, state SecretDownloadState, trackID strin
 				return templ_7745c5c3_Err
 			}
 		case SecretDownloadDone:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"rounded-md border-l-4 border-emerald-500 bg-white px-3 py-2 text-sm dark:bg-zinc-900\">Done. ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<p class=\"rounded-md border-l-4 border-st-done bg-panel px-3 py-2 text-sm\">Done. ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -321,14 +321,14 @@ func SecretSourceStatus(pageURL string, state SecretDownloadState, trackID strin
 				return templ_7745c5c3_Err
 			}
 		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<p class=\"rounded-md border-l-4 border-red-500 bg-white px-3 py-2 text-sm text-red-600 dark:bg-zinc-900 dark:text-red-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<p class=\"rounded-md border-l-4 border-st-failed bg-panel px-3 py-2 text-sm text-st-failed\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/secretsource.templ`, Line: 114, Col: 134}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/secretsource.templ`, Line: 114, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -365,7 +365,7 @@ func SecretSourceExists(t *ExistingTrack, uploader string) templ.Component {
 			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"rounded-md border-l-4 border-amber-500 bg-white px-3 py-2 text-sm dark:bg-zinc-900\">Already in the library: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"rounded-md border-l-4 border-st-review bg-panel px-3 py-2 text-sm\">Already in the library: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -529,7 +529,7 @@ func SecretSourceListing(l *secret.Listing, entries []ListingEntry) templ.Compon
 		}
 		ctx = templ.ClearChildren(ctx)
 		todo, done := entriesWhere(entries, false), entriesWhere(entries, true)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"grid grid-cols-1 gap-4\"><p class=\"text-zinc-500\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"grid grid-cols-1 gap-4\"><p class=\"text-fg-muted\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -599,7 +599,7 @@ func SecretSourceListing(l *secret.Listing, entries []ListingEntry) templ.Compon
 			return templ_7745c5c3_Err
 		}
 		if len(todo) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<ul class=\"divide-y divide-zinc-200 dark:divide-zinc-800\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<ul class=\"divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -667,7 +667,7 @@ func SecretSourceListing(l *secret.Listing, entries []ListingEntry) templ.Compon
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, ")</summary><ul class=\"mt-2 divide-y divide-zinc-200 dark:divide-zinc-800\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, ")</summary><ul class=\"mt-2 divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

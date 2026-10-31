@@ -101,7 +101,7 @@ func AddSongPage(q string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"Artist - Title, e.g. Ella Red - Muse\" aria-label=\"Song\" autocomplete=\"off\" required> <button class=\"btn\" type=\"submit\">Search</button> <span id=\"add-loading\" class=\"htmx-indicator text-sm text-zinc-500\">Searching…</span></form><p id=\"add-status\" class=\"mt-4 text-sm text-red-600 empty:hidden dark:text-red-400\" role=\"alert\"></p><div id=\"add-results\" class=\"mt-6\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"Artist - Title, e.g. Ella Red - Muse\" aria-label=\"Song\" autocomplete=\"off\" required> <button class=\"btn\" type=\"submit\">Search</button> <span id=\"add-loading\" class=\"htmx-indicator text-sm text-fg-muted\">Searching…</span></form><p id=\"add-status\" class=\"mt-4 text-sm text-st-failed empty:hidden\" role=\"alert\"></p><div id=\"add-results\" class=\"mt-6\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -160,12 +160,12 @@ func SongCandidates(q string, found []SongCandidate) templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"text-zinc-900 dark:text-zinc-100\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"text-fg\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(found) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"mb-3 text-zinc-500 dark:text-zinc-400\">MusicBrainz found nothing. Looking on YouTube…</p><div hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"mb-3 text-fg-muted\">MusicBrainz found nothing. Looking on YouTube…</p><div hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -183,12 +183,12 @@ func SongCandidates(q string, found []SongCandidate) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<ul class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<ul class=\"divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, c := range found {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<li class=\"flex flex-wrap items-center gap-3 py-2\"><img class=\"size-14 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800\" src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<li class=\"flex flex-wrap items-center gap-3 py-2\"><img class=\"size-14 shrink-0 rounded bg-panel-2 object-cover\" src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -214,7 +214,7 @@ func SongCandidates(q string, found []SongCandidate) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span> <span class=\"block truncate text-zinc-500 dark:text-zinc-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span> <span class=\"block truncate text-fg-muted\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -247,7 +247,7 @@ func SongCandidates(q string, found []SongCandidate) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if c.ReleaseTitle != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"block truncate text-sm text-zinc-500 dark:text-zinc-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"block truncate text-sm text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -381,17 +381,17 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"text-zinc-900 dark:text-zinc-100\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"text-fg\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(found) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<p class=\"text-zinc-500 dark:text-zinc-400\">YouTube found nothing.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<p class=\"text-fg-muted\">YouTube found nothing.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<p class=\"mb-2 text-sm text-zinc-500 dark:text-zinc-400\">The picked video becomes a single you can tag later.</p><ul class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<p class=\"mb-2 text-sm text-fg-muted\">The picked video becomes a single you can tag later.</p><ul class=\"divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

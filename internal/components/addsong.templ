@@ -39,9 +39,9 @@ templ AddSongPage(q string) {
 			>
 				<input class="input flex-1" type="text" name="q" value={ q } placeholder="Artist - Title, e.g. Ella Red - Muse" aria-label="Song" autocomplete="off" required/>
 				<button class="btn" type="submit">Search</button>
-				<span id="add-loading" class="htmx-indicator text-sm text-zinc-500">Searching…</span>
+				<span id="add-loading" class="htmx-indicator text-sm text-fg-muted">Searching…</span>
 			</form>
-			<p id="add-status" class="mt-4 text-sm text-red-600 empty:hidden dark:text-red-400" role="alert"></p>
+			<p id="add-status" class="mt-4 text-sm text-st-failed empty:hidden" role="alert"></p>
 			<div
 				id="add-results"
 				class="mt-6"
@@ -57,16 +57,16 @@ templ AddSongPage(q string) {
 
 // SongCandidates lists MusicBrainz's best recordings for q.
 templ SongCandidates(q string, found []SongCandidate) {
-	<div class="text-zinc-900 dark:text-zinc-100">
+	<div class="text-fg">
 		if len(found) == 0 {
-			<p class="mb-3 text-zinc-500 dark:text-zinc-400">MusicBrainz found nothing. Looking on YouTube…</p>
+			<p class="mb-3 text-fg-muted">MusicBrainz found nothing. Looking on YouTube…</p>
 			<div hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>
 		} else {
-			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ul class="divide-y divide-line">
 				for _, c := range found {
 					<li class="flex flex-wrap items-center gap-3 py-2">
 						<img
-							class="size-14 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800"
+							class="size-14 shrink-0 rounded bg-panel-2 object-cover"
 							src={ c.CoverURL }
 							alt=""
 							loading="lazy"
@@ -74,14 +74,14 @@ templ SongCandidates(q string, found []SongCandidate) {
 						/>
 						<span class="min-w-0 flex-1">
 							<span class="block truncate">{ c.Title }</span>
-							<span class="block truncate text-zinc-500 dark:text-zinc-400">
+							<span class="block truncate text-fg-muted">
 								{ c.Artists }
 								if c.Length > 0 {
 									{ " · " + formatDuration(c.Length) }
 								}
 							</span>
 							if c.ReleaseTitle != "" {
-								<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+								<span class="block truncate text-sm text-fg-muted">
 									{ c.ReleaseTitle }
 									if c.Year != "" {
 										{ " · " + c.Year }
@@ -113,12 +113,12 @@ templ SongCandidates(q string, found []SongCandidate) {
 // the guessed track title and artist of each result, for the person to
 // correct; owned holds the link to the library's track when it has the video.
 templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string) {
-	<div class="text-zinc-900 dark:text-zinc-100">
+	<div class="text-fg">
 		if len(found) == 0 {
-			<p class="text-zinc-500 dark:text-zinc-400">YouTube found nothing.</p>
+			<p class="text-fg-muted">YouTube found nothing.</p>
 		} else {
-			<p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">The picked video becomes a single you can tag later.</p>
-			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			<p class="mb-2 text-sm text-fg-muted">The picked video becomes a single you can tag later.</p>
+			<ul class="divide-y divide-line">
 				for i, c := range found {
 					@youTubeCandidate(c, 0) {
 						if owned[i] != "" {

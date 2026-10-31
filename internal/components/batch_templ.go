@@ -79,14 +79,14 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn btn-ghost\" href=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var4 templ.SafeURL
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(releaseURL(release))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/batch.templ`, Line: 32, Col: 45}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/batch.templ`, Line: 32, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -115,7 +115,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a class=\"btn\" href=\"/upload\">Single upload</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a class=\"btn btn-ghost\" href=\"/upload\">Single upload</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -138,7 +138,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a class=\"btn\" href=\"/upload\">Single upload</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a class=\"btn btn-ghost\" href=\"/upload\">Single upload</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -219,7 +219,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div id=\"batch-start\" class=\"py-8 text-center\"><button type=\"button\" class=\"btn\" data-action=\"pick\">Choose files</button><p class=\"mt-2 text-sm text-zinc-500 dark:text-zinc-400\">Pick one or more audio files.</p></div><div id=\"batch-table\" hidden><div class=\"mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-zinc-200 pb-4 dark:border-zinc-700\"><div class=\"flex items-center gap-2\"><label for=\"batch-default-artist\" class=\"text-sm font-medium\">Artist for all tracks</label> <select id=\"batch-default-artist\" class=\"input w-auto min-w-48\"><option value=\"\">Choose…</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div id=\"batch-start\" class=\"py-8 text-center\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"pick\">Choose files</button><p class=\"mt-2 text-sm text-fg-muted\">Pick one or more audio files.</p></div><div id=\"batch-table\" hidden><div class=\"mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line pb-4\"><div class=\"flex items-center gap-2\"><label for=\"batch-default-artist\" class=\"text-xs font-medium text-fg-muted\">Artist for all tracks</label> <select id=\"batch-default-artist\" class=\"input w-auto min-w-48\"><option value=\"\">Choose…</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -279,7 +279,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"flex items-center gap-2\"><label for=\"batch-default-release\" class=\"text-sm font-medium\">Release for all tracks</label>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"flex items-center gap-2\"><label for=\"batch-default-release\" class=\"text-xs font-medium text-fg-muted\">Release for all tracks</label>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -296,7 +296,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var13 = []any{"hidden gap-2 pb-2 text-sm font-medium text-zinc-500 md:grid dark:text-zinc-400", batchColsFor(ctx)}
+			var templ_7745c5c3_Var13 = []any{"hidden gap-2 pb-2 text-sm font-medium text-fg-muted md:grid", batchColsFor(ctx)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -339,7 +339,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"sr-only\">Actions</span></div><div id=\"batch-rows\" class=\"divide-y divide-zinc-200 dark:divide-zinc-700\"></div><div class=\"mt-4 flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" data-action=\"pick\">Add tracks</button><p id=\"batch-result\" class=\"flex-1 text-sm\" aria-live=\"polite\"></p><button type=\"button\" class=\"btn\" data-action=\"submit\">Upload all</button></div></div><template id=\"batch-row-template\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"sr-only\">Actions</span></div><div id=\"batch-rows\" class=\"divide-y divide-line\"></div><div class=\"mt-4 flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" data-action=\"pick\">Add tracks</button><p id=\"batch-result\" class=\"flex-1 text-sm\" aria-live=\"polite\"></p><button type=\"button\" class=\"btn\" data-action=\"submit\">Upload all</button></div></div><template id=\"batch-row-template\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -457,7 +457,7 @@ func batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.R
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "> <button type=\"button\" class=\"btn px-2.5\" data-action=\"remove\" title=\"Remove from batch\" aria-label=\"Remove from batch\">✕</button><div class=\"row-status col-span-full text-sm empty:hidden data-[state=error]:text-red-600 data-[state=exists]:text-amber-600 data-[state=link]:text-sky-600 data-[state=pending]:text-zinc-500 dark:data-[state=error]:text-red-400 dark:data-[state=exists]:text-amber-400 dark:data-[state=link]:text-sky-400\"></div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "> <button type=\"button\" class=\"btn px-2.5\" data-action=\"remove\" title=\"Remove from batch\" aria-label=\"Remove from batch\">✕</button><div class=\"row-status col-span-full text-sm empty:hidden data-[state=error]:text-st-failed data-[state=exists]:text-st-review data-[state=link]:text-accent data-[state=pending]:text-fg-muted\"></div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

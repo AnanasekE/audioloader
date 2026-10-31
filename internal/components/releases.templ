@@ -53,7 +53,7 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('release-result').textContent = event.detail.xhr.responseText || 'Could not create the release.'"
 		>
 			<div>
-				<label for="release-title" class="mb-1 block text-sm font-medium">Title</label>
+				<label for="release-title" class="mb-1 block text-xs font-medium text-fg-muted">Title</label>
 				<input id="release-title" class="input" type="text" name="title" required/>
 			</div>
 			if upload {
@@ -62,7 +62,7 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 			<div class="grid grid-cols-2 gap-4">
 				if !upload {
 					<div>
-						<label for="release-type" class="mb-1 block text-sm font-medium">Type</label>
+						<label for="release-type" class="mb-1 block text-xs font-medium text-fg-muted">Type</label>
 						<select id="release-type" class="input" name="type">
 							for _, typ := range audio.ReleaseTypes {
 								<option value={ string(typ) } selected?={ typ == audio.ReleaseAlbum }>{ typ.Label() }</option>
@@ -71,7 +71,7 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 					</div>
 				}
 				<div>
-					<label for="release-date" class="mb-1 block text-sm font-medium">Release date</label>
+					<label for="release-date" class="mb-1 block text-xs font-medium text-fg-muted">Release date</label>
 					<input
 						id="release-date"
 						class="input"
@@ -154,10 +154,10 @@ templ releaseActions(r *audio.Release) {
 	<div class="mt-4 flex flex-wrap gap-2">
 		if missingCount(r) < len(r.Tracks) {
 			<button type="button" class="btn" data-play-list="release-tracks">Play</button>
-			<button type="button" class="btn" data-play-list="release-tracks" data-shuffle>Shuffle</button>
+			<button type="button" class="btn btn-ghost" data-play-list="release-tracks" data-shuffle>Shuffle</button>
 		}
 		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
-		<a class="btn" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
+		<a class="btn btn-ghost" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
 		@removeReleaseButton(r)
 	</div>
 }
@@ -311,7 +311,7 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.Artist) {
 	@layout("Edit "+r.Title, PageReleases) {
 		@pageHeader("Edit release", r.Type.Label()+": "+r.Title) {
-			<a class="btn" href={ releaseURL(r) }>Cancel</a>
+			<a class="btn btn-ghost" href={ releaseURL(r) }>Cancel</a>
 		}
 		@releaseDetailsForm(r, artists)
 		@releaseCoverForm(r)
@@ -330,7 +330,7 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 			</ol>
 			<p class="py-4 text-sm text-fg-muted" data-edit-empty hidden?={ len(r.Tracks) > 0 }>No tracks on this release.</p>
 			<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
-				<label for="release-add-track" class="text-sm font-medium">Add from library</label>
+				<label for="release-add-track" class="text-xs font-medium text-fg-muted">Add from library</label>
 				<select id="release-add-track" class="input w-auto min-w-64 flex-1">
 					<option value="">Choose a track…</option>
 					for _, t := range notOnRelease(library, r) {
@@ -373,12 +373,12 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-details-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 	>
 		<div>
-			<label for="release-title" class="mb-1 block text-sm font-medium">Title</label>
+			<label for="release-title" class="mb-1 block text-xs font-medium text-fg-muted">Title</label>
 			<input id="release-title" class="input" type="text" name="title" value={ r.Title } required/>
 		</div>
 		<div class="grid grid-cols-2 gap-4">
 			<div>
-				<label for="release-type" class="mb-1 block text-sm font-medium">Type</label>
+				<label for="release-type" class="mb-1 block text-xs font-medium text-fg-muted">Type</label>
 				<select id="release-type" class="input" name="type">
 					for _, typ := range audio.ReleaseTypes {
 						<option value={ string(typ) } selected?={ typ == r.Type }>{ typ.Label() }</option>
@@ -386,7 +386,7 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 				</select>
 			</div>
 			<div>
-				<label for="release-date" class="mb-1 block text-sm font-medium">Release date</label>
+				<label for="release-date" class="mb-1 block text-xs font-medium text-fg-muted">Release date</label>
 				<input
 					id="release-date"
 					class="input"
@@ -420,7 +420,7 @@ templ releaseCoverForm(r *audio.Release) {
 	>
 		<img class="pixelated size-24 shrink-0 rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
 		<div class="grid gap-2">
-			<label for="release-cover" class="text-sm font-medium">Cover (JPEG, PNG or WebP, up to 10 MiB)</label>
+			<label for="release-cover" class="text-xs font-medium text-fg-muted">Cover (JPEG, PNG or WebP, up to 10 MiB)</label>
 			<input id="release-cover" type="file" name="cover" accept="image/jpeg,image/png,image/webp" required/>
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Upload cover</button>

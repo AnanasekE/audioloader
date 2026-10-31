@@ -77,14 +77,14 @@ templ PlaylistPage(p *audio.Playlist) {
 templ PlaylistEditPage(p *audio.Playlist) {
 	@layout("Edit "+p.Name, PagePlaylists) {
 		@pageHeader("Edit playlist", p.Name) {
-			<a class="btn" href={ playlistURL(p) }>Cancel</a>
+			<a class="btn btn-ghost" href={ playlistURL(p) }>Cancel</a>
 		}
 		<form
 			class="card mb-6 flex flex-wrap items-center gap-2"
 			hx-post={ "/ui/playlists/" + p.ID.String() + "/rename" }
 			hx-target="#playlist-rename-result"
 		>
-			<label for="playlist-name" class="text-sm font-medium">Name</label>
+			<label for="playlist-name" class="text-xs font-medium text-fg-muted">Name</label>
 			<input id="playlist-name" class="input flex-1" type="text" name="name" value={ p.Name } required/>
 			<button class="btn" type="submit">Rename</button>
 			<span id="playlist-rename-result" class="text-sm"></span>

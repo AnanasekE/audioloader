@@ -200,7 +200,7 @@ func NewReleaseForm(artists []*audio.Artist, upload bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<form id=\"new-release-form\" class=\"grid max-w-lg gap-4\" hx-post=\"/ui/releases\" hx-target=\"#release-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('release-result').textContent = event.detail.xhr.responseText || 'Could not create the release.'\"><div><label for=\"release-title\" class=\"mb-1 block text-sm font-medium\">Title</label> <input id=\"release-title\" class=\"input\" type=\"text\" name=\"title\" required></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<form id=\"new-release-form\" class=\"grid max-w-lg gap-4\" hx-post=\"/ui/releases\" hx-target=\"#release-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('release-result').textContent = event.detail.xhr.responseText || 'Could not create the release.'\"><div><label for=\"release-title\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Title</label> <input id=\"release-title\" class=\"input\" type=\"text\" name=\"title\" required></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -215,7 +215,7 @@ func NewReleaseForm(artists []*audio.Artist, upload bool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if !upload {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div><label for=\"release-type\" class=\"mb-1 block text-sm font-medium\">Type</label> <select id=\"release-type\" class=\"input\" name=\"type\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div><label for=\"release-type\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Type</label> <select id=\"release-type\" class=\"input\" name=\"type\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -266,7 +266,7 @@ func NewReleaseForm(artists []*audio.Artist, upload bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div><label for=\"release-date\" class=\"mb-1 block text-sm font-medium\">Release date</label> <input id=\"release-date\" class=\"input\" type=\"text\" name=\"date\" placeholder=\"YYYY or YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div></div><div><span class=\"mb-1 block text-sm font-medium\">Artists</span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div><label for=\"release-date\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Release date</label> <input id=\"release-date\" class=\"input\" type=\"text\" name=\"date\" placeholder=\"YYYY or YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div></div><div><span class=\"mb-1 block text-sm font-medium\">Artists</span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -610,7 +610,7 @@ func releaseActions(r *audio.Release) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if missingCount(r) < len(r.Tracks) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<button type=\"button\" class=\"btn\" data-play-list=\"release-tracks\">Play</button> <button type=\"button\" class=\"btn\" data-play-list=\"release-tracks\" data-shuffle>Shuffle</button> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<button type=\"button\" class=\"btn\" data-play-list=\"release-tracks\">Play</button> <button type=\"button\" class=\"btn btn-ghost\" data-play-list=\"release-tracks\" data-shuffle>Shuffle</button> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -628,14 +628,14 @@ func releaseActions(r *audio.Release) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\">Upload tracks</a> <a class=\"btn\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\">Upload tracks</a> <a class=\"btn btn-ghost\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 templ.SafeURL
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/releases/" + r.ID.String() + "/edit"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/releases.templ`, Line: 160, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/releases.templ`, Line: 160, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -1305,14 +1305,14 @@ func ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<a class=\"btn\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<a class=\"btn btn-ghost\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var54 templ.SafeURL
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinURLErrs(releaseURL(r))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/releases.templ`, Line: 314, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/releases.templ`, Line: 314, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 				if templ_7745c5c3_Err != nil {
@@ -1369,7 +1369,7 @@ func ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ">No tracks on this release.</p><div class=\"mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4\"><label for=\"release-add-track\" class=\"text-sm font-medium\">Add from library</label> <select id=\"release-add-track\" class=\"input w-auto min-w-64 flex-1\"><option value=\"\">Choose a track…</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ">No tracks on this release.</p><div class=\"mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4\"><label for=\"release-add-track\" class=\"text-xs font-medium text-fg-muted\">Add from library</label> <select id=\"release-add-track\" class=\"input w-auto min-w-64 flex-1\"><option value=\"\">Choose a track…</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1521,7 +1521,7 @@ func releaseDetailsForm(r *audio.Release, artists []*audio.Artist) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "\" hx-target=\"#release-details-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('release-details-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><div><label for=\"release-title\" class=\"mb-1 block text-sm font-medium\">Title</label> <input id=\"release-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "\" hx-target=\"#release-details-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('release-details-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><div><label for=\"release-title\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Title</label> <input id=\"release-title\" class=\"input\" type=\"text\" name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1534,7 +1534,7 @@ func releaseDetailsForm(r *audio.Release, artists []*audio.Artist) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" required></div><div class=\"grid grid-cols-2 gap-4\"><div><label for=\"release-type\" class=\"mb-1 block text-sm font-medium\">Type</label> <select id=\"release-type\" class=\"input\" name=\"type\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" required></div><div class=\"grid grid-cols-2 gap-4\"><div><label for=\"release-type\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Type</label> <select id=\"release-type\" class=\"input\" name=\"type\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1580,7 +1580,7 @@ func releaseDetailsForm(r *audio.Release, artists []*audio.Artist) templ.Compone
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</select></div><div><label for=\"release-date\" class=\"mb-1 block text-sm font-medium\">Release date</label> <input id=\"release-date\" class=\"input\" type=\"text\" name=\"date\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</select></div><div><label for=\"release-date\" class=\"mb-1 block text-xs font-medium text-fg-muted\">Release date</label> <input id=\"release-date\" class=\"input\" type=\"text\" name=\"date\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1656,7 +1656,7 @@ func releaseCoverForm(r *audio.Release) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "\" alt=\"\"><div class=\"grid gap-2\"><label for=\"release-cover\" class=\"text-sm font-medium\">Cover (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"release-cover\" type=\"file\" name=\"cover\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload cover</button> <span id=\"release-cover-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></div></div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "\" alt=\"\"><div class=\"grid gap-2\"><label for=\"release-cover\" class=\"text-xs font-medium text-fg-muted\">Cover (JPEG, PNG or WebP, up to 10 MiB)</label> <input id=\"release-cover\" type=\"file\" name=\"cover\" accept=\"image/jpeg,image/png,image/webp\" required><div class=\"flex items-center gap-4\"><button class=\"btn\" type=\"submit\">Upload cover</button> <span id=\"release-cover-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></div></div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

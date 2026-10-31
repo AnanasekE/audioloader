@@ -132,12 +132,12 @@ templ EpisodeForm(shows []*audio.Show) {
 			"
 		>
 			<div>
-				<label for="episode-title" class="mb-1 block text-sm font-medium">Episode title</label>
+				<label for="episode-title" class="mb-1 block text-xs font-medium text-fg-muted">Episode title</label>
 				<input id="episode-title" class="input" type="text" name="title" required/>
 			</div>
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="episode-show" class="mb-1 block text-sm font-medium">Show</label>
+					<label for="episode-show" class="mb-1 block text-xs font-medium text-fg-muted">Show</label>
 					<select id="episode-show" class="input" name="show_id">
 						<option value="">New show…</option>
 						for i, s := range shows {
@@ -146,12 +146,12 @@ templ EpisodeForm(shows []*audio.Show) {
 					</select>
 				</div>
 				<div>
-					<label for="episode-show-name" class="mb-1 block text-sm font-medium">New show name</label>
+					<label for="episode-show-name" class="mb-1 block text-xs font-medium text-fg-muted">New show name</label>
 					<input id="episode-show-name" class="input" type="text" name="show_name" placeholder="Only for a new show"/>
 				</div>
 			</div>
 			<div>
-				<label for="episode-date" class="mb-1 block text-sm font-medium">Published <span class="font-normal text-fg-muted">(optional)</span></label>
+				<label for="episode-date" class="mb-1 block text-xs font-medium text-fg-muted">Published <span class="font-normal text-fg-muted">(optional)</span></label>
 				<input
 					id="episode-date"
 					class="input"
@@ -163,7 +163,7 @@ templ EpisodeForm(shows []*audio.Show) {
 				/>
 			</div>
 			<div>
-				<label for="episode-file" class="mb-1 block text-sm font-medium">Audio file</label>
+				<label for="episode-file" class="mb-1 block text-xs font-medium text-fg-muted">Audio file</label>
 				<input
 					id="episode-file"
 					class="input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm"
