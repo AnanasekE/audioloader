@@ -389,7 +389,9 @@ templ tagField(l TagLens) {
 templ tagResults(l TagLens) {
 	<section aria-label="Tracks">
 		if len(l.Query.Include)+len(l.Query.Exclude) == 0 {
-			<p class="py-6 text-center text-fg-muted">Pick tags to narrow down { plural(len(l.Tracks), "track") }</p>
+			@emptyState() {
+				Pick tags to narrow down { plural(len(l.Tracks), "track") }
+			}
 		} else {
 			<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
 				<p class="font-mono text-xs text-fg-muted">{ tagTotal(l.Tracks) }</p>

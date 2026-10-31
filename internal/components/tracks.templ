@@ -250,14 +250,11 @@ templ trackRow(t *audio.Track, highlight map[string]bool, n int) {
 		}
 		@cover(t.ImgURL, 28)
 		<div class="stack">
-			<b class="group-has-[[aria-pressed=true]]/row:text-accent">{ t.Title }</b>
+			<b class="group-has-[[aria-pressed=true]]/row:text-accent" { descriptionAttr(t)... }>{ t.Title }</b>
 			<span>
 				@artistLinks(t.Artists)
 			</span>
 			@coverOfLine(t)
-			if t.Secret && t.Description != "" {
-				<span class="max-[719px]:hidden">{ t.Description }</span>
-			}
 			<span class="alb-line min-[720px]:hidden">
 				if t.Secret {
 					{ strings.Join(t.Tags, " · ") }
@@ -279,6 +276,15 @@ templ trackRow(t *audio.Track, highlight map[string]bool, n int) {
 		<span class="mono text-right text-fg-muted">{ formatDuration(t.Duration) }</span>
 		@trackMenu(t)
 	</article>
+}
+
+// descriptionAttr shows a secret track's description as a tooltip on its
+// title: the row has no room for a line of it.
+func descriptionAttr(t *audio.Track) templ.Attributes {
+	if t.Secret && t.Description != "" {
+		return templ.Attributes{"title": t.Description}
+	}
+	return nil
 }
 
 func trackNo(n int) string {
