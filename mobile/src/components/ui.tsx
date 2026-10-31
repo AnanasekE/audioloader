@@ -1,7 +1,8 @@
 import type { ReactElement, ReactNode } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { absoluteUrl, authHeaders } from "@/api/client";
 import type { Track } from "@/api/types";
+import { addToEnd, playNext } from "@/player";
 import { colors, font, radius } from "@/theme";
 
 export function formatDuration(seconds: number): string {
@@ -24,9 +25,9 @@ export function Cover({ uri, size = 44 }: { uri?: string; size?: number }) {
   return <Image style={box} source={{ uri: absoluteUrl(uri), headers: authHeaders() }} />;
 }
 
-export function Row({ title, subtitle, right, image, onPress }: { title: string; subtitle?: string; right?: string; image?: ReactNode; onPress?: () => void }) {
+export function Row({ title, subtitle, right, image, onPress, onLongPress }: { title: string; subtitle?: string; right?: string; image?: ReactNode; onPress?: () => void; onLongPress?: () => void }) {
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable style={styles.row} onPress={onPress} onLongPress={onLongPress}>
       {image}
       <View style={styles.rowText}>
         <Text style={styles.rowTitle} numberOfLines={1}>
@@ -52,6 +53,13 @@ export function TrackRow({ track, onPress }: { track: Track; onPress: () => void
       subtitle={artistNames(track)}
       right={(done ? "played  " : "") + formatDuration(track.duration)}
       onPress={onPress}
+      onLongPress={() =>
+        Alert.alert(track.title, undefined, [
+          { text: "Play next", onPress: () => playNext(track) },
+          { text: "Add to end of queue", onPress: () => addToEnd(track) },
+          { text: "Cancel", style: "cancel" },
+        ])
+      }
     />
   );
 }

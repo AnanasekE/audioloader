@@ -1,4 +1,6 @@
-import { Tabs } from "expo-router";
+import { BottomTabBar, Tabs } from "expo-router/js-tabs";
+import { View } from "react-native";
+import { MiniPlayer } from "@/components/player-ui";
 import { useMode } from "@/modeProvider";
 import { colors } from "@/theme";
 
@@ -6,6 +8,12 @@ export default function TabsLayout() {
   const { secret } = useMode();
   return (
     <Tabs
+      tabBar={(props) => (
+        <View>
+          <MiniPlayer />
+          <BottomTabBar {...props} />
+        </View>
+      )}
       screenOptions={{
         headerStyle: { backgroundColor: colors.panel },
         headerTintColor: colors.fg,

@@ -35,7 +35,7 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store",
-      "expo-audio",
+      ["expo-audio", { "microphonePermission": false, "recordAudioAndroid": false }],
       "expo-image"
     ],
     "experiments": {
