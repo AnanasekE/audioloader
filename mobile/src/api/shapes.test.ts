@@ -20,7 +20,7 @@ const track: Track = {
   finished: false,
 };
 const release: Release = { id: "r1", title: "Album", type: "album", date: "2001", imageUrl: "", artists: [{ id: "a1", name: "Artist" }] };
-const artist: Artist = { id: "a1", name: "Artist", imageUrl: "" };
+const artist: Artist = { id: "a1", name: "Artist", imageUrl: "/artist-images/a1" };
 const playlist: Playlist = { id: "p1", name: "Mix", imageUrl: "", count: 1, duration: 180 };
 const show: Show = { id: "s1", title: "Cast", author: "Me", imageUrl: "", count: 3, unplayed: 2 };
 

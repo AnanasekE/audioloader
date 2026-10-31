@@ -95,7 +95,7 @@ func setArtistTwitch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	a, err := db.GetArtist(viewer(r), id.String())
+	_, err := db.GetArtist(viewer(r), id.String())
 	if err != nil {
 		serverError(w, err)
 		return
@@ -108,8 +108,8 @@ func setArtistTwitch(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	// an uploaded or earlier fetched picture is served from /artist-images/
-	hasDefaultPicture := !strings.HasPrefix(a.ImgURL, "/artist-images/")
+	_, imgErr := db.ArtistImagePath(id)
+	hasDefaultPicture := errors.Is(imgErr, db.ErrNotFound)
 	if login != "" && hasDefaultPicture && twitchClient() != nil {
 		if err := fetchTwitchPicture(r.Context(), id, login); err != nil {
 			// the login is saved; only the picture failed

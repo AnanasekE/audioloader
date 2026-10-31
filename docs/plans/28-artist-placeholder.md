@@ -6,9 +6,9 @@
 
 ## Status
 
-- [ ] 1. Initials tile generator
-- [ ] 2. Serve the fallbacks
-- [ ] 3. Use them everywhere, docs
+- [x] 1. Initials tile generator
+- [x] 2. Serve the fallbacks
+- [x] 3. Use them everywhere, docs
 
 ## Rules
 

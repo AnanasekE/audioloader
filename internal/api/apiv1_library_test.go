@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -12,6 +13,9 @@ func TestV1Artists(t *testing.T) {
 
 	list := s.json("/api/v1/artists")
 	wantKeys(t, "artist", items(t, list)[0], "id imageUrl name")
+	if img, _ := items(t, list)[0]["imageUrl"].(string); !strings.HasPrefix(img, "/artist-images/") {
+		t.Errorf("artist imageUrl = %q", img)
+	}
 	if got := titles(items(t, list), "name"); !slices.Equal(got, []string{"Shared Artist", "ZZPUBLIC Artist"}) {
 		t.Errorf("normal artists = %v", got)
 	}
