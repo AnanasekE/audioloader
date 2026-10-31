@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { loadCookie } from "./api/client";
 import { clearServerUrl, loadServerUrl, saveServerUrl } from "./server";
 
 type ServerState = {
@@ -16,8 +17,8 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   const [url, setUrlState] = useState<string | null>(null);
 
   useEffect(() => {
-    loadServerUrl()
-      .then((u) => setUrlState(u || null))
+    Promise.all([loadServerUrl(), loadCookie()])
+      .then(([u]) => setUrlState(u || null))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

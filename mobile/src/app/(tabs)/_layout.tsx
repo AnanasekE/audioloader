@@ -1,7 +1,9 @@
 import { Tabs } from "expo-router";
+import { useMode } from "@/modeProvider";
 import { colors } from "@/theme";
 
 export default function TabsLayout() {
+  const { secret } = useMode();
   return (
     <Tabs
       screenOptions={{
@@ -18,7 +20,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: "Tracks" }} />
       <Tabs.Screen name="artists" options={{ title: "Artists" }} />
-      <Tabs.Screen name="releases" options={{ title: "Releases" }} />
+      <Tabs.Screen name="releases" options={{ title: "Releases", href: secret ? null : undefined }} />
       <Tabs.Screen name="playlists" options={{ title: "Playlists" }} />
       <Tabs.Screen name="podcasts" options={{ title: "Podcasts" }} />
       <Tabs.Screen name="search" options={{ title: "Search" }} />

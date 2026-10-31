@@ -1,6 +1,9 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { setCookie } from "@/api/client";
+import { resetForModeChange } from "@/mode";
 import { checkServer, normalizeUrl } from "@/server";
 import { useServer } from "@/serverContext";
 import { colors, font, radius } from "@/theme";
@@ -9,6 +12,7 @@ import { colors, font, radius } from "@/theme";
 export default function Setup() {
   const { url: current, setUrl } = useServer();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [text, setText] = useState(current ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +27,12 @@ export default function Setup() {
     setError("");
     try {
       await checkServer(url);
+      if (url !== current) {
+        // another server: nothing of the old one may stay
+        await setCookie(null);
+        queryClient.clear();
+        resetForModeChange();
+      }
       await setUrl(url);
       router.replace("/");
     } catch (e) {

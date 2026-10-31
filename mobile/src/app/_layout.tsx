@@ -1,5 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
+import { configure } from "@/api/client";
+import { ModeProvider } from "@/modeProvider";
 import { ServerProvider, useServer } from "@/serverContext";
 import { colors } from "@/theme";
 
@@ -9,19 +13,25 @@ function Gate() {
   if (loading) return null;
   const onSetup = segments[0] === "setup";
   if (!url && !onSetup) return <Redirect href="/setup" />;
-  return (
+  // set during render so the first queries of the screens below use it
+  if (url) configure(url);
+  const stack = (
     <Stack screenOptions={{ headerStyle: { backgroundColor: colors.panel }, headerTintColor: colors.fg, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="setup" options={{ title: "Connect", headerShown: false }} />
     </Stack>
   );
+  return url ? <ModeProvider>{stack}</ModeProvider> : stack;
 }
 
 export default function RootLayout() {
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }));
   return (
-    <ServerProvider>
-      <StatusBar style="light" />
-      <Gate />
-    </ServerProvider>
+    <QueryClientProvider client={client}>
+      <ServerProvider>
+        <StatusBar style="light" />
+        <Gate />
+      </ServerProvider>
+    </QueryClientProvider>
   );
 }
