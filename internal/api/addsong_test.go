@@ -131,3 +131,83 @@ func TestAddSongFromYouTube(t *testing.T) {
 		t.Fatalf("import = %+v, artists = %v", imp, artists)
 	}
 }
+
+func TestAddSongFromMusicBrainzLink(t *testing.T) {
+	dbtest.New(t)
+	fakeMusicBrainz(t, map[string]string{
+		"/recording/": `{"id":"` + teardropRecording + `","title":"Teardrop","length":330773,
+			"artist-credit":[{"name":"Massive Attack","artist":{"id":"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8","name":"Massive Attack"}}],
+			"releases":[{"id":"` + mezzanine + `","title":"Mezzanine","status":"Official","date":"1998-04-20","release-group":{"primary-type":"Album"}}]}`,
+		"/release/": mustRead(t, "../mb/testdata/release.json"),
+	})
+	h := downloadsHandler(t)
+	get := func(q string) (int, string) {
+		rec := do(h, "GET", "/ui/add/musicbrainz?q="+url.QueryEscape(q), nil)
+		return rec.Code, rec.Body.String()
+	}
+
+	// a release link lists its whole tracklist in order, each added to that release
+	code, body := get("https://musicbrainz.org/release/" + mezzanine + "?x=1")
+	if code != 200 || strings.Count(body, ">Add<") != 11 || !strings.Contains(body, "Mezzanine") || !strings.Contains(body, "11 tracks") ||
+		strings.Contains(body, "None of these") || strings.Count(body, `release_id&#34;: &#34;`+mezzanine) != 11 {
+		t.Fatalf("release = %d\n%s", code, body)
+	}
+	if strings.Index(body, "Angel") > strings.Index(body, "Teardrop") || strings.Index(body, "Teardrop") > strings.Index(body, "Group Four") || !strings.Contains(body, "1.3 ") {
+		t.Fatalf("tracks out of order:\n%s", body)
+	}
+
+	// a track the library has shows as owned
+	a, _ := db.AddArtist(db.All, "Massive Attack")
+	_, err := db.AddTrack(db.All, []string{a.ID.String()}, &audio.Track{Title: "Teardrop", MBID: teardropRecording, Duration: 330 * time.Second},
+		bytes.NewReader([]byte("teardrop")), ".mp3", nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, body = get("https://musicbrainz.org/release/" + mezzanine)
+	if strings.Count(body, ">Add<") != 10 || strings.Count(body, "In your library") != 1 {
+		t.Fatalf("owned release:\n%s", body)
+	}
+
+	// a recording link is one candidate
+	code, body = get("https://musicbrainz.org/recording/" + teardropRecording)
+	if code != 200 || strings.Count(body, "Teardrop") == 0 || strings.Contains(body, ">Add<") || strings.Count(body, "In your library") != 1 {
+		t.Fatalf("recording = %d\n%s", code, body)
+	}
+
+	// other kinds of link are refused
+	for _, kind := range []string{"track", "release-group"} {
+		rec := do(h, "GET", "/ui/add/musicbrainz?q="+url.QueryEscape("https://musicbrainz.org/"+kind+"/"+mezzanine), nil)
+		if rec.Code != 400 || !strings.Contains(rec.Body.String(), "Paste a release or recording link.") {
+			t.Fatalf("%s link = %d %s", kind, rec.Code, rec.Body)
+		}
+	}
+
+	// plain text, and a bare ID, still search
+	fakeSongMusicBrainz(t)
+	for _, q := range []string{"Massive Attack Teardrop", mezzanine} {
+		if code, body := get(q); code != 200 || !strings.Contains(body, "Spirits of Nature 5") {
+			t.Fatalf("search %q = %d\n%s", q, code, body)
+		}
+	}
+}
+
+func TestAddSongFromMusicBrainzLinkNotFound(t *testing.T) {
+	dbtest.New(t)
+	fakeMusicBrainz(t, nil)
+	h := downloadsHandler(t)
+	for _, kind := range []string{"release", "recording"} {
+		rec := do(h, "GET", "/ui/add/musicbrainz?q="+url.QueryEscape("https://musicbrainz.org/"+kind+"/"+mezzanine), nil)
+		if rec.Code != 404 || !strings.Contains(rec.Body.String(), "isn't on MusicBrainz") {
+			t.Fatalf("%s = %d %s", kind, rec.Code, rec.Body)
+		}
+	}
+}
+
+func mustRead(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}

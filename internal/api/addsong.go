@@ -20,7 +20,8 @@ func getAddSongPage(w http.ResponseWriter, r *http.Request) {
 }
 
 // searchSongsMusicBrainz lists MusicBrainz's 5 best recordings for what was
-// typed, marking the ones the library already has.
+// typed, marking the ones the library already has. A MusicBrainz release or
+// recording link lists exactly what it points to instead.
 func searchSongsMusicBrainz(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	if q == "" {
@@ -28,6 +29,17 @@ func searchSongsMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := mb.Default()
+	if kind, id, ok := mb.ParseLink(q); ok {
+		switch kind {
+		case "release":
+			listRelease(w, r, id)
+		case "recording":
+			listRecording(w, r, id)
+		default:
+			http.Error(w, "Paste a release or recording link.", http.StatusBadRequest)
+		}
+		return
+	}
 	recs, err := c.SearchSongs(r.Context(), q, 5)
 	if err != nil {
 		http.Error(w, "couldn't search MusicBrainz: "+err.Error(), http.StatusBadGateway)
@@ -40,29 +52,167 @@ func searchSongsMusicBrainz(w http.ResponseWriter, r *http.Request) {
 	}
 	found := make([]components.SongCandidate, 0, len(recs))
 	for _, rec := range recs {
-		cand := components.SongCandidate{
-			RecordingID: rec.ID,
-			Title:       rec.Title,
-			Artists:     rec.ArtistCredit.String(),
-			Length:      time.Duration(rec.Length) * time.Millisecond,
-			CoverURL:    "/assets/img/default_track.png",
-		}
-		if rel := tagging.PickRelease(rec.Releases); rel != nil {
-			cand.ReleaseID, cand.ReleaseTitle = rel.ID, rel.Title
-			cand.Year = rel.Date
-			if len(cand.Year) > 4 {
-				cand.Year = cand.Year[:4]
-			}
-			cand.CoverURL = c.CoverArtURL + "/release/" + rel.ID + "/front-250"
-		}
-		cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, songTrack(rec))
+		cand, err := recordingCandidate(c, library, rec)
 		if err != nil {
 			serverError(w, err)
 			return
 		}
 		found = append(found, cand)
 	}
-	render(w, r, components.SongCandidates(q, found))
+	render(w, r, components.SongCandidates(q, nil, found))
+}
+
+// recordingCandidate is rec as one search result, on the release
+// tagging.PickRelease picks for it.
+func recordingCandidate(c *mb.Client, library []*audio.Track, rec mb.Recording) (components.SongCandidate, error) {
+	cand := components.SongCandidate{
+		RecordingID: rec.ID,
+		Title:       rec.Title,
+		Artists:     rec.ArtistCredit.String(),
+		Length:      time.Duration(rec.Length) * time.Millisecond,
+		CoverURL:    "/assets/img/default_track.png",
+	}
+	if rel := tagging.PickRelease(rec.Releases); rel != nil {
+		cand.ReleaseID, cand.ReleaseTitle = rel.ID, rel.Title
+		cand.Year = releaseYear(rel.Date)
+		cand.CoverURL = c.CoverArtURL + "/release/" + rel.ID + "/front-250"
+	}
+	var err error
+	cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, songTrack(rec))
+	return cand, err
+}
+
+func releaseYear(date string) string {
+	if len(date) > 4 {
+		return date[:4]
+	}
+	return date
+}
+
+// listRecording shows the one recording a link points to.
+func listRecording(w http.ResponseWriter, r *http.Request, id string) {
+	c := mb.Default()
+	rec, err := c.GetRecording(r.Context(), id)
+	if errors.Is(err, mb.ErrNotFound) {
+		http.Error(w, "that recording isn't on MusicBrainz", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	library, err := db.ListTracks(db.Normal)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	cand, err := recordingCandidate(c, library, *rec)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.SongCandidates("", nil, []components.SongCandidate{cand}))
+}
+
+// listRelease shows every track of the release a link points to, each
+// added to that very release.
+func listRelease(w http.ResponseWriter, r *http.Request, id string) {
+	rel, err := mb.Default().GetRelease(r.Context(), id)
+	if errors.Is(err, mb.ErrNotFound) {
+		http.Error(w, "that release isn't on MusicBrainz", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	renderRelease(w, r, rel)
+}
+
+// renderRelease answers rel's header and tracklist, with what the library
+// has marked as owned.
+func renderRelease(w http.ResponseWriter, r *http.Request, rel *mb.Release) {
+	c := mb.Default()
+	library, err := db.ListTracks(db.Normal)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	songs := releaseSongs(rel)
+	head := &components.SongRelease{
+		ID:       rel.ID,
+		Title:    rel.Title,
+		Artists:  rel.ArtistCredit.String(),
+		Year:     releaseYear(rel.Date),
+		CoverURL: c.CoverArtURL + "/release/" + rel.ID + "/front-250",
+		Tracks:   len(songs),
+	}
+	found := make([]components.SongCandidate, 0, len(songs))
+	for _, s := range songs {
+		cand := components.SongCandidate{
+			RecordingID: s.Track.RecordingMBID,
+			Title:       s.Track.Title,
+			Artists:     s.Artists,
+			Length:      time.Duration(s.Track.LengthMs) * time.Millisecond,
+			CoverURL:    head.CoverURL,
+			ReleaseID:   rel.ID,
+			Disc:        s.Disc,
+			Position:    s.Position,
+		}
+		cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, s.Track)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		found = append(found, cand)
+	}
+	render(w, r, components.SongCandidates("", head, found))
+}
+
+// releaseSong is one track of a MusicBrainz release, ready to add to the
+// library on that release.
+type releaseSong struct {
+	Song           db.NewSong
+	Track          db.InboxTrack // what the library's ownership rule compares
+	Artists        string
+	Disc, Position int
+}
+
+// releaseSongs lists rel's tracks in disc and position order.
+func releaseSongs(rel *mb.Release) []releaseSong {
+	var out []releaseSong
+	for _, m := range rel.Media {
+		for _, t := range m.Tracks {
+			it := songTrack(t.Recording)
+			it.Title, it.LengthMs = t.Title, firstPositive(t.Length, t.Recording.Length)
+			out = append(out, releaseSong{
+				Track:    it,
+				Artists:  t.Recording.ArtistCredit.String(),
+				Disc:     max(m.Position, 1),
+				Position: t.Position,
+				Song: db.NewSong{
+					RecordingMBID: t.Recording.ID,
+					Title:         it.Title,
+					ISRC:          it.ISRC,
+					LengthMs:      it.LengthMs,
+					SpotifyURL:    mb.SpotifyURL(t.Recording.Relations, "track"),
+					Artists:       it.Artists,
+					Release: &db.NewSongRelease{
+						MBID:             rel.ID,
+						ReleaseGroupMBID: rel.ReleaseGroup.ID,
+						Title:            rel.Title,
+						Type:             tagging.ReleaseType(rel.ReleaseGroup),
+						Date:             rel.Date,
+						SpotifyURL:       mb.SpotifyURL(rel.Relations, "album"),
+						Artists:          tagging.MatchArtists(rel.ArtistCredit),
+						Disc:             max(m.Position, 1),
+						Position:         t.Position,
+					},
+				},
+			})
+		}
+	}
+	return out
 }
 
 // songTrack is the recording as an inbox tracklist entry, which is what the
@@ -128,33 +278,9 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		found := false
-		for _, m := range rel.Media {
-			for _, t := range m.Tracks {
-				if found || t.Recording.ID != recordingID {
-					continue
-				}
-				found = true
-				it = songTrack(t.Recording)
-				it.Title, it.LengthMs = t.Title, firstPositive(t.Length, t.Recording.Length)
-				song = db.NewSong{
-					RecordingMBID: recordingID,
-					Title:         it.Title,
-					ISRC:          it.ISRC,
-					LengthMs:      it.LengthMs,
-					SpotifyURL:    mb.SpotifyURL(t.Recording.Relations, "track"),
-					Artists:       it.Artists,
-					Release: &db.NewSongRelease{
-						MBID:             rel.ID,
-						ReleaseGroupMBID: rel.ReleaseGroup.ID,
-						Title:            rel.Title,
-						Type:             tagging.ReleaseType(rel.ReleaseGroup),
-						Date:             rel.Date,
-						SpotifyURL:       mb.SpotifyURL(rel.Relations, "album"),
-						Artists:          tagging.MatchArtists(rel.ArtistCredit),
-						Disc:             max(m.Position, 1),
-						Position:         t.Position,
-					},
-				}
+		for _, rs := range releaseSongs(rel) {
+			if !found && rs.Song.RecordingMBID == recordingID {
+				found, song, it = true, rs.Song, rs.Track
 			}
 		}
 		if !found {

@@ -18,6 +18,14 @@ type SongCandidate struct {
 	// set when the library has the song, or has it queued
 	OwnedTrackID, OwnedReleaseID string
 	OwnedHasFile                 bool
+	Disc, Position               int // the track's place on its release; 0 when listed on its own
+}
+
+// SongRelease is the header above the tracks of a release listed from a
+// MusicBrainz link.
+type SongRelease struct {
+	ID, Title, Artists, Year, CoverURL string
+	Tracks                             int
 }
 
 // Owned reports whether the library already has the song.
@@ -55,10 +63,34 @@ templ AddSongPage(q string) {
 	}
 }
 
-// SongCandidates lists MusicBrainz's best recordings for q.
-templ SongCandidates(q string, found []SongCandidate) {
+// SongCandidates lists MusicBrainz's best recordings for q. rel is set when
+// the list is a release's tracks, found from a link instead of a search.
+templ SongCandidates(q string, rel *SongRelease, found []SongCandidate) {
 	<div class="text-fg">
-		if len(found) == 0 {
+		if rel != nil {
+			<div class="mb-3 flex flex-wrap items-center gap-3">
+				<img
+					class="size-20 shrink-0 rounded bg-panel-2 object-cover"
+					src={ rel.CoverURL }
+					alt=""
+					loading="lazy"
+					onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+				/>
+				<span class="min-w-0 flex-1">
+					<span class="block truncate font-medium">{ rel.Title }</span>
+					<span class="block truncate text-fg-muted">
+						{ rel.Artists }
+						if rel.Year != "" {
+							{ " · " + rel.Year }
+						}
+						{ fmt.Sprintf(" · %d tracks", rel.Tracks) }
+					</span>
+				</span>
+			</div>
+		}
+		if len(found) == 0 && rel != nil {
+			<p class="text-fg-muted">This release has no tracks.</p>
+		} else if len(found) == 0 {
 			<p class="mb-3 text-fg-muted">MusicBrainz found nothing. Looking on YouTube…</p>
 			<div hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>
 		} else {
@@ -73,7 +105,12 @@ templ SongCandidates(q string, found []SongCandidate) {
 							onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
 						/>
 						<span class="min-w-0 flex-1">
-							<span class="block truncate">{ c.Title }</span>
+							<span class="block truncate">
+								if c.Position > 0 {
+									<span class="text-fg-muted">{ fmt.Sprintf("%d.%d ", c.Disc, c.Position) }</span>
+								}
+								{ c.Title }
+							</span>
 							<span class="block truncate text-fg-muted">
 								{ c.Artists }
 								if c.Length > 0 {
@@ -104,7 +141,9 @@ templ SongCandidates(q string, found []SongCandidate) {
 					</li>
 				}
 			</ul>
-			<button type="button" class="btn mt-2" hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-target="#add-results">None of these</button>
+			if rel == nil {
+				<button type="button" class="btn mt-2" hx-get={ "/ui/add/youtube?q=" + url.QueryEscape(q) } hx-target="#add-results">None of these</button>
+			}
 		}
 	</div>
 }

@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. Parse MusicBrainz links
-- [ ] 2. List a release's or recording's tracks
+- [x] 2. List a release's or recording's tracks
 - [ ] 3. Add all tracks of a release
 - [ ] 4. Docs
 
