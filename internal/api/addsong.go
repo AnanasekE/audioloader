@@ -25,7 +25,14 @@ func getAddSongPage(w http.ResponseWriter, r *http.Request) {
 // typed, marking the ones the library already has. A MusicBrainz release or
 // recording link lists exactly what it points to instead.
 func searchSongsMusicBrainz(w http.ResponseWriter, r *http.Request) {
-	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	listMusicBrainz(w, r, r.URL.Query().Get("q"))
+}
+
+const msgMBLink = "Paste a release or recording link."
+
+// listMusicBrainz is searchSongsMusicBrainz for q given as a value.
+func listMusicBrainz(w http.ResponseWriter, r *http.Request, q string) {
+	q = strings.TrimSpace(q)
 	if q == "" {
 		http.Error(w, "type an artist and a title", http.StatusBadRequest)
 		return
@@ -38,7 +45,7 @@ func searchSongsMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		case "recording":
 			listRecording(w, r, id)
 		default:
-			http.Error(w, "Paste a release or recording link.", http.StatusBadRequest)
+			http.Error(w, msgMBLink, http.StatusBadRequest)
 		}
 		return
 	}

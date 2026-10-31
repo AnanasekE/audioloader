@@ -282,7 +282,12 @@ func getYouTubeImportPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func previewYouTubeImport(w http.ResponseWriter, r *http.Request) {
-	ref, err := ytdlp.Parse(r.FormValue("url"))
+	previewYouTube(w, r, r.FormValue("url"))
+}
+
+// previewYouTube is previewYouTubeImport for a link given as a value.
+func previewYouTube(w http.ResponseWriter, r *http.Request, rawURL string) {
+	ref, err := ytdlp.Parse(rawURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

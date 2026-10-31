@@ -118,8 +118,13 @@ func existingSecretTrack(r *http.Request, pageURL string) (*components.ExistingT
 
 // checkSecretSource loads the page and answers with the form to confirm.
 func checkSecretSource(w http.ResponseWriter, r *http.Request) {
+	checkSecret(w, r, r.FormValue("url"))
+}
+
+// checkSecret is checkSecretSource for a link given as a value.
+func checkSecret(w http.ResponseWriter, r *http.Request, rawURL string) {
 	src := secret.Default()
-	pageURL, err := src.Normalize(r.FormValue("url"))
+	pageURL, err := src.Normalize(rawURL)
 	if err != nil {
 		secretSourceError(w, err)
 		return
