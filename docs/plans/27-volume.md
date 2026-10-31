@@ -17,7 +17,7 @@ As in plan 19: `make build`, `go vet ./...` and `make test` pass; no attribution
 - **Where:** in the player bar, right side, after the seek row and before ☰: a speaker button (mute toggle) and a range input (0–1, step 0.01, about 96px wide). Shown from `min-[720px]` up only. On phones the hardware buttons set the volume, and iOS Safari ignores `audio.volume` anyway.
 - **Mute** uses `audio.muted`, so unmuting goes back to the previous level. Dragging the slider above 0 unmutes. The icon has three states: muted or 0, low (< 0.5), high, as inline SVG in `icon()` (`volume-x`, `volume-1`, `volume-2`, same stroke style). `aria-label` "Mute" / "Unmute", and the slider `aria-label` "Volume".
 - **Saved:** add `muted` to the saved state next to `volume`, and restore both. The slider follows `volumechange`, so it stays right when the volume changes elsewhere.
-- **Keyboard:** with focus not in a text field, `m` toggles mute and arrow up/down change the volume by 0.05, only if the page has no existing shortcuts on those keys. Check `nav.js` and the ⌘K code first.
+- **Keyboard:** with focus not in a text field, only `m` (toggle mute) is global. Arrow keys are left to the page so it scrolls; the volume slider keeps its native arrow handling when focused.
 - **Exponential feel:** the slider sets `audio.volume = value²`, so the low end isn't all crammed together, and shows `sqrt(volume)`. Keep this in one small pair of functions.
 
 ## Steps

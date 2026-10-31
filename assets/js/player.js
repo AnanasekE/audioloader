@@ -536,8 +536,7 @@
 
 	volumeEl.addEventListener("input", () => setVolume(volumeFromSlider(volumeEl.value)));
 	muteBtn.addEventListener("click", toggleMute);
-	// m and arrow up/down; nothing else on the page uses them (nav.js has
-	// only Space, /, Ctrl+K and arrows inside the search suggestions)
+	// m toggles mute; arrow keys stay free so the page scrolls
 	document.addEventListener("keydown", (e) => {
 		if (!current || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
 		const t = e.target;
@@ -545,9 +544,6 @@
 		if (e.key === "m") {
 			e.preventDefault();
 			toggleMute();
-		} else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-			e.preventDefault();
-			setVolume(volumeFromSlider(sliderFromVolume(audio.volume) + (e.key === "ArrowUp" ? 0.05 : -0.05)));
 		}
 	});
 
