@@ -266,7 +266,15 @@ func importGroup() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></div><label class=\"text-xs font-medium text-fg-muted\">Date <input class=\"input mt-1\" type=\"text\" data-field=\"date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"></label><div class=\"flex gap-1\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"split\">Split into singles</button> <button type=\"button\" class=\"btn px-2.5\" data-action=\"remove-group\" aria-label=\"Remove release from import\">✕</button></div></div><div class=\"mb-2 flex items-center gap-2 text-sm\"><span class=\"shrink-0 font-medium\">Release artists</span><div class=\"w-full max-w-md\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></div><label class=\"text-xs font-medium text-fg-muted\">Date <input class=\"input mt-1\" type=\"text\" data-field=\"date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"></label><div class=\"flex gap-1\"><button type=\"button\" class=\"btn btn-ghost\" data-action=\"split\">Split into singles</button> <button type=\"button\" class=\"btn px-2.5\" data-action=\"remove-group\" aria-label=\"Remove release from import\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = icon("x").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</button></div></div><div class=\"mb-2 flex items-center gap-2 text-sm\"><span class=\"shrink-0 font-medium\">Release artists</span><div class=\"w-full max-w-md\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -274,7 +282,7 @@ func importGroup() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><p class=\"mb-2 text-sm text-st-failed empty:hidden\" data-group-status></p><ol class=\"list\" data-rows></ol></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div></div><p class=\"mb-2 text-sm text-st-failed empty:hidden\" data-group-status></p><ol class=\"list\" data-rows></ol></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -311,7 +319,7 @@ func importRow() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<li class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<li class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -324,7 +332,7 @@ func importRow() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\"><input type=\"checkbox\" data-select aria-label=\"Select track\"> <span class=\"text-right text-sm text-fg-muted tabular-nums\" data-number></span> <input class=\"input px-1.5\" type=\"number\" min=\"1\" data-field=\"disc\" aria-label=\"Disc\" title=\"Disc\"> <input class=\"input\" type=\"text\" data-field=\"title\" aria-label=\"Title\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\"><input type=\"checkbox\" data-select aria-label=\"Select track\"> <span class=\"text-right text-sm text-fg-muted tabular-nums\" data-number></span> <input class=\"input px-1.5\" type=\"number\" min=\"1\" data-field=\"disc\" aria-label=\"Disc\" title=\"Disc\"> <input class=\"input\" type=\"text\" data-field=\"title\" aria-label=\"Title\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -332,7 +340,7 @@ func importRow() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -362,7 +370,7 @@ func importArtist() templ.Component {
 			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<li class=\"row import-artist grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 py-1.5\"><input class=\"input\" type=\"text\" list=\"import-artist-list\" data-artist-name aria-label=\"Artist name\" autocomplete=\"off\"> <span class=\"text-sm text-fg-muted tabular-nums\" data-count></span> <span class=\"rounded px-2 py-0.5 text-xs font-medium data-[state=known]:bg-panel-2 data-[state=known]:text-st-done data-[state=new]:bg-panel-2 data-[state=new]:text-st-review/40/40\" data-badge></span> <button type=\"button\" class=\"btn\" data-action=\"add-detected\">Add</button></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<li class=\"row import-artist grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 py-1.5\"><input class=\"input\" type=\"text\" list=\"import-artist-list\" data-artist-name aria-label=\"Artist name\" autocomplete=\"off\"> <span class=\"text-sm text-fg-muted tabular-nums\" data-count></span> <span class=\"rounded px-2 py-0.5 text-xs font-medium data-[state=known]:bg-panel-2 data-[state=known]:text-st-done data-[state=new]:bg-panel-2 data-[state=new]:text-st-review/40/40\" data-badge></span> <button type=\"button\" class=\"btn\" data-action=\"add-detected\">Add</button></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -395,7 +403,7 @@ func importArtistPicker() templ.Component {
 			templ_7745c5c3_Var15 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<details class=\"relative\" data-artist-picker data-import-picker><summary class=\"input cursor-pointer list-none truncate\" data-artist-summary>Select artists</summary><div class=\"absolute z-20 mt-1 w-full min-w-56 rounded-md border border-line bg-panel p-2 shadow-(--shadow-pop)\"><input type=\"search\" class=\"input mb-2\" placeholder=\"Search artists…\" aria-label=\"Search artists\" autocomplete=\"off\" data-artist-search><div class=\"max-h-60 overflow-auto\" data-artist-options></div><p class=\"px-1 py-1 text-sm text-fg-muted\" hidden data-artist-empty>No matching artists.</p><button type=\"button\" class=\"mt-1 w-full rounded px-1 py-1 text-left text-sm text-accent hover:bg-panel-2\" hidden data-action=\"picker-add\"></button></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<details class=\"relative\" data-artist-picker data-import-picker><summary class=\"input cursor-pointer list-none truncate\" data-artist-summary>Select artists</summary><div class=\"absolute z-20 mt-1 w-full min-w-56 rounded-md border border-line bg-panel p-2 shadow-(--shadow-pop)\"><input type=\"search\" class=\"input mb-2\" placeholder=\"Search artists…\" aria-label=\"Search artists\" autocomplete=\"off\" data-artist-search><div class=\"max-h-60 overflow-auto\" data-artist-options></div><p class=\"px-1 py-1 text-sm text-fg-muted\" hidden data-artist-empty>No matching artists.</p><button type=\"button\" class=\"mt-1 w-full rounded px-1 py-1 text-left text-sm text-accent hover:bg-panel-2\" hidden data-action=\"picker-add\"></button></div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -425,7 +433,7 @@ func importArtistOption() templ.Component {
 			templ_7745c5c3_Var16 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<label class=\"flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2\"><input type=\"checkbox\" name=\"artist_id\"> <span data-option-name></span> <span class=\"text-xs text-st-review\" hidden data-option-new>new</span></label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<label class=\"flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2\"><input type=\"checkbox\" name=\"artist_id\"> <span data-option-name></span> <span class=\"text-xs text-st-review\" hidden data-option-new>new</span></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -472,7 +480,7 @@ func importSingle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<li class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<li class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -485,7 +493,7 @@ func importSingle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><input type=\"checkbox\" data-select aria-label=\"Select track\"> <input class=\"input\" type=\"text\" data-field=\"title\" aria-label=\"Title\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"><input type=\"checkbox\" data-select aria-label=\"Select track\"> <input class=\"input\" type=\"text\" data-field=\"title\" aria-label=\"Title\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -498,7 +506,7 @@ func importSingle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<input class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<input class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -511,7 +519,7 @@ func importSingle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" type=\"text\" data-field=\"date\" aria-label=\"Release date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"> <span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" type=\"text\" data-field=\"date\" aria-label=\"Release date\" placeholder=\"YYYY\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\"> <span class=\"truncate text-xs text-fg-muted\" data-file></span> <span class=\"stat col-span-full\" data-status></span></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -286,7 +286,7 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 		if rt.Track.HasFile {
 			<button type="button" class="play" aria-label={ "Play " + rt.Track.Title } aria-pressed="false" data-bare { playAttrs(rt.Track)... }>
 				<span class="n">{ fmt.Sprint(rt.Position) }</span>
-				<span class="go">▶</span>
+				<span class="go">@iconClass("play", "size-3.5")</span>
 				@eqBars()
 			</button>
 		} else {
@@ -452,9 +452,9 @@ templ editRow(trackID, title, artists string, disc int) {
 			<span data-artists>{ artists }</span>
 		</div>
 		<div class="flex gap-1">
-			<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">↑</button>
-			<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">↓</button>
-			<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from release">✕</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">@icon("arrow-up")</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">@icon("arrow-down")</button>
+			<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from release">@icon("x")</button>
 		</div>
 	</div>
 }

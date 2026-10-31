@@ -231,7 +231,7 @@
 				const rm = document.createElement("button");
 				rm.type = "button";
 				rm.className = "text-xs text-fg-muted hover:text-fg";
-				rm.textContent = "✕";
+				rm.append(document.getElementById("player-x-icon").content.cloneNode(true));
 				rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
 				rm.addEventListener("click", () => removeUpcoming(pos + 1 + k));
 				li.append(name, rm);
@@ -252,13 +252,19 @@
 		all("data-now-artists").forEach((el) => (el.textContent = current.coverOf ? `${current.artists} · cover of ${current.coverOf}` : current.artists));
 	}
 
+	// setPlayIcon shows the play or the pause icon of a button (both are in its markup)
+	function setPlayIcon(btn, playing) {
+		btn.querySelector("[data-icon-play]").hidden = playing;
+		btn.querySelector("[data-icon-pause]").hidden = !playing;
+	}
+
 	function markRows() {
 		const playingID = current && !audio.paused ? current.id : null;
 		document.querySelectorAll("[data-play-track]").forEach((btn) => {
 			const playing = btn.dataset.id === playingID;
 			btn.setAttribute("aria-pressed", String(playing));
 			// data-bare buttons draw their own state from aria-pressed (CSS)
-			if (!btn.hasAttribute("data-bare")) btn.textContent = playing ? "❚❚" : "▶";
+			if (!btn.hasAttribute("data-bare")) setPlayIcon(btn, playing);
 		});
 	}
 
@@ -559,7 +565,7 @@
 
 	function syncPlay() {
 		const playing = !audio.paused;
-		playBtn.textContent = playing ? "❚❚" : "▶";
+		setPlayIcon(playBtn, playing);
 		playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
 	}
 

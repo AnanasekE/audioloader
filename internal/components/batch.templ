@@ -134,7 +134,7 @@ templ batchRow(artists []*audio.Artist, defaultArtist string, releases []*audio.
 		</div>
 		// disabled (and so not submitted) while the row is a new single
 		<input class="input px-2 disabled:opacity-40" type="number" name="disc" min="1" value="1" aria-label="Disc" required disabled?={ release == nil } hidden?={ secretMode(ctx) }/>
-		<button type="button" class="btn px-2.5" data-action="remove" title="Remove from batch" aria-label="Remove from batch">✕</button>
+		<button type="button" class="btn px-2.5" data-action="remove" title="Remove from batch" aria-label="Remove from batch">@icon("x")</button>
 		<div class="row-status stat col-span-full"></div>
 	</form>
 }

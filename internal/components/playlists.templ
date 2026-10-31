@@ -27,7 +27,7 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 		}
 		if len(playlists) == 0 {
 			@emptyState() {
-				No playlists yet. Add tracks to one from a track's ⋯ menu.
+				No playlists yet. Add tracks to one from a track's @iconClass("more", "inline size-4 align-text-bottom") menu.
 			}
 		} else {
 			@cardGrid() {
@@ -50,7 +50,7 @@ templ PlaylistPage(p *audio.Playlist) {
 		}
 		if p.Count == 0 {
 			@emptyState() {
-				Empty. Add tracks from a track's ⋯ menu.
+				Empty. Add tracks from a track's @iconClass("more", "inline size-4 align-text-bottom") menu.
 			}
 		} else {
 			<div id="playlist-tracks" class="list" data-track-list data-filter-rows>
@@ -102,9 +102,9 @@ templ PlaylistEditPage(p *audio.Playlist) {
 							<span>{ artistNames(t.Artists) }</span>
 						</span>
 						<div class="flex gap-1">
-							<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">↑</button>
-							<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">↓</button>
-							<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from playlist">✕</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">@icon("arrow-up")</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">@icon("arrow-down")</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from playlist">@icon("x")</button>
 						</div>
 					</div>
 				}

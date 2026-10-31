@@ -226,7 +226,7 @@ templ trackRow(t *audio.Track, highlight map[string]bool, n int) {
 		if t.HasFile {
 			<button type="button" class="play" aria-label={ "Play " + t.Title } aria-pressed="false" data-bare { playAttrs(t)... }>
 				<span class="n">{ trackNo(n) }</span>
-				<span class="go">▶</span>
+				<span class="go">@iconClass("play", "size-3.5")</span>
 				@eqBars()
 			</button>
 		} else {
@@ -341,7 +341,7 @@ func playAttrs(t *audio.Track) templ.Attributes {
 templ trackMenu(t *audio.Track) {
 	if t.HasFile {
 		<details class="relative" data-track-menu>
-			<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8" aria-label={ "More for " + t.Title }>⋯</summary>
+			<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8" aria-label={ "More for " + t.Title }>@icon("more")</summary>
 			<div class="pop absolute right-0 z-10 mt-1 grid w-48">
 				<button type="button" class="menu-item" data-queue="next">Play next</button>
 				<button type="button" class="menu-item" data-queue="add">Add to queue</button>
@@ -408,7 +408,10 @@ templ playableButton(t *audio.Track, size string) {
 		aria-label={ "Play " + t.Title }
 		aria-pressed="false"
 		{ playAttrs(t)... }
-	>▶</button>
+	>
+		<span data-icon-play>@iconClass("play", "size-3.5")</span>
+		<span data-icon-pause hidden>@iconClass("pause", "size-3.5")</span>
+	</button>
 }
 
 // coverOfLine says which song a cover is of, linking to the original in the
@@ -524,7 +527,11 @@ templ TrimPreview(t *audio.Track, p trim.Plan, errMsg string) {
 		} else if p.None() {
 			<p>No silence at the end</p>
 		} else {
-			<p>{ formatDuration(p.Total) + " → " + formatDuration(p.CutAt) }</p>
+			<p class="flex items-center gap-1">
+				<span>{ formatDuration(p.Total) }</span>
+				@icon("arrow-right")
+				<span>{ formatDuration(p.CutAt) }</span>
+			</p>
 			<button
 				type="button"
 				class="menu-item"

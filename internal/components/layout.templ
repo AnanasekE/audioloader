@@ -69,10 +69,13 @@ templ player() {
 				<span id="player-chapter" class="block truncate text-xs text-fg-subtle" hidden></span>
 			</div>
 			<div class="flex shrink-0 items-center gap-1 min-[720px]:order-1">
-				<button id="player-shuffle" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">⇄</button>
-				<button id="player-prev" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden" aria-label="Previous track">⏮</button>
-				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">▶</button>
-				<button id="player-next" type="button" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9" aria-label="Next track">⏭</button>
+				<button id="player-shuffle" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">@icon("shuffle")</button>
+				<button id="player-prev" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden" aria-label="Previous track">@iconClass("skip-back", "size-4")</button>
+				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">
+					<span data-icon-play>@iconClass("play", "size-5")</span>
+					<span data-icon-pause hidden>@iconClass("pause", "size-5")</span>
+				</button>
+				<button id="player-next" type="button" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9" aria-label="Next track">@iconClass("skip-forward", "size-5")</button>
 			</div>
 			<div class="hidden shrink-0 items-center gap-1 min-[720px]:order-3 min-[720px]:flex">
 				<button id="player-mute" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg" aria-label="Mute">
@@ -85,7 +88,7 @@ templ player() {
 			// sleep timer, phone spot: in the top row, between next and the queue
 			@sleepTimer("min-[720px]:hidden", "right-0")
 			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
-				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">☰</summary>
+				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">@iconClass("list", "size-5")</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
 						<strong>Up next</strong>
@@ -117,6 +120,8 @@ templ player() {
 				<span id="player-remaining" class="w-12 shrink-0 font-mono text-xs text-fg-muted tabular-nums">-0:00</span>
 				</div>
 			</div>
+			// player.js builds the queue remove buttons from this
+			<template id="player-x-icon">@iconClass("x", "size-3.5")</template>
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
@@ -411,7 +416,12 @@ templ sheetLink(href string, label string, iconName string, current bool, badgeU
 
 // icon is a 16px inline SVG that takes the text colour.
 templ icon(name string) {
-	<svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+	@iconClass(name, "size-4")
+}
+
+// iconClass is an icon at another size: class sets the size classes.
+templ iconClass(name string, class string) {
+	<svg class={ "shrink-0", class } viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		switch name {
 			case "tracks":
 				<path d="M9 18V5l12-2v13"></path>
@@ -461,6 +471,38 @@ templ icon(name string) {
 			case "volume-2":
 				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
 				<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path>
+			case "play":
+				<path d="M7 4.5v15l12-7.5z" fill="currentColor"></path>
+			case "pause":
+				<rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"></rect>
+				<rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"></rect>
+			case "skip-back":
+				<path d="M19 5v14L8 12z" fill="currentColor"></path>
+				<path d="M5 5v14"></path>
+			case "skip-forward":
+				<path d="M5 5v14l11-7z" fill="currentColor"></path>
+				<path d="M19 5v14"></path>
+			case "shuffle":
+				<path d="M16 3h5v5"></path>
+				<path d="M4 20L21 3"></path>
+				<path d="M21 16v5h-5"></path>
+				<path d="M15 15l6 6"></path>
+				<path d="M4 4l5 5"></path>
+			case "list":
+				<path d="M4 6h16M4 12h16M4 18h16"></path>
+			case "x":
+				<path d="M18 6L6 18M6 6l12 12"></path>
+			case "arrow-up":
+				<path d="M12 19V5"></path>
+				<path d="M5 12l7-7 7 7"></path>
+			case "arrow-down":
+				<path d="M12 5v14"></path>
+				<path d="M19 12l-7 7-7-7"></path>
+			case "arrow-right":
+				<path d="M5 12h14"></path>
+				<path d="M12 5l7 7-7 7"></path>
+			case "check":
+				<path d="M20 6L9 17l-5-5"></path>
 			case "lock":
 				<rect x="4" y="11" width="16" height="10" rx="2"></rect>
 				<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>

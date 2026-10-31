@@ -81,7 +81,7 @@ func TestTrimWithFFmpeg(t *testing.T) {
 	}
 	target := "/ui/tracks/" + res.TrackID + "/trim"
 
-	if body := a.do(false, "GET", target, nil).Body.String(); !strings.Contains(body, "0:08 → 0:04") || !strings.Contains(body, "This can&#39;t be undone") {
+	if body := a.do(false, "GET", target, nil).Body.String(); !strings.Contains(body, "<span>0:08</span>") || !strings.Contains(body, "<span>0:04</span>") || !strings.Contains(body, "This can&#39;t be undone") {
 		t.Fatalf("preview:\n%s", body)
 	}
 	if rec := a.do(false, "POST", target, url.Values{}); rec.Code != 204 || rec.Header().Get("HX-Location") == "" {

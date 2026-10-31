@@ -264,7 +264,7 @@ templ InboxDetails(r *db.InboxRelease) {
 					<span class="truncate">
 						{ t.Title }
 						if t.OwnedTrackID != "" {
-							<span class="text-st-done" title="In your library">✓</span>
+							<span class="text-st-done" title="In your library">@icon("check")</span>
 						}
 					</span>
 					<span class="mono text-right text-fg-muted">{ formatDuration(time.Duration(t.LengthMs) * time.Millisecond) }</span>
