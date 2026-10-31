@@ -136,7 +136,7 @@ func player() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div id=\"player\" hx-preserve class=\"fixed inset-x-0 bottom-14 z-20 min-[720px]:bottom-0 min-[720px]:left-[232px] border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95\" hidden><div class=\"mx-auto flex max-w-4xl items-center gap-3 px-4 py-2\"><img id=\"player-cover\" class=\"pixelated size-10 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800\" alt=\"\"><div class=\"w-32 min-w-0 shrink-0 sm:w-56\"><strong id=\"player-title\" class=\"block truncate text-sm\"></strong> <span id=\"player-artists\" class=\"block truncate text-xs text-zinc-500 dark:text-zinc-400\"></span> <span id=\"player-chapter\" class=\"block truncate text-xs text-zinc-500 dark:text-zinc-400\" hidden></span></div><div class=\"flex shrink-0 items-center gap-1\"><button id=\"player-prev\" type=\"button\" class=\"btn px-2\" aria-label=\"Previous track\">⏮</button> <button id=\"player-next\" type=\"button\" class=\"btn px-2\" aria-label=\"Next track\">⏭</button> <span id=\"player-episode-controls\" class=\"flex items-center gap-1\" hidden><button id=\"player-back\" type=\"button\" class=\"btn px-2 text-xs\" aria-label=\"Back 15 seconds\">−15</button> <button id=\"player-forward\" type=\"button\" class=\"btn px-2 text-xs\" aria-label=\"Forward 30 seconds\">+30</button> <select id=\"player-speed\" class=\"input w-auto px-1 py-1 text-xs\" aria-label=\"Playback speed\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div id=\"player\" hx-preserve class=\"fixed inset-x-0 bottom-14 z-20 border-t border-line bg-panel/95 backdrop-blur min-[720px]:bottom-0 min-[720px]:left-[232px]\" hidden><div class=\"flex flex-wrap items-center gap-x-3 gap-y-0 px-3 pt-2 min-[720px]:h-16 min-[720px]:flex-nowrap min-[720px]:gap-3 min-[720px]:px-4 min-[720px]:py-0\"><img id=\"player-cover\" class=\"pixelated size-10 shrink-0 rounded-sm bg-panel-2 object-cover\" alt=\"\"><div class=\"min-w-0 flex-1 min-[720px]:w-56 min-[720px]:flex-none\"><strong id=\"player-title\" class=\"block truncate text-sm font-semibold\"></strong> <span id=\"player-artists\" class=\"block truncate text-xs text-fg-muted\"></span> <span id=\"player-chapter\" class=\"block truncate text-xs text-fg-subtle\" hidden></span></div><div class=\"flex shrink-0 items-center gap-1 min-[720px]:order-1\"><button id=\"player-shuffle\" type=\"button\" class=\"flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden\" aria-label=\"Shuffle\" aria-pressed=\"false\">⇄</button> <button id=\"player-prev\" type=\"button\" class=\"flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden\" aria-label=\"Previous track\">⏮</button> <button id=\"player-play\" type=\"button\" class=\"flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10\" aria-label=\"Play\">▶</button> <button id=\"player-next\" type=\"button\" class=\"flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9\" aria-label=\"Next track\">⏭</button></div><details id=\"player-queue\" class=\"relative shrink-0 min-[720px]:order-3\"><summary class=\"flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9\" aria-label=\"Queue\">☰</summary><div class=\"absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)\"><div class=\"mb-1 flex items-center justify-between\"><strong>Up next</strong> <button id=\"player-queue-clear\" type=\"button\" class=\"text-xs text-fg-muted underline hover:text-fg\">Clear</button></div><ol id=\"player-queue-list\" class=\"max-h-72 overflow-auto\"></ol><p id=\"player-queue-empty\" class=\"py-1 text-fg-muted\">Nothing queued.</p><div id=\"player-chapters-box\" class=\"mt-2 border-t border-line pt-2\" hidden><strong>Chapters</strong><ol id=\"player-chapters\" class=\"max-h-60 overflow-auto\"></ol></div></div></details><div class=\"flex w-full min-w-0 items-center gap-2 min-[720px]:order-2 min-[720px]:w-auto min-[720px]:flex-1\"><span id=\"player-episode-controls\" class=\"flex shrink-0 items-center gap-1\" hidden><button id=\"player-back\" type=\"button\" class=\"btn btn-ghost min-h-9 px-2 text-xs\" aria-label=\"Back 15 seconds\">−15</button> <button id=\"player-forward\" type=\"button\" class=\"btn btn-ghost min-h-9 px-2 text-xs\" aria-label=\"Forward 30 seconds\">+30</button> <select id=\"player-speed\" class=\"input w-auto px-1 py-1 text-xs\" aria-label=\"Playback speed\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -148,7 +148,7 @@ func player() templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.ResolveAttributeValue(s)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 72, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 91, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -171,7 +171,7 @@ func player() templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(s)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 72, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 91, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -182,7 +182,7 @@ func player() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</select></span> <button id=\"player-shuffle\" type=\"button\" class=\"btn px-2 aria-pressed:bg-zinc-900 aria-pressed:text-white dark:aria-pressed:bg-zinc-100 dark:aria-pressed:text-zinc-900\" aria-label=\"Shuffle\" aria-pressed=\"false\">⇄</button></div><audio id=\"player-audio\" class=\"h-9 min-w-0 flex-1\" controls preload=\"metadata\"></audio> <details id=\"player-queue\" class=\"relative shrink-0\"><summary class=\"btn cursor-pointer list-none px-2\" aria-label=\"Queue\">☰</summary><div class=\"absolute right-0 bottom-full mb-2 w-72 rounded-md border border-zinc-300 bg-white p-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800\"><div class=\"mb-1 flex items-center justify-between\"><strong>Up next</strong> <button id=\"player-queue-clear\" type=\"button\" class=\"text-xs underline\">Clear</button></div><ol id=\"player-queue-list\" class=\"max-h-72 overflow-auto\"></ol><p id=\"player-queue-empty\" class=\"py-1 text-zinc-500\">Nothing queued.</p><div id=\"player-chapters-box\" class=\"mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-700\" hidden><strong>Chapters</strong><ol id=\"player-chapters\" class=\"max-h-60 overflow-auto\"></ol></div></div></details></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</select></span> <span id=\"player-time\" class=\"w-10 shrink-0 text-right font-mono text-xs text-fg-muted tabular-nums\">0:00</span> <input id=\"player-seek\" type=\"range\" min=\"0\" max=\"0\" step=\"any\" value=\"0\" class=\"-my-4 h-11 min-w-0 flex-1 accent-accent min-[720px]:my-0 min-[720px]:h-6\" aria-label=\"Seek\"> <span id=\"player-remaining\" class=\"w-12 shrink-0 font-mono text-xs text-fg-muted tabular-nums\">-0:00</span></div><audio id=\"player-audio\" preload=\"metadata\"></audio></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -369,7 +369,7 @@ func navLabel(label string) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 164, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 170, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -517,7 +517,7 @@ func navAnchor(href string, label string, current bool) templ.Component {
 			var templ_7745c5c3_Var13 templ.SafeURL
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 210, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 216, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -530,7 +530,7 @@ func navAnchor(href string, label string, current bool) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 210, Col: 174}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 216, Col: 174}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -548,7 +548,7 @@ func navAnchor(href string, label string, current bool) templ.Component {
 			var templ_7745c5c3_Var15 templ.SafeURL
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 212, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 218, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -561,7 +561,7 @@ func navAnchor(href string, label string, current bool) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 212, Col: 161}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 218, Col: 161}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -614,7 +614,7 @@ func navLinkBadge(href string, label string, current bool, badgeURL string) temp
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 221, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 227, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -657,7 +657,7 @@ func pageHeader(title string, subtitle string) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 229, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 235, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -670,7 +670,7 @@ func pageHeader(title string, subtitle string) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(subtitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 230, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 236, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -721,7 +721,7 @@ func Notice(msg string) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 240, Col: 107}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 246, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -911,7 +911,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 		var templ_7745c5c3_Var30 templ.SafeURL
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 287, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 293, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -946,7 +946,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 291, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 297, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 			if templ_7745c5c3_Err != nil {
@@ -964,7 +964,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 294, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 300, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -1067,7 +1067,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 		var templ_7745c5c3_Var37 templ.SafeURL
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 315, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 321, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
@@ -1111,7 +1111,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 322, Col: 10}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 328, Col: 10}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1129,7 +1129,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 325, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 331, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 			if templ_7745c5c3_Err != nil {

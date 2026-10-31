@@ -17,6 +17,10 @@
 	const cover = document.getElementById("player-cover");
 	const title = document.getElementById("player-title");
 	const artists = document.getElementById("player-artists");
+	const playBtn = document.getElementById("player-play");
+	const seek = document.getElementById("player-seek");
+	const timeEl = document.getElementById("player-time");
+	const remainingEl = document.getElementById("player-remaining");
 	const shuffleBtn = document.getElementById("player-shuffle");
 	const queueList = document.getElementById("player-queue-list");
 	const queueEmpty = document.getElementById("player-queue-empty");
@@ -97,6 +101,7 @@
 
 	function clear() {
 		current = null;
+		syncTime();
 		queue = [];
 		order = [];
 		pos = 0;
@@ -209,7 +214,7 @@
 			name.title = `${t.title} · ${t.artists}`;
 			const rm = document.createElement("button");
 			rm.type = "button";
-			rm.className = "text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100";
+			rm.className = "text-xs text-fg-muted hover:text-fg";
 			rm.textContent = "✕";
 			rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
 			rm.addEventListener("click", () => removeUpcoming(pos + 1 + k));
@@ -278,7 +283,7 @@
 			const li = document.createElement("li");
 			const b = document.createElement("button");
 			b.type = "button";
-			b.className = "w-full truncate rounded px-1 py-0.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700";
+			b.className = "w-full truncate rounded px-1 py-0.5 text-left hover:bg-panel-2";
 			b.textContent = c.title || "Chapter";
 			b.addEventListener("click", () => {
 				audio.currentTime = c.start;
@@ -372,6 +377,59 @@
 		order = order.slice(0, pos + 1);
 		renderQueue();
 		save();
+	});
+
+	// --- play button, seek bar and times ---------------------------------
+
+	function clock(sec) {
+		sec = Math.max(0, Math.floor(sec || 0));
+		const h = Math.floor(sec / 3600);
+		const m = Math.floor((sec % 3600) / 60);
+		const s = String(sec % 60).padStart(2, "0");
+		return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+	}
+
+	let seeking = false;
+
+	function syncTime() {
+		const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
+		seek.max = String(dur);
+		if (!seeking) seek.value = String(audio.currentTime);
+		timeEl.textContent = clock(seeking ? Number(seek.value) : audio.currentTime);
+		remainingEl.textContent = "-" + clock(dur - (seeking ? Number(seek.value) : audio.currentTime));
+	}
+
+	function syncPlay() {
+		const playing = !audio.paused;
+		playBtn.textContent = playing ? "❚❚" : "▶";
+		playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+	}
+
+	function togglePlay() {
+		if (!current) return;
+		if (audio.paused) audio.play().catch(() => {});
+		else audio.pause();
+	}
+
+	playBtn.addEventListener("click", togglePlay);
+	seek.addEventListener("input", () => {
+		seeking = true;
+		audio.currentTime = Number(seek.value);
+		syncTime();
+		seeking = false;
+	});
+	audio.addEventListener("loadedmetadata", syncTime);
+	audio.addEventListener("durationchange", syncTime);
+	audio.addEventListener("timeupdate", syncTime);
+	audio.addEventListener("play", syncPlay);
+	audio.addEventListener("pause", syncPlay);
+	document.addEventListener("keydown", (e) => {
+		if (e.code !== "Space" || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+		const t = e.target;
+		if (t instanceof Element && t.closest("input, textarea, select, button, summary, a, [contenteditable]")) return;
+		if (!current) return;
+		e.preventDefault();
+		togglePlay();
 	});
 
 	audio.addEventListener("play", () => (markRows(), save()));
