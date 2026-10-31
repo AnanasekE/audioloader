@@ -302,3 +302,18 @@ func TestSearchSongs(t *testing.T) {
 		t.Fatalf("empty = %v, %v", recs, err)
 	}
 }
+
+func TestGetReleaseCoverWork(t *testing.T) {
+	c, reqs := fixtureServer(t, map[string]string{"/ws/2/release/": "release_cover.json"})
+	rel, err := c.GetRelease(context.Background(), "9a025dc4-fdb2-4b7c-a197-d0fd58216e21")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := (*reqs)[0].URL.Query().Get("inc"); !strings.Contains(got, "work-rels") || !strings.Contains(got, "recording-level-rels") {
+		t.Fatalf("inc = %q", got)
+	}
+	w := rel.Media[0].Tracks[0].Recording.CoverWork()
+	if w == nil || w.Title != "Bring Me to Life" || w.ID == "" {
+		t.Fatalf("cover work = %+v", w)
+	}
+}

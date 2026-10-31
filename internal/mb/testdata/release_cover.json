@@ -1,0 +1,103 @@
+{
+ "media": [
+  {
+   "id": "1275e180-ecb3-4deb-aca4-fb3a65095a12",
+   "track-count": 1,
+   "format-id": "907a28d9-b3b2-3ef6-89a8-7b18d91d4794",
+   "title": "",
+   "format": "Digital Media",
+   "position": 1,
+   "tracks": [
+    {
+     "id": "47923bb4-c343-480e-8d2e-f91f8ec590ba",
+     "position": 1,
+     "number": "1",
+     "title": "Bring Me to Life",
+     "length": 236143,
+     "recording": {
+      "id": "13284549-dbd7-425e-83f3-ee3629599066",
+      "title": "Bring Me to Life",
+      "length": 236143,
+      "artist-credit": [
+       {
+        "artist": {
+         "disambiguation": "James Mills",
+         "sort-name": "Little V",
+         "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+         "type": "Person",
+         "country": "CA",
+         "name": "Little V",
+         "id": "a60e6aba-08e1-4945-9acf-f53b248f2daa"
+        },
+        "name": "Little V.",
+        "joinphrase": " feat. "
+       },
+       {
+        "artist": {
+         "sort-name": "Apricot",
+         "type-id": "5c1375b0-f18d-3db7-a164-a49d7a63773f",
+         "type": "Character",
+         "country": "GB",
+         "disambiguation": "VTuber",
+         "name": "Apricot",
+         "id": "b5a72362-ba89-4802-a73d-d5b7622623df"
+        },
+        "name": "Apricot",
+        "joinphrase": ""
+       }
+      ],
+      "relations": [
+       {
+        "type": "performance",
+        "target-type": "work",
+        "direction": "forward",
+        "attributes": [
+         "cover"
+        ],
+        "work": {
+         "id": "2722996e-ca58-368a-b5e7-0ca622256ea3",
+         "title": "Bring Me to Life"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "track-offset": 0
+  }
+ ],
+ "country": "XW",
+ "title": "Bring Me to Life",
+ "status": "Official",
+ "artist-credit": [
+  {
+   "name": "Little V.",
+   "artist": {
+    "name": "Little V",
+    "id": "a60e6aba-08e1-4945-9acf-f53b248f2daa",
+    "sort-name": "Little V",
+    "type-id": "b6e035f4-3ce9-331c-97df-83397230b0df",
+    "country": "CA",
+    "type": "Person",
+    "disambiguation": "James Mills"
+   },
+   "joinphrase": " feat. "
+  },
+  {
+   "joinphrase": "",
+   "artist": {
+    "name": "Apricot",
+    "id": "b5a72362-ba89-4802-a73d-d5b7622623df",
+    "disambiguation": "VTuber",
+    "sort-name": "Apricot",
+    "type-id": "5c1375b0-f18d-3db7-a164-a49d7a63773f",
+    "country": "GB",
+    "type": "Character"
+   },
+   "name": "Apricot"
+  }
+ ],
+ "date": "2026-10-30",
+ "id": "9a025dc4-fdb2-4b7c-a197-d0fd58216e21",
+ "relations": []
+}

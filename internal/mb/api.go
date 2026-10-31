@@ -29,9 +29,11 @@ func (c *Client) GetWork(ctx context.Context, id string) (*Work, error) {
 }
 
 // GetRelease looks up a release with its tracklist, credits and release group.
+// work-rels with recording-level-rels adds each recording's performance
+// relations, which tell a cover from an original.
 func (c *Client) GetRelease(ctx context.Context, id string) (*Release, error) {
 	var r Release
-	q := url.Values{"inc": {"recordings artist-credits release-groups isrcs url-rels recording-level-rels"}}
+	q := url.Values{"inc": {"recordings artist-credits release-groups isrcs url-rels recording-level-rels work-rels"}}
 	return &r, c.getJSON(ctx, "musicbrainz", c.mbURL("release/"+url.PathEscape(id), q), &r)
 }
 
