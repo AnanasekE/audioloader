@@ -118,7 +118,7 @@ templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string
 			<p class="text-fg-muted">YouTube found nothing.</p>
 		} else {
 			<p class="mb-2 text-sm text-fg-muted">The picked video becomes a single you can tag later.</p>
-			<ul class="divide-y divide-line">
+			@list() {
 				for i, c := range found {
 					@youTubeCandidate(c, 0) {
 						if owned[i] != "" {
@@ -136,7 +136,7 @@ templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string
 						}
 					}
 				}
-			</ul>
+			}
 		}
 	</div>
 }

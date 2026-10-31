@@ -327,6 +327,62 @@
 	.row-cand {
 		@apply flex items-start gap-2 py-2;
 	}
+	/* a download: cover, item, progress or error, status, retry; the manual
+	   ways to get the file open below */
+	.row-dl {
+		grid-template-columns: 28px minmax(0, 1fr) minmax(0, 14rem) 11rem 5rem;
+		padding-block: 8px;
+	}
+	.row-dl > .dl-prog {
+		@apply flex min-w-0 items-center gap-2;
+	}
+	.row-dl > .dl-prog > .progress {
+		@apply flex-1;
+	}
+	.row-dl > .dl-act {
+		@apply text-right;
+	}
+	.row-dl > .dl-fix {
+		grid-column: 1 / -1;
+	}
+	@media (max-width: 719px) {
+		.row-dl {
+			grid-template-columns: 28px minmax(0, 1fr) auto;
+		}
+		.row-dl > .dl-prog {
+			grid-column: 2 / -1;
+		}
+		.row-dl > .dl-prog:empty {
+			display: none;
+		}
+	}
+	/* a YouTube search result and a missing track's pick button */
+	.row-yt,
+	.row-missing {
+		@apply flex flex-wrap items-center gap-3 py-2;
+	}
+	.row-missing {
+		@apply justify-between;
+	}
+	/* a tagging review: the file on the left, its candidates on the right */
+	.tag-review {
+		@apply grid grid-cols-[minmax(0,2fr)_minmax(0,5fr)] items-start gap-3 rounded-lg border border-line bg-panel p-3 max-[719px]:grid-cols-1;
+	}
+	.tag-review .list {
+		@apply bg-bg;
+	}
+	.row-match {
+		grid-template-columns: 3rem minmax(0, 1fr) auto;
+		padding-block: 8px;
+	}
+	@media (max-width: 719px) {
+		.row-match {
+			grid-template-columns: 3rem minmax(0, 1fr);
+		}
+		.row-match > :last-child {
+			grid-column: 1 / -1;
+		}
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
 	}

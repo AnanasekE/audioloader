@@ -29,22 +29,30 @@ templ DownloadsPage(active, needsPick, failed, notFound []*db.Download, ytErr, s
 		if spErr != "" {
 			<p class="card mb-6 text-sm">spotDL downloads are off: { spErr }.</p>
 		}
-		<h2 class="mb-3 text-lg font-semibold">In progress</h2>
-		@DownloadsActive(active)
-		<h2 class="mt-8 mb-1 text-lg font-semibold">Needs a pick</h2>
-		<p class="mb-3 text-sm text-fg-muted">
-			No other source had these. Pick the right YouTube video; nothing is downloaded from YouTube on a guess.
-		</p>
-		@downloadList(needsPick, false)
-		<h2 class="mt-8 mb-1 text-lg font-semibold">Failed</h2>
-		if len(failed) > 0 {
-			<p class="mb-3 text-sm text-fg-muted">
-				YouTube often changes in ways that break yt-dlp; updating it usually fixes failed downloads.
+		<section class="mb-8">
+			@sectionLabel("Active")
+			@DownloadsActive(active)
+		</section>
+		<section class="mb-8">
+			@sectionLabel("Needs pick")
+			<p class="mb-2 text-sm text-fg-muted">
+				No other source had these. Pick the right YouTube video; nothing is downloaded from YouTube on a guess.
 			</p>
-		}
-		@downloadList(failed, true)
-		<h2 class="mt-8 mb-3 text-lg font-semibold">Couldn't find</h2>
-		@downloadList(notFound, false)
+			@downloadList(needsPick, false)
+		</section>
+		<section class="mb-8">
+			@sectionLabel("Failed")
+			if len(failed) > 0 {
+				<p class="mb-2 text-sm text-fg-muted">
+					YouTube often changes in ways that break yt-dlp; updating it usually fixes failed downloads.
+				</p>
+			}
+			@downloadList(failed, true)
+		</section>
+		<section class="mb-8">
+			@sectionLabel("Not found")
+			@downloadList(notFound, false)
+		</section>
 	}
 }
 
@@ -64,48 +72,70 @@ templ DownloadsActive(active []*db.Download) {
 				Nothing downloading.
 			}
 		} else {
-			<ul class="card divide-y divide-line">
+			@list() {
+				@listHead("row-dl", "", "Item", "Progress", "Status", "")
 				for _, d := range active {
-					<li class="flex flex-wrap items-center justify-between gap-2 py-2">
-						@downloadTrack(d)
-						<span class="flex items-center gap-2 text-sm text-fg-muted">
-							@statusChip(downloadChipStatus(d), downloadStatus(d))
-							if d.Status == db.DownloadDownloading {
-								<span class="block h-1 w-24 overflow-hidden rounded-full bg-panel-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={ fmt.Sprint(int(d.Progress * 100)) }>
-									<span class="block h-full bg-st-running" style={ fmt.Sprintf("width:%d%%", int(d.Progress*100)) }></span>
-								</span>
-							}
-						</span>
-					</li>
+					@downloadRow(d, false, false)
 				}
-			</ul>
+			}
 		}
 	</div>
 }
 
-templ downloadList(list []*db.Download, retry bool) {
-	if len(list) == 0 {
+templ downloadList(downloads []*db.Download, retry bool) {
+	if len(downloads) == 0 {
 		@emptyState() {
 			None.
 		}
 	} else {
-		<ul class="card divide-y divide-line">
-			for _, d := range list {
-				<li class="grid gap-2 py-3">
-					<div class="flex flex-wrap items-center justify-between gap-2">
-						@downloadTrack(d)
-						if retry {
-							<button class="btn btn-ghost" hx-post={ "/ui/downloads/" + d.Track.ID.String() + "/retry" }>Retry</button>
-						}
-					</div>
-					if d.LastError != "" {
-						<p class="text-sm break-words text-st-failed">{ d.LastError }</p>
-					}
-					@downloadFix(d.Track)
-				</li>
+		@list() {
+			@listHead("row-dl", "", "Item", "Progress", "Status", "")
+			for _, d := range downloads {
+				@downloadRow(d, retry, true)
 			}
-		</ul>
+		}
 	}
+}
+
+// downloadRow is a download: cover, title over artists and release, its
+// progress (or error), a status chip and Retry. With fix set it opens with
+// the manual ways to get the file below it.
+templ downloadRow(d *db.Download, retry bool, fix bool) {
+	<article class="row row-dl">
+		@cover(downloadCover(d), 28)
+		@downloadTrack(d)
+		<span class="dl-prog">
+			if d.Status == db.DownloadDownloading {
+				@progress(int(d.Progress * 100))
+				<span class="mono text-xs text-fg-muted">{ fmt.Sprintf("%d%%", int(d.Progress*100)) }</span>
+			} else if d.LastError != "" {
+				<span class="text-xs break-words text-st-failed">{ d.LastError }</span>
+			}
+		</span>
+		<span>
+			@statusChip(downloadChipStatus(d), downloadStatus(d))
+		</span>
+		<span class="dl-act">
+			if retry {
+				<button class="btn btn-ghost" hx-post={ "/ui/downloads/" + d.Track.ID.String() + "/retry" }>Retry</button>
+			}
+		</span>
+		if fix {
+			<div class="dl-fix">
+				@downloadFix(d.Track)
+			</div>
+		}
+	</article>
+}
+
+func downloadCover(d *db.Download) string {
+	if d.Track.ImgURL != "" {
+		return d.Track.ImgURL
+	}
+	if d.Release != nil {
+		return d.Release.ImgURL
+	}
+	return "/assets/img/default_track.png"
 }
 
 // downloadFix offers the manual ways to get a track's file: picking a
@@ -136,9 +166,9 @@ templ downloadFix(t *audio.Track) {
 }
 
 templ downloadTrack(d *db.Download) {
-	<span class="min-w-0">
-		<span class="block truncate">{ d.Track.Title }</span>
-		<span class="block truncate text-sm text-fg-muted">
+	<span class="stack">
+		<b>{ d.Track.Title }</b>
+		<span>
 			{ artistNames(d.Track.Artists) }
 			if d.Release != nil {
 				{ " · " }<a href={ releaseURL(d.Release) }>{ d.Release.Title }</a>{ fmt.Sprintf(" #%d", d.Position) }
@@ -166,6 +196,10 @@ func downloadStatus(d *db.Download) string {
 		return "Looking for a file"
 	case db.DownloadDownloading:
 		return "Downloading from " + d.Source
+	case db.DownloadNeedsPick:
+		return "Needs a pick"
+	case db.DownloadNotFound:
+		return "Not found"
 	}
 	return d.Status
 }
@@ -173,8 +207,8 @@ func downloadStatus(d *db.Download) string {
 // releaseMissing is the release page's section for its placeholder tracks.
 templ releaseMissing(r *audio.Release) {
 	if n := missingCount(r); n > 0 {
-		<section class="card mt-6">
-			<h2 class="font-semibold">{ fmt.Sprintf("%d tracks not in your library yet", n) }</h2>
+		<section class="mt-6">
+			@sectionLabel(fmt.Sprintf("%d tracks not in your library yet", n))
 			<p class="mb-3 text-sm text-fg-muted">
 				See <a href="/downloads">Downloads</a>, or fill them from a YouTube playlist of this release.
 			</p>
@@ -190,16 +224,18 @@ templ releaseMissing(r *audio.Release) {
 				<span id="playlist-loading" class="htmx-indicator text-sm text-fg-muted">Reading the playlist…</span>
 			</form>
 			<div id="playlist-mapping" class="mt-4 text-sm"></div>
-			<ul class="mt-4 divide-y divide-line">
-				for _, rt := range r.Tracks {
-					if !rt.Track.HasFile {
-						<li class="py-2">
-							<span class="block truncate text-sm">{ fmt.Sprintf("%d. %s", rt.Position, rt.Track.Title) }</span>
-							@youTubePickButton(rt.Track)
-						</li>
+			<div class="mt-4">
+				@list() {
+					for _, rt := range r.Tracks {
+						if !rt.Track.HasFile {
+							<div class="row row-missing">
+								<span class="truncate text-sm">{ fmt.Sprintf("%d. %s", rt.Position, rt.Track.Title) }</span>
+								@youTubePickButton(rt.Track)
+							</div>
+						}
 					}
 				}
-			</ul>
+			</div>
 		</section>
 	}
 }
@@ -247,7 +283,7 @@ templ YouTubeImportPage(recent []jobs.Job) {
 			<a class="btn" href="/upload">Upload</a>
 		}
 		<form
-			class="card flex flex-wrap items-center gap-2"
+			class="form-panel !max-w-none flex-row flex-wrap items-center gap-2"
 			hx-post="/ui/youtube/preview"
 			hx-target="#youtube-preview"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('youtube-preview').textContent = event.detail.xhr.responseText"
@@ -259,18 +295,20 @@ templ YouTubeImportPage(recent []jobs.Job) {
 		</form>
 		<div id="youtube-preview" class="mt-6"></div>
 		if len(recent) > 0 {
-			<h2 class="mt-8 mb-3 text-lg font-semibold">Recent imports</h2>
-			<ul class="card divide-y divide-line">
-				for _, j := range recent {
-					<li class="flex flex-wrap justify-between gap-2 py-2 text-sm">
-						<span>{ importTitle(j) }</span>
-						@statusChip(j.Status, j.Status)
-						if j.LastError != "" {
-							<span class="w-full break-words text-st-failed">{ j.LastError }</span>
-						}
-					</li>
+			<div class="mt-8">
+				@sectionLabel("Recent imports")
+				@list() {
+					for _, j := range recent {
+						<div class="row row-2 row-pad text-sm">
+							<span class="truncate">{ importTitle(j) }</span>
+							@statusChip(j.Status, j.Status)
+							if j.LastError != "" {
+								<span class="col-span-full break-words text-st-failed">{ j.LastError }</span>
+							}
+						</div>
+					}
 				}
-			</ul>
+			</div>
 		}
 		<script src="/assets/js/artist-picker.js" defer></script>
 	}
@@ -352,7 +390,7 @@ templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
 		if len(found) == 0 {
 			<p class="text-fg-muted">YouTube found nothing.</p>
 		} else {
-			<ul class="divide-y divide-line">
+			@list() {
 				for _, c := range found {
 					@youTubeCandidate(c, t.Duration) {
 						<button
@@ -363,7 +401,7 @@ templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
 						>Use this</button>
 					}
 				}
-			</ul>
+			}
 		}
 		<button type="button" class="btn mt-2" hx-post={ "/ui/downloads/" + t.ID.String() + "/youtube/none" }>None of these</button>
 	</div>
@@ -372,25 +410,26 @@ templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
 // youTubeCandidate is one search result: thumbnail, title, channel, length
 // (against expected, if known) and a Preview link, then the caller's buttons.
 templ youTubeCandidate(c ytdlp.Entry, expected time.Duration) {
-	<li class="flex flex-wrap items-center gap-3 py-2">
-		<img class="h-14 w-24 shrink-0 rounded bg-panel-2 object-cover" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
-		<span class="min-w-0 flex-1">
-			<span class="block truncate">{ c.Title }</span>
-			<span class="block truncate text-fg-muted">
-				{ channelName(c) } · { formatSeconds(c.Duration) }
+	<div class="row row-yt">
+		<img class="cover h-9 w-16 shrink-0" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
+		<span class="stack min-w-0 flex-1">
+			<b>{ c.Title }</b>
+			<span>
+				{ channelName(c) }
 				if d := lengthDiff(c.Duration, expected); d != "" {
 					{ " (" + d + ")" }
 				}
 				for _, b := range channelBadges(c) {
-					<span class="ml-1 rounded bg-panel-2 px-1.5 text-xs">{ b }</span>
+					@chip(b)
 				}
 			</span>
 		</span>
+		<span class="mono text-fg-muted">{ formatSeconds(c.Duration) }</span>
 		<span class="flex items-center gap-2">
 			<a class="btn btn-ghost" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
 			{ children... }
 		</span>
-	</li>
+	</div>
 }
 
 func channelName(e ytdlp.Entry) string {

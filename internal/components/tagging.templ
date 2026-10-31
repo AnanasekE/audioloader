@@ -57,7 +57,7 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 				Nothing to review.
 			}
 		} else {
-			<form class="mb-6 flex flex-wrap items-center gap-2" hx-post="/ui/tagging/apply-all">
+			<form class="mb-4 flex flex-wrap items-center gap-2" hx-post="/ui/tagging/apply-all">
 				<label for="apply-threshold" class="text-sm">Apply every best match scoring at least</label>
 				<select id="apply-threshold" class="input w-auto" name="min">
 					for _, p := range []int{80, 70, 60} {
@@ -66,7 +66,8 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 				</select>
 				<button class="btn" type="submit">Apply</button>
 			</form>
-			<div class="grid gap-4">
+			@sectionLabel("To review")
+			<div class="grid gap-3">
 				for _, rv := range reviews {
 					@taggingReview(rv)
 				}
@@ -78,36 +79,36 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 // artistSuggestions asks about artists that matches credit under a similar
 // name. Nothing is linked unless the user picks a MusicBrainz artist.
 templ artistSuggestions(suggestions []db.ArtistSuggestion) {
-	<section class="card mb-6">
-		<h2 class="font-semibold">Link artists?</h2>
+	<section class="mb-6">
+		@sectionLabel("Link artists?")
 		<p class="mb-2 text-sm text-fg-muted">
 			These artists have no MusicBrainz link, but applied matches credit a similar name.
 		</p>
-		<ul class="divide-y divide-line">
+		@list() {
 			for _, s := range suggestions {
-				<li class="py-2">
+				<div class="row row-pad block">
 					<p class="mb-2 text-sm">
 						<a href={ artistURL(s.Artist) }>{ s.Artist.Name }</a>
 						<span class="text-fg-muted">{ " · credited as “" + s.CreditedName + "”" }</span>
 					</p>
 					@artistLinkButton(s.Artist, "/tagging")
-				</li>
+				</div>
 			}
-		</ul>
+		}
 	</section>
 }
 
 // coverSuggestions asks about originals MusicBrainz names for matched covers.
 // Nothing is set unless the user applies it.
 templ coverSuggestions(covers []db.CoverSuggestion) {
-	<section class="card mb-6">
-		<h2 class="font-semibold">Cover songs?</h2>
+	<section class="mb-6">
+		@sectionLabel("Cover songs?")
 		<p class="mb-2 text-sm text-fg-muted">
 			MusicBrainz lists these tracks as covers. Applying only adds a reference; the credits stay.
 		</p>
-		<ul class="divide-y divide-line">
+		@list() {
 			for _, c := range covers {
-				<li class="flex flex-wrap items-center justify-between gap-3 py-2">
+				@row("row-2 row-pad") {
 					<p class="min-w-0 text-sm">
 						<strong>{ c.Track.Title }</strong>
 						{ " by " + artistNames(c.Track.Artists) + " · cover of " }
@@ -124,31 +125,48 @@ templ coverSuggestions(covers []db.CoverSuggestion) {
 						<button class="btn" hx-post={ "/ui/tagging/" + c.Track.ID.String() + "/cover-of/apply" }>Apply</button>
 						<button class="btn btn-ghost" hx-post={ "/ui/tagging/" + c.Track.ID.String() + "/cover-of/reject" }>Reject</button>
 					</div>
-				</li>
+				}
 			}
-		</ul>
+		}
 	</section>
 }
 
+// taggingReview puts the file under review next to its MusicBrainz
+// candidates, best first; on phones they stack.
 templ taggingReview(rv TaggingReview) {
-	<section class="card">
-		<h2 class="font-semibold">{ rv.Track.Title }</h2>
-		<p class="mb-3 text-sm text-fg-muted">
-			{ artistNames(rv.Track.Artists) } · { formatDuration(rv.Track.Duration) }
-			for _, r := range rv.Track.Releases {
-				{ " · " }<a href={ releaseURL(r) }>{ r.Title }</a>
-			}
-		</p>
-		<ul class="divide-y divide-line">
+	<section class="tag-review">
+		<div class="tag-cur">
+			<div class="flex items-center gap-2">
+				@cover(rv.Track.ImgURL, 28)
+				<span class="stack">
+					<b>{ rv.Track.Title }</b>
+					<span>{ artistNames(rv.Track.Artists) }</span>
+				</span>
+			</div>
+			<p class="mono mt-2 text-xs text-fg-muted">{ formatDuration(rv.Track.Duration) }</p>
+			<p class="mt-1 text-xs text-fg-muted">
+				for i, r := range rv.Track.Releases {
+					if i > 0 {
+						{ " · " }
+					}
+					<a href={ releaseURL(r) }>{ r.Title }</a>
+				}
+			</p>
+			<div class="mt-2">
+				@statusChip("review", "To review")
+			</div>
+		</div>
+		<div class="list">
 			for _, m := range rv.Candidates {
-				<li class="flex flex-wrap items-center justify-between gap-3 py-2">
-					<div class="min-w-0">
-						<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/recording/" + m.RecordingID) } target="_blank" rel="noopener">{ m.Title }</a>
-						<span class="text-sm text-fg-muted">
-							{ " by " + matchArtistNames(m.Artists) } · { formatDuration(time.Duration(m.LengthMs) * time.Millisecond) }
+				<div class="row row-match">
+					<span class="mono text-fg-muted" title={ "found by " + m.Source }>{ fmt.Sprintf("%.0f%%", m.Score*100) }</span>
+					<div class="stack">
+						<b><a class="text-fg" href={ templ.SafeURL("https://musicbrainz.org/recording/" + m.RecordingID) } target="_blank" rel="noopener">{ m.Title }</a></b>
+						<span>
+							{ matchArtistNames(m.Artists) + " · " + formatDuration(time.Duration(m.LengthMs)*time.Millisecond) }
 						</span>
 						if m.ReleaseTitle != "" {
-							<span class="block text-sm text-fg-muted">
+							<span>
 								{ "on " + m.ReleaseTitle }
 								if m.ReleaseType != "" {
 									{ " (" + audio.ReleaseType(m.ReleaseType).Label() + ")" }
@@ -160,13 +178,12 @@ templ taggingReview(rv TaggingReview) {
 						}
 					</div>
 					<div class="flex items-center gap-2">
-						<span class="text-sm tabular-nums" title={ "found by " + m.Source }>{ fmt.Sprintf("%.0f%%", m.Score*100) }</span>
 						<button class="btn" hx-post={ "/ui/tagging/" + rv.Track.ID.String() + "/" + m.RecordingID + "/apply" }>Apply</button>
 						<button class="btn btn-ghost" hx-post={ "/ui/tagging/" + rv.Track.ID.String() + "/" + m.RecordingID + "/reject" }>Reject</button>
 					</div>
-				</li>
+				</div>
 			}
-		</ul>
+		</div>
 	</section>
 }
 
