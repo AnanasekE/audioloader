@@ -135,7 +135,22 @@ templ sidebar(active string) {
 				</ul>
 			</nav>
 		}
-		<div class="mt-auto flex flex-col gap-2 px-2 text-xs text-fg-subtle">
+		<div class="mt-auto">
+			if secretMode(ctx) {
+				<form method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
+					<button type="submit" class="btn btn-ghost w-full justify-center gap-2">
+						@icon("lock")
+						<span>Lock</span>
+					</button>
+				</form>
+			} else if vaultEnabled(ctx) {
+				<a href="/vault" class="btn btn-ghost w-full justify-center gap-2">
+					@icon("lock")
+					Vault
+				</a>
+			}
+		</div>
+		<div class="flex flex-col gap-2 px-2 text-xs text-fg-subtle">
 			<div class="flex items-center gap-2" role="group" aria-label="Theme">
 				<button type="button" class="rounded px-2 py-1 hover:text-fg" onclick="setTheme('dark')">Dark</button>
 				<button type="button" class="rounded px-2 py-1 hover:text-fg" onclick="setTheme('light')">Light</button>
@@ -170,12 +185,16 @@ templ topStrip() {
 			@icon("upload")
 		</a>
 		if secretMode(ctx) {
-			<div class="flex items-center gap-3">
-				<span class="rounded bg-accent-dim px-2 py-0.5 text-xs font-semibold tracking-wide text-accent uppercase">Secret</span>
-				<form method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
-					<button type="submit" class="text-fg-muted hover:text-fg">Lock</button>
-				</form>
-			</div>
+			<span class="rounded bg-accent-dim px-2 py-0.5 text-xs font-semibold tracking-wide text-accent uppercase">Secret</span>
+			<form class="min-[720px]:hidden" method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
+				<button type="submit" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg" aria-label="Lock">
+					@icon("lock")
+				</button>
+			</form>
+		} else if vaultEnabled(ctx) {
+			<a href="/vault" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg min-[720px]:hidden" aria-label="Vault">
+				@icon("lock")
+			</a>
 		}
 	</header>
 }

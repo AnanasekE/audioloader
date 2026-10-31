@@ -644,3 +644,29 @@ func countJobs(typ string) (n int) {
 	db.DB.QueryRow(`SELECT COUNT(*) FROM jobs WHERE type = ?;`, typ).Scan(&n)
 	return n
 }
+
+func TestVaultButton(t *testing.T) {
+	a := newModeApp(t)
+	if body := a.do(false, "GET", "/tracks", nil).Body.String(); !strings.Contains(body, `href="/vault"`) {
+		t.Error("normal mode with a vault has no Vault link")
+	}
+	if rec := a.do(false, "GET", "/vault", nil); rec.Code != 200 || !strings.Contains(rec.Body.String(), `id="vault-passphrase"`) {
+		t.Errorf("vault page = %d", rec.Code)
+	}
+	body := a.do(true, "GET", "/tracks", nil).Body.String()
+	if !strings.Contains(body, `action="/vault/lock"`) {
+		t.Error("secret mode has no Lock form")
+	}
+	if strings.Contains(body, `href="/vault"`) {
+		t.Error("secret mode links to /vault")
+	}
+
+	dbtest.New(t)
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	rec := httptest.NewRecorder()
+	WithViewer(mux).ServeHTTP(rec, httptest.NewRequest("GET", "/tracks", nil))
+	if strings.Contains(rec.Body.String(), `href="/vault"`) {
+		t.Error("normal mode without a vault links to /vault")
+	}
+}

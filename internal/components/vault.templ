@@ -8,18 +8,20 @@ import (
 
 templ VaultPage(wrong bool) {
 	@layout("Vault", "") {
-		@pageHeader("Vault", "") {
-		}
 		// a plain form: the unlock reloads the whole page
-		<form method="post" action="/vault" hx-boost="false" class="card grid max-w-sm gap-4">
-			<label for="vault-passphrase" class="text-sm font-medium">Passphrase</label>
+		<form method="post" action="/vault" hx-boost="false" class="card mx-auto mt-8 grid max-w-sm gap-4 text-center">
+			<div class="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-dim text-accent">
+				<span class="[&_svg]:size-6">
+					@icon("lock")
+				</span>
+			</div>
+			<h1 class="text-xl font-semibold">Vault</h1>
+			<label for="vault-passphrase" class="text-left text-sm text-fg-muted">Passphrase</label>
 			<input id="vault-passphrase" class="input" type="password" name="passphrase" autocomplete="current-password" required autofocus/>
 			if wrong {
-				<p class="text-sm text-red-600 dark:text-red-400">That's not it.</p>
+				<p class="text-sm text-st-failed">That's not it.</p>
 			}
-			<div>
-				<button class="btn" type="submit">Unlock</button>
-			</div>
+			<button class="btn justify-center" type="submit">Unlock</button>
 		</form>
 	}
 }
