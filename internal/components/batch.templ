@@ -26,18 +26,18 @@ func batchColsFor(ctx context.Context) string {
 // its own choosing, or becomes a new single. release, if set, is preselected
 // for every row. nextPositions maps release ID and disc to the next free position.
 templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*audio.Release, release *audio.Release, nextPositions map[string]map[int]int) {
-	@layout("Batch upload", PageUpload) {
+	@layout("Batch upload", PageAdd) {
 		if release != nil {
 			@pageHead("Batch upload", "Into "+release.Type.Label()+": "+release.Title) {
 				<a class="btn btn-ghost" href={ releaseURL(release) }>Back to release</a>
 			}
 		} else if secretMode(ctx) {
 			@pageHead("Batch upload", "Each file becomes a secret track") {
-				<a class="btn btn-ghost" href="/upload">Single upload</a>
+				<a class="btn btn-ghost" href="/add">Single upload</a>
 			}
 		} else {
 			@pageHead("Batch upload", "Tracks without a release each become a single") {
-				<a class="btn btn-ghost" href="/upload">Single upload</a>
+				<a class="btn btn-ghost" href="/add">Single upload</a>
 			}
 		}
 		<details class="mb-4">
@@ -175,7 +175,7 @@ func batchCancelURL(release *audio.Release) string {
 	if release != nil {
 		return "/releases/" + release.ID.String()
 	}
-	return "/upload"
+	return "/add"
 }
 
 func batchExitURL(release *audio.Release) string {

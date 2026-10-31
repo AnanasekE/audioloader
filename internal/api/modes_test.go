@@ -390,7 +390,7 @@ func TestSecretModeHidesReleaseControls(t *testing.T) {
 		gone    []string
 		present []string
 	}{
-		{"/upload", []string{`name="date"`, `name="secret"`, "From YouTube", "new-release-form"}, []string{`name="description"`, `name="tags"`, "Podcast episode"}},
+		{"/add", []string{`name="date"`, `name="secret"`, "YouTube", "new-release-form"}, []string{`name="description"`, `name="tags"`, "Podcast episode"}},
 		{"/upload/batch", []string{`name="secret"`, "Release for all tracks", "Disc</span>"}, []string{"Creators"}},
 		{"/upload/import", []string{`import-secret`}, []string{"Each file becomes a secret track"}},
 		{"/artists", []string{"Add from MusicBrainz"}, nil},
@@ -489,14 +489,28 @@ func TestSecretSourceDownload(t *testing.T) {
 		t.Fatalf("secret-only routes = %v", SecretOnly)
 	}
 
-	if b := a.do(true, "GET", "/upload/secret-source", nil); b.Code != http.StatusOK || !strings.Contains(b.Body.String(), "/ui/secret-source/check") {
-		t.Fatalf("page = %d", b.Code)
+	// the old page forwards to the Add page, with the address in the box
+	if b := a.do(true, "GET", "/upload/secret-source?url="+url.QueryEscape(pageURL), nil); b.Code != http.StatusFound || b.Header().Get("Location") != "/add?q="+url.QueryEscape(pageURL) {
+		t.Fatalf("old page = %d %s", b.Code, b.Header().Get("Location"))
 	}
-	if b := a.do(true, "GET", "/upload", nil).Body.String(); !strings.Contains(b, "Download from URL") {
-		t.Error("the upload page doesn't offer it")
+	if b := a.do(true, "GET", "/upload/secret-source", nil); b.Header().Get("Location") != "/add" {
+		t.Fatalf("old page without an address = %d %s", b.Code, b.Header().Get("Location"))
 	}
-	if b := a.do(false, "GET", "/upload", nil).Body.String(); strings.Contains(b, "Download from URL") {
-		t.Error("normal mode offers it")
+	if b := a.do(true, "GET", "/add?q="+url.QueryEscape(pageURL), nil); b.Code != http.StatusOK ||
+		!strings.Contains(b.Body.String(), "/ui/add/lookup") || !strings.Contains(b.Body.String(), `value="`+pageURL+`"`) || !strings.Contains(b.Body.String(), `hx-trigger="load, submit"`) {
+		t.Fatalf("add page = %d", b.Code)
+	}
+	for _, mode := range []bool{true, false} {
+		b := a.do(mode, "GET", "/add", nil).Body.String()
+		if !strings.Contains(b, "Or upload a file") || strings.Contains(b, `hx-trigger="load, submit"`) {
+			t.Errorf("add page (secret %v) lacks the upload part or runs a lookup on load", mode)
+		}
+		if got := strings.Contains(b, "secret-source"); got != mode {
+			t.Errorf("add page (secret %v) mentions the source: %v", mode, got)
+		}
+		if strings.Contains(b, secrettest.PageHost) {
+			t.Errorf("add page (secret %v) names the source's host", mode)
+		}
 	}
 
 	// Check
@@ -590,7 +604,7 @@ func TestSecretSourceDownload(t *testing.T) {
 
 	// the uploader's page lists their other pages, the downloaded one folded away
 	listURL := fake.Page("/items/someone", `<a href="/items/someone/one">The one</a> <a href="/items/someone/copy">A copy</a> <a href="/items/other/x">Not theirs</a>`)
-	uploaderLink := "/upload/secret-source?url=" + url.QueryEscape(listURL)
+	uploaderLink := "/add?q=" + url.QueryEscape(listURL)
 	if rec := check(pageURL); !strings.Contains(rec.Body.String(), uploaderLink) {
 		t.Errorf("the duplicate message doesn't offer the uploader's page: %s", rec.Body)
 	}

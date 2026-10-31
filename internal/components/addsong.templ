@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"time"
 
+	"audioloader/internal/audio"
+	"audioloader/internal/jobs"
 	"audioloader/internal/sources/ytdlp"
 )
-
-const PageAddSong = "add"
 
 // SongCandidate is a MusicBrainz recording offered for "Add a song".
 type SongCandidate struct {
@@ -31,36 +31,92 @@ type SongRelease struct {
 // Owned reports whether the library already has the song.
 func (c SongCandidate) Owned() bool { return c.OwnedTrackID != "" }
 
-// AddSongPage is one box for artist and title. A q pre-fills it and
-// searches at once.
-templ AddSongPage(q string) {
-	@layout("Add a song", PageAddSong) {
-		@pageHead("Add a song", "Search MusicBrainz, then YouTube") {
-			<a class="btn" href="/upload">Upload</a>
+// AddPage is the one place to add things: a box that takes search text or
+// a link and sends it where it belongs (see api.classifyAddInput), and the
+// file upload forms below. A q fills the box and runs the lookup on load.
+// recent lists the latest YouTube imports (normal mode).
+templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jobs.Job) {
+	@layout("Add", PageAdd) {
+		@pageHead("Add", addSubtitle(secretMode(ctx), secretSourceOn(ctx)))
+		if secretMode(ctx) && secretSourceOn(ctx) {
+			<details class="mb-4">
+				<summary class="mb-2 cursor-pointer text-sm font-medium">New creator</summary>
+				@AddArtistForm()
+			</details>
+			<script src="/assets/js/secret-source.js" defer></script>
 		}
-		<div hx-on::after-request="document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText">
-			<form
-				class="form-panel max-w-none! flex-row! flex-wrap items-center"
-				hx-get="/ui/add/musicbrainz"
-				hx-target="#add-results"
-				hx-indicator="#add-loading"
-			>
-				<input class="input flex-1" type="text" name="q" value={ q } placeholder="Artist - Title, e.g. Ella Red - Muse" aria-label="Song" autocomplete="off" required/>
-				<button class="btn" type="submit">Search</button>
-				<span id="add-loading" class="htmx-indicator text-sm text-fg-muted">Searching…</span>
-			</form>
-			<p id="add-status" class="mt-4 text-sm text-st-failed empty:hidden" role="alert"></p>
+		if !secretMode(ctx) || secretSourceOn(ctx) {
 			<div
-				id="add-results"
-				class="mt-6"
-				if q != "" {
-					hx-get="/ui/add/musicbrainz"
-					hx-vals={ fmt.Sprintf(`{"q": %q}`, q) }
-					hx-trigger="load"
-				}
-			></div>
+				id="add-box"
+				hx-on::after-request="if (event.target.hasAttribute('hx-on::after-request')) return; document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText"
+			>
+				<form
+					id="add-lookup"
+					class="form-panel max-w-none! flex-row! flex-wrap items-center"
+					hx-post="/ui/add/lookup"
+					hx-target="#add-results"
+					hx-indicator="#add-loading"
+					if q != "" {
+						hx-trigger="load, submit"
+					}
+				>
+					<label for="add-q" class="sr-only">Search, or paste a link</label>
+					<input
+						id="add-q"
+						class="input flex-1"
+						type="text"
+						name="q"
+						value={ q }
+						if secretMode(ctx) {
+							placeholder="Paste a link"
+							inputmode="url"
+						} else {
+							placeholder="Search, or paste a link"
+						}
+						autocomplete="off"
+						required
+					/>
+					<button class="btn" type="submit">
+						if secretMode(ctx) {
+							Check
+						} else {
+							Go
+						}
+					</button>
+					<span id="add-loading" class="htmx-indicator text-sm text-fg-muted">Looking…</span>
+				</form>
+				<p id="add-status" class="mt-4 text-sm text-st-failed empty:hidden" role="alert"></p>
+				<div id="add-results" class="mt-6" aria-live="polite"></div>
+			</div>
+		}
+		if len(recent) > 0 {
+			<div class="mt-8">
+				@RecentImports(recent)
+			</div>
+		}
+		<div class="mt-8 flex items-center gap-3 text-sm text-fg-muted">
+			<hr class="flex-1 border-line"/>
+			<span>Or upload a file</span>
+			<hr class="flex-1 border-line"/>
+		</div>
+		<div class="mt-4">
+			@uploadForms(artists, shows)
+		</div>
+		<div class="mt-2 flex flex-wrap gap-2">
+			<a class="btn btn-ghost" href="/upload/batch">Batch mode</a>
+			<a class="btn btn-ghost" href="/upload/import">Import library</a>
 		</div>
 	}
+}
+
+func addSubtitle(secret, source bool) string {
+	if secret && !source {
+		return "Upload a file"
+	}
+	if secret {
+		return "Paste a link, or upload a file"
+	}
+	return "Search MusicBrainz, paste a MusicBrainz, YouTube or YouTube Music link, or upload a file"
 }
 
 // SongCandidates lists MusicBrainz's best recordings for q. rel is set when

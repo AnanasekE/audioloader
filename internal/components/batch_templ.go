@@ -115,7 +115,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a class=\"btn btn-ghost\" href=\"/upload\">Single upload</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a class=\"btn btn-ghost\" href=\"/add\">Single upload</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -138,7 +138,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a class=\"btn btn-ghost\" href=\"/upload\">Single upload</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a class=\"btn btn-ghost\" href=\"/add\">Single upload</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -343,7 +343,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layout("Batch upload", PageUpload).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout("Batch upload", PageAdd).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -614,7 +614,7 @@ func batchCancelURL(release *audio.Release) string {
 	if release != nil {
 		return "/releases/" + release.ID.String()
 	}
-	return "/upload"
+	return "/add"
 }
 
 func batchExitURL(release *audio.Release) string {

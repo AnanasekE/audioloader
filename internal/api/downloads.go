@@ -8,7 +8,6 @@ import (
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
-	"audioloader/internal/jobs"
 	"audioloader/internal/sources/ytdlp"
 )
 
@@ -272,15 +271,6 @@ func confirmReleasePlaylist(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/downloads")
 }
 
-func getYouTubeImportPage(w http.ResponseWriter, r *http.Request) {
-	recent, err := jobs.Recent(downloads.JobYouTubeImport, 20)
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	render(w, r, components.YouTubeImportPage(recent))
-}
-
 func previewYouTubeImport(w http.ResponseWriter, r *http.Request) {
 	previewYouTube(w, r, r.FormValue("url"))
 }
@@ -391,5 +381,5 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	hxLocation(w, "/upload/youtube")
+	hxLocation(w, "/add")
 }

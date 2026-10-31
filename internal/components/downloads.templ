@@ -277,40 +277,19 @@ func formatSeconds(s float64) string {
 }
 
 // YouTubeImportPage imports videos or a playlist as new tracks.
-templ YouTubeImportPage(recent []jobs.Job) {
-	@layout("Import from YouTube", PageUpload) {
-		@pageHead("Import from YouTube", "Download a video or a whole playlist as tracks") {
-			<a class="btn" href="/upload">Upload</a>
-		}
-		<form
-			class="form-panel !max-w-none flex-row flex-wrap items-center gap-2"
-			hx-post="/ui/youtube/preview"
-			hx-target="#youtube-preview"
-			hx-on::after-request="if (!event.detail.successful) document.getElementById('youtube-preview').textContent = event.detail.xhr.responseText"
-			hx-indicator="#youtube-loading"
-		>
-			<input class="input flex-1" type="url" name="url" placeholder="YouTube video or playlist URL" aria-label="YouTube URL" required/>
-			<button class="btn" type="submit">Read</button>
-			<span id="youtube-loading" class="htmx-indicator text-sm text-fg-muted">Reading…</span>
-		</form>
-		<div id="youtube-preview" class="mt-6"></div>
-		if len(recent) > 0 {
-			<div class="mt-8">
-				@sectionLabel("Recent imports")
-				@list() {
-					for _, j := range recent {
-						<div class="row row-2 row-pad text-sm">
-							<span class="truncate">{ importTitle(j) }</span>
-							@statusChip(j.Status, j.Status)
-							if j.LastError != "" {
-								<span class="col-span-full break-words text-st-failed">{ j.LastError }</span>
-							}
-						</div>
-					}
+// RecentImports lists the latest YouTube imports and how they went.
+templ RecentImports(recent []jobs.Job) {
+	@sectionLabel("Recent imports")
+	@list() {
+		for _, j := range recent {
+			<div class="row row-2 row-pad text-sm">
+				<span class="truncate">{ importTitle(j) }</span>
+				@statusChip(j.Status, j.Status)
+				if j.LastError != "" {
+					<span class="col-span-full break-words text-st-failed">{ j.LastError }</span>
 				}
 			</div>
 		}
-		<script src="/assets/js/artist-picker.js" defer></script>
 	}
 }
 

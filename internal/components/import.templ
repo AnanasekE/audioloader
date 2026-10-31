@@ -9,9 +9,9 @@ import (
 // ImportPage imports a whole folder: import.js reads the files' tags in the
 // browser, proposes releases, and uploads only after the review is confirmed.
 templ ImportPage(artists []*audio.Artist) {
-	@layout("Import library", PageUpload) {
+	@layout("Import library", PageAdd) {
 		@pageHead("Import library", importSubtitle(ctx)) {
-			<a class="btn btn-ghost" href="/upload">Single upload</a>
+			<a class="btn btn-ghost" href="/add">Single upload</a>
 		}
 		<section id="import" class="form-panel max-w-none!">
 			<input id="import-folder" class="hidden" type="file" webkitdirectory multiple/>

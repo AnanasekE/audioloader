@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -143,5 +144,60 @@ func TestAddLookup(t *testing.T) {
 		if code, body := lookup(true, q); code != 400 || strings.TrimSpace(body) != msgBadSite {
 			t.Fatalf("secret mode %s = %d %q", q, code, body)
 		}
+	}
+}
+
+func TestAddPageAndRedirects(t *testing.T) {
+	a := newModeApp(t)
+	_, src := secrettest.New(t)
+	secret.SetDefault(src)
+	t.Cleanup(func() { secret.SetDefault(nil) })
+	redirect := func(secretMode bool, from, to string) {
+		t.Helper()
+		rec := a.do(secretMode, "GET", from, nil)
+		if rec.Code != http.StatusFound || rec.Header().Get("Location") != to {
+			t.Errorf("GET %s = %d, Location %q; want %q", from, rec.Code, rec.Header().Get("Location"), to)
+		}
+	}
+	redirect(false, "/upload", "/add")
+	redirect(false, "/upload?q=Teardrop", "/add?q=Teardrop")
+	redirect(true, "/upload?q=a%20b", "/add?q=a%20b")
+	redirect(false, "/upload/youtube", "/add")
+	redirect(false, "/upload/youtube?url=https%3A%2F%2Fyoutu.be%2FaaaaaaaaaaA", "/add?q=https%3A%2F%2Fyoutu.be%2FaaaaaaaaaaA")
+
+	for _, mode := range []bool{false, true} {
+		body := a.do(mode, "GET", "/add", nil).Body.String()
+		for _, want := range []string{`hx-post="/ui/add/lookup"`, "Or upload a file", `href="/upload/batch"`, `href="/upload/import"`, `name="track"`} {
+			if !strings.Contains(body, want) {
+				t.Errorf("/add (secret %v) lacks %q", mode, want)
+			}
+		}
+		if strings.Contains(body, `hx-trigger="load, submit"`) {
+			t.Errorf("/add without q runs a lookup (secret %v)", mode)
+		}
+	}
+	// with q: the box is filled and looked up on load
+	body := a.do(false, "GET", "/add?q="+url.QueryEscape("https://musicbrainz.org/release/"+mezzanine), nil).Body.String()
+	if !strings.Contains(body, `hx-trigger="load, submit"`) || !strings.Contains(body, `value="https://musicbrainz.org/release/`+mezzanine+`"`) {
+		t.Errorf("/add?q= doesn't look up on load")
+	}
+	normal := a.do(false, "GET", "/add", nil).Body.String()
+	for _, hidden := range []string{"Paste a link, or upload", "Download from URL", "secret"} {
+		if strings.Contains(strings.ToLower(normal), strings.ToLower(hidden)) {
+			t.Errorf("/add in normal mode mentions %q", hidden)
+		}
+	}
+}
+
+// Secret mode without a secret source has nothing to look up: only the upload part.
+func TestAddPageSecretWithoutSource(t *testing.T) {
+	a := newModeApp(t)
+	secret.SetDefault(nil)
+	body := a.do(true, "GET", "/add", nil).Body.String()
+	if strings.Contains(body, "/ui/add/lookup") || !strings.Contains(body, "Or upload a file") {
+		t.Errorf("add page without a source:\n%s", body)
+	}
+	if rec := a.do(true, "POST", "/ui/add/lookup", url.Values{"q": {"words"}}); rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != msgSecretNoLinks {
+		t.Errorf("lookup = %d %q", rec.Code, rec.Body)
 	}
 }

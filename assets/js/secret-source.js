@@ -1,7 +1,7 @@
-// "Download from URL" page (SecretSourcePage in internal/components/secretsource.templ):
+// Add page in secret mode (AddPage in internal/components/addsong.templ):
 // a creator added with the "New creator" form joins the picker, already ticked.
 (() => {
-	const root = document.getElementById("secret-source");
+	const root = document.getElementById("add-box");
 	if (!root) return;
 
 	// the server's HX-Trigger carries {id, name} of the new creator

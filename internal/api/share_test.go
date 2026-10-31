@@ -236,7 +236,7 @@ func TestShareEndpoint(t *testing.T) {
 	rec = share(ok, solo, false)
 	if lines := strings.Split(strings.TrimSpace(rec.Body.String()), "\n"); rec.Code != http.StatusUnprocessableEntity || len(lines) != 2 ||
 		lines[0] != "No creator in that address. Finish it in the app:" ||
-		lines[1] != "http://example.com/upload/secret-source?url="+neturl.QueryEscape(solo) {
+		lines[1] != "http://example.com/add?q="+neturl.QueryEscape(solo) {
 		t.Errorf("no uploader = %d %q", rec.Code, rec.Body)
 	}
 	if n := countJobs(downloads.JobSecretDownload); n != 4 {

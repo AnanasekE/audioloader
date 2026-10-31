@@ -17,10 +17,6 @@ import (
 	"audioloader/internal/tagging"
 )
 
-func getAddSongPage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, components.AddSongPage(strings.TrimSpace(r.URL.Query().Get("q"))))
-}
-
 // searchSongsMusicBrainz lists MusicBrainz's 5 best recordings for what was
 // typed, marking the ones the library already has. A MusicBrainz release or
 // recording link lists exactly what it points to instead.
@@ -488,5 +484,5 @@ func addSongFromYouTube(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	hxLocation(w, "/upload/youtube")
+	hxLocation(w, "/add")
 }

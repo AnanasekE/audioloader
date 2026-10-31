@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"slices"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
 	"audioloader/internal/sources/secret"
+	"audioloader/internal/sources/secret/secrettest"
 	"audioloader/internal/vault"
 )
 
@@ -166,6 +168,7 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		"/ui/tracks/pick?q=zz", "/ui/tracks/pick?q=song",
 		"/tracks?sort=creator", "/tracks?sort=tag", "/tracks?sort=added",
 		"/upload/batch?release=" + ids["public release"],
+		"/add?q=zz", "/add?q=https%3A%2F%2Fexample.com%2Fx", "/upload?q=zz", "/upload/youtube?url=https%3A%2F%2Fyoutu.be%2Fx",
 		"/api/v1/search?q=zz", "/api/v1/search?q=secret", "/api/v1/search?q=public", "/api/v1/search?q=shared", "/api/v1/search?q=artist",
 		"/api/v1/tracks?sort=creator", "/api/v1/tracks?sort=tag", "/api/v1/tracks?q=zz", "/api/v1/tracks?limit=1&offset=1",
 	}
@@ -344,7 +347,23 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 			}
 		}
 	}
-	for _, page := range []string{"/releases", "/inbox", "/tagging", "/downloads", "/upload/youtube"} {
+	// the Add box treats a secret source link in normal mode like any unknown
+	// site: same answer, and the source isn't asked
+	fake, src := secrettest.New(t)
+	secret.SetDefault(src)
+	for _, link := range []string{"https://" + secrettest.PageHost + "/items/a/b", "https://example.com/items/a/b"} {
+		req := httptest.NewRequest("POST", "/ui/add/lookup", strings.NewReader("q="+url.QueryEscape(link)))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != msgBadSite {
+			t.Errorf("lookup of %s in normal mode = %d %q", link, rec.Code, rec.Body)
+		}
+	}
+	if reqs := fake.Requests(); len(reqs) != 0 {
+		t.Errorf("normal mode asked the secret source: %v", reqs)
+	}
+	for _, page := range []string{"/releases", "/inbox", "/tagging", "/downloads", "/add"} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", page, nil))
 		if rec.Code != http.StatusOK {

@@ -3,7 +3,7 @@ package components
 // Page identifiers, used to highlight the current nav link.
 const (
 	PageTracks   = "tracks"
-	PageUpload   = "upload"
+	PageAdd      = "add"
 	PageArtists  = "artists"
 	PageReleases = "releases"
 	PageTags     = "tags"
@@ -143,13 +143,15 @@ templ sidebar(active string) {
 			<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
 			audioloader
 		</a>
-		<a class="btn w-full justify-center gap-2" href="/upload"
-			if active == PageUpload {
+		<a
+			class="btn w-full justify-center gap-2"
+			href="/add"
+			if active == PageAdd {
 				aria-current="page"
 			}
 		>
 			@icon("upload")
-			Upload
+			Add
 		</a>
 		<nav aria-label="Library">
 			@navLabel("Library")
@@ -227,7 +229,7 @@ templ topStrip() {
 			<kbd id="search-hint" class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-sm border border-line px-1.5 font-mono text-xs text-fg-subtle max-[720px]:hidden peer-focus:hidden">Ctrl K</kbd>
 			<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
 		</form>
-		<a href="/upload" class="ml-auto flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg min-[720px]:hidden" aria-label="Upload">
+		<a href="/add" class="ml-auto flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg min-[720px]:hidden" aria-label="Add">
 			@icon("upload")
 		</a>
 		if secretMode(ctx) {

@@ -164,7 +164,7 @@ func shareSecretPage(w http.ResponseWriter, r *http.Request) {
 	name := src.Uploader(page.URL)
 	if name == "" || len([]rune(name)) > maxCreatorName {
 		http.Error(w, "No creator in that address. Finish it in the app:\n"+
-			publicBase(r)+"/upload/secret-source?url="+url.QueryEscape(page.URL), http.StatusUnprocessableEntity)
+			publicBase(r)+"/add?q="+url.QueryEscape(page.URL), http.StatusUnprocessableEntity)
 		return
 	}
 	creator, err := db.CreatorForUploader(viewer(r), src.Parent(page.URL), name)

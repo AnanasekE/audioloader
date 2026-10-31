@@ -53,10 +53,6 @@ func rememberedPage(url string) *secret.Page {
 	return nil
 }
 
-func getSecretSourcePage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, components.SecretSourcePage(r.URL.Query().Get("url")))
-}
-
 // uploaderPages are the pages one level above the pages the artist's tracks
 // came from, such as the uploaders' pages; none outside secret mode.
 func uploaderPages(r *http.Request, artistID string) ([]string, error) {

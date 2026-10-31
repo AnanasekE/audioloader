@@ -12,7 +12,7 @@
 - [x] 2. Set the cover on added songs
 - [x] 3. Backfill songs added before
 - [x] 4. One box that routes links
-- [ ] 5. Merge the pages
+- [x] 5. Merge the pages
 - [ ] 6. Docs
 
 ## Rules

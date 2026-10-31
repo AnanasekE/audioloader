@@ -31,7 +31,7 @@ templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy
 					{Label: "Tag", Href: "/tracks?sort=" + SortTag, On: sortBy == SortTag},
 				})
 			} else {
-				<a class="btn btn-ghost" href="/add">Add song</a>
+				<a class="btn btn-ghost" href="/add">Add</a>
 			}
 			@filterInput("Filter tracks")
 		}
@@ -110,54 +110,40 @@ func GroupTracks(tracks []*audio.Track, sortBy string) []TrackGroup {
 	return groups
 }
 
-// UploadPage starts with the kind of release. A single is uploaded right
+// uploadForms starts with the kind of release. A single is uploaded right
 // here; an album, EP or compilation is created first and its tracks are then
 // uploaded together in batch mode. The switch is CSS only (group-has).
-templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
-	@layout("Upload", PageUpload) {
-		@pageHead("Upload", "Add music to the library") {
+templ uploadForms(artists []*audio.Artist, shows []*audio.Show) {
+	<div class="group">
+		<fieldset class="mb-4">
+			<legend class="mb-2 text-sm font-medium">What are you uploading?</legend>
 			<div class="flex flex-wrap gap-2">
-				<a class="btn btn-ghost" href="/upload/import">Import library</a>
-				<a class="btn btn-ghost" href="/upload/batch">Batch mode</a>
-				if !secretMode(ctx) {
-					<a class="btn btn-ghost" href="/upload/youtube">From YouTube</a>
+				if secretMode(ctx) {
+					// secret tracks have no releases
+					@kindChoice("kind-single", "single", "Track", "episode-form", true)
 				}
-				if secretMode(ctx) && secretSourceOn(ctx) {
-					<a class="btn btn-ghost" href="/upload/secret-source">Download from URL</a>
+				for _, typ := range audio.ReleaseTypes {
+					if !secretMode(ctx) {
+						// form= ties the choice to the release form, which needs the type
+						@kindChoice("kind-"+string(typ), string(typ), typ.Label(), "new-release-form", typ == audio.ReleaseSingle)
+					}
 				}
+				// not part of the release form: an episode isn't a release
+				@kindChoice("kind-episode", "episode", "Podcast episode", "episode-form", false)
+			</div>
+		</fieldset>
+		<div class="hidden group-has-[#kind-single:checked]:block">
+			@AddTrackForm(artists)
+		</div>
+		if !secretMode(ctx) {
+			<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
+				@NewReleaseForm(artists, true)
 			</div>
 		}
-		<div class="group">
-			<fieldset class="mb-4">
-				<legend class="mb-2 text-sm font-medium">What are you uploading?</legend>
-				<div class="flex flex-wrap gap-2">
-					if secretMode(ctx) {
-						// secret tracks have no releases
-						@kindChoice("kind-single", "single", "Track", "episode-form", true)
-					}
-					for _, typ := range audio.ReleaseTypes {
-						if !secretMode(ctx) {
-							// form= ties the choice to the release form, which needs the type
-							@kindChoice("kind-"+string(typ), string(typ), typ.Label(), "new-release-form", typ == audio.ReleaseSingle)
-						}
-					}
-					// not part of the release form: an episode isn't a release
-					@kindChoice("kind-episode", "episode", "Podcast episode", "episode-form", false)
-				</div>
-			</fieldset>
-			<div class="hidden group-has-[#kind-single:checked]:block">
-				@AddTrackForm(artists)
-			</div>
-			if !secretMode(ctx) {
-				<div class="hidden group-has-[#kind-album:checked]:block group-has-[#kind-ep:checked]:block group-has-[#kind-compilation:checked]:block">
-					@NewReleaseForm(artists, true)
-				</div>
-			}
-			<div class="hidden group-has-[#kind-episode:checked]:block">
-				@EpisodeForm(shows)
-			</div>
+		<div class="hidden group-has-[#kind-episode:checked]:block">
+			@EpisodeForm(shows)
 		</div>
-	}
+	</div>
 }
 
 templ AddTrackForm(artists []*audio.Artist) {
@@ -502,7 +488,7 @@ func artistNames(artists []*audio.Artist) string {
 templ TrackList(tracks []*audio.Track) {
 	if len(tracks) == 0 {
 		@emptyState() {
-			No tracks yet. <a href="/upload">Upload one</a>.
+			No tracks yet. <a href="/add">Add one</a>.
 		}
 	} else {
 		// data-track-list: playing a track queues the rest of the list after it

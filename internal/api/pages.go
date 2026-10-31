@@ -2,11 +2,14 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
+	"audioloader/internal/downloads"
+	"audioloader/internal/jobs"
 )
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +40,8 @@ func trackSort(r *http.Request) string {
 	return components.SortAdded
 }
 
-func getUploadPage(w http.ResponseWriter, r *http.Request) {
+// getAddPage is the one Add page. A q fills the box and looks it up on load.
+func getAddPage(w http.ResponseWriter, r *http.Request) {
 	artists, err := db.ListArtists(viewer(r))
 	if err != nil {
 		serverError(w, err)
@@ -48,7 +52,34 @@ func getUploadPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.UploadPage(artists, shows))
+	var recent []jobs.Job
+	if !viewer(r).IsSecret() {
+		if recent, err = jobs.Recent(downloads.JobYouTubeImport, 20); err != nil {
+			serverError(w, err)
+			return
+		}
+	}
+	render(w, r, components.AddPage(strings.TrimSpace(r.URL.Query().Get("q")), artists, shows, recent))
+}
+
+// redirectUpload sends the old pages to /add, with the query string of
+// /upload as it was, or with the address of the old download pages as q.
+func redirectUpload(w http.ResponseWriter, r *http.Request) {
+	target := "/add"
+	if r.URL.RawQuery != "" {
+		target += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// redirectUploadURL is redirectUpload for /upload/youtube and
+// /upload/secret-source, whose address was in "url".
+func redirectUploadURL(w http.ResponseWriter, r *http.Request) {
+	target := "/add"
+	if u := strings.TrimSpace(r.URL.Query().Get("url")); u != "" {
+		target += "?q=" + url.QueryEscape(u)
+	}
+	http.Redirect(w, r, target, http.StatusFound)
 }
 
 func getBatchUploadPage(w http.ResponseWriter, r *http.Request) {
