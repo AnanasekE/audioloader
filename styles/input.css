@@ -295,6 +295,38 @@
 		grid-template-columns: 32px minmax(0, 1fr) auto;
 		padding-block: 6px;
 	}
+	/* an inbox release: cover, title over artist, type, date, actions; the
+	   tracklist opens below */
+	.row-inbox {
+		grid-template-columns: 40px minmax(0, 1fr) auto 6rem auto;
+		padding-block: 8px;
+	}
+	.row-inbox > .inbox-details,
+	.row-inbox > .inbox-details:empty {
+		grid-column: 1 / -1;
+	}
+	.row-inbox > .inbox-details:empty {
+		display: none;
+	}
+	.inbox-acts {
+		@apply flex flex-wrap justify-end gap-2;
+	}
+	@media (max-width: 719px) {
+		.row-inbox {
+			grid-template-columns: 40px minmax(0, 1fr) auto;
+		}
+		.row-inbox > .inbox-date {
+			display: none;
+		}
+		.row-inbox > .inbox-acts {
+			grid-column: 1 / -1;
+			justify-content: flex-start;
+		}
+	}
+	/* a MusicBrainz candidate: control, name and details, expand */
+	.row-cand {
+		@apply flex items-start gap-2 py-2;
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
 	}

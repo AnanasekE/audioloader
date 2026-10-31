@@ -6,7 +6,7 @@
 # A page is a path (/tracks, /search?q=low), a path for the unlocked vault
 # (secret:/tags), or an alias for a page with a generated id: @release (two
 # discs), @release-single, @release-edit, @artist, @playlist, @playlist-edit,
-# @show, @track-edit. With no pages it shoots all of them.
+# @show, @follow, @track-edit. With no pages it shoots all of them.
 # Output: tmp/shots/<name>-<w>.png, and mock-<view>-<w>.png for the mockup.
 # SHOTS_RESEED=1 starts over with a fresh seeded database.
 # SHOTS_H=2400 makes the screenshots taller, to see a long page.
@@ -59,6 +59,7 @@ alias_path() {
 	@release-single) echo "/releases/$(q "select uuid from releases where title='Harbor Lights'")" ;;
 	@release-edit) echo "/releases/$(q "select uuid from releases where title='Slow Weather'")/edit" ;;
 	@artist) echo "/artists/$(q "select uuid from artists where name='Lumen Park'")" ;;
+	@follow) echo "/artists/$(q "select uuid from artists where name='Mara Voss'")/follow" ;;
 	@playlist) echo "/playlists/$(q "select uuid from playlists where name='Late night'")" ;;
 	@playlist-edit) echo "/playlists/$(q "select uuid from playlists where name='Late night'")/edit" ;;
 	@show) echo "/shows/$(q "select uuid from shows where title='The Long Tape'")" ;;

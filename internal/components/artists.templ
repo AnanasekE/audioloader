@@ -390,7 +390,7 @@ templ artistManageForm(a *audio.Artist, others []*audio.Artist) {
 // disambiguation, type, country and active years. Expand loads a few of
 // their release groups. The children are the control that picks it.
 templ artistCandidate(c mb.Artist) {
-	<div class="flex items-start gap-2 text-sm">
+	<div class="row row-cand text-sm">
 		{ children... }
 		<div class="min-w-0 flex-1">
 			<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
@@ -417,16 +417,14 @@ templ CandidateReleases(groups []mb.ReleaseGroup, failed bool) {
 	} else if len(groups) == 0 {
 		<p class="text-fg-muted">No releases listed.</p>
 	} else {
-		<ul class="mt-1 list-disc pl-5">
+		<div class="list mt-1">
 			for _, g := range groups {
-				<li>
-					{ g.Title }
-					if g.PrimaryType != "" || g.FirstReleaseDate != "" {
-						<span class="text-fg-muted">{ " (" + joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) + ")" }</span>
-					}
-				</li>
+				@row("row-2 row-pad") {
+					<span class="truncate">{ g.Title }</span>
+					<span class="mono text-fg-muted">{ joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) }</span>
+				}
 			}
-		</ul>
+		</div>
 	}
 }
 

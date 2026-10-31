@@ -17,57 +17,68 @@ const PageInbox = "inbox"
 // candidates when unknown, and which releases to track.
 templ FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, searchErr string) {
 	@layout("Follow "+a.Name, PageArtists) {
-		@pageHead("Follow "+a.Name, "Get new releases in your inbox") {
-			<a class="btn btn-ghost" href="/artists">Back</a>
+		@avatarHeader(a.ImgURL, "Follow", a.Name, nil, followMeta(follow)) {
+			<a class="btn btn-ghost" href={ artistURL(a) }>Back to artist</a>
 		}
-		<form
-			class="card grid max-w-2xl gap-6"
-			hx-post={ "/ui/artists/" + a.ID.String() + "/follow" }
-			hx-target="#follow-result"
-			hx-on::after-request="if (!event.detail.successful) document.getElementById('follow-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
-		>
-			<fieldset class="grid gap-2">
-				<legend class="mb-1 text-sm font-medium">MusicBrainz artist</legend>
-				if a.MBID != "" {
-					<label class="flex items-center gap-2 text-sm">
-						<input type="radio" name="mbid" value={ a.MBID } checked/>
-						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } target="_blank" rel="noopener">{ a.Name }</a>
-						<span class="text-fg-muted">(linked)</span>
-					</label>
-				}
-				for i, c := range candidates {
-					if c.ID != a.MBID {
-						@artistCandidate(c) {
-							<input type="radio" name="mbid" value={ c.ID } checked?={ a.MBID == "" && i == 0 } aria-label={ "Use " + c.Name } class="mt-1"/>
+		@formPanel() {
+			<form
+				class="grid gap-6"
+				hx-post={ "/ui/artists/" + a.ID.String() + "/follow" }
+				hx-target="#follow-result"
+				hx-on::after-request="if (!event.detail.successful) document.getElementById('follow-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
+			>
+				<fieldset class="grid gap-2">
+					@sectionLabel("MusicBrainz artist")
+					@list() {
+						if a.MBID != "" {
+							<label class="row row-cand">
+								<input type="radio" name="mbid" value={ a.MBID } checked/>
+								<span class="min-w-0 flex-1">
+									<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } target="_blank" rel="noopener">{ a.Name }</a>
+									<span class="text-fg-muted">(linked)</span>
+								</span>
+							</label>
+						}
+						for i, c := range candidates {
+							if c.ID != a.MBID {
+								@artistCandidate(c) {
+									<input type="radio" name="mbid" value={ c.ID } checked?={ a.MBID == "" && i == 0 } aria-label={ "Use " + c.Name } class="mt-1"/>
+								}
+							}
 						}
 					}
-				}
-				if searchErr != "" {
-					<p class="text-sm text-st-failed">{ searchErr }</p>
-				}
-				<label class="mt-2 text-sm">
-					Or paste a MusicBrainz artist ID or URL
-					<input class="input mt-1" type="text" name="mbid_manual" placeholder="https://musicbrainz.org/artist/…"/>
-				</label>
-			</fieldset>
-			@followFilters(follow)
-			<div class="flex flex-wrap items-center gap-2">
-				<button class="btn" type="submit">
-					if follow != nil {
-						Save
-					} else {
-						Follow
+					if searchErr != "" {
+						<p class="text-sm text-st-failed">{ searchErr }</p>
 					}
-				</button>
-				if follow != nil {
-					<button class="btn btn-ghost" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/check" }>Check now</button>
-					<button class="btn btn-ghost" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/unfollow" } hx-confirm={ "Stop following " + a.Name + "?" }>Unfollow</button>
-					<span class="text-sm text-fg-muted">{ lastChecked(follow.LastChecked) }</span>
-				}
-				<span id="follow-result" class="text-sm text-st-failed" aria-live="polite"></span>
-			</div>
-		</form>
+					@field("Or paste a MusicBrainz artist ID or URL", "") {
+						<input class="input" type="text" name="mbid_manual" placeholder="https://musicbrainz.org/artist/…"/>
+					}
+				</fieldset>
+				@followFilters(follow)
+				<div class="flex flex-wrap items-center gap-2">
+					<button class="btn" type="submit">
+						if follow != nil {
+							Save
+						} else {
+							Follow
+						}
+					</button>
+					if follow != nil {
+						<button class="btn btn-ghost" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/check" }>Check now</button>
+						<button class="btn btn-danger" type="button" hx-post={ "/ui/artists/" + a.ID.String() + "/unfollow" } hx-confirm={ "Stop following " + a.Name + "?" }>Unfollow</button>
+					}
+					<span id="follow-result" class="text-sm text-st-failed" aria-live="polite"></span>
+				</div>
+			</form>
+		}
 	}
+}
+
+func followMeta(follow *db.Follow) string {
+	if follow == nil {
+		return "Get new releases in your inbox"
+	}
+	return lastChecked(follow.LastChecked)
 }
 
 templ followFilters(follow *db.Follow) {
@@ -75,25 +86,19 @@ templ followFilters(follow *db.Follow) {
 	if follow != nil {
 		{{ f = follow.Filters }}
 	}
-	<fieldset>
-		<legend class="mb-1 text-sm font-medium">Release types</legend>
-		<div class="flex flex-wrap gap-4">
+	<fieldset class="grid gap-2">
+		@sectionLabel("Release types")
+		<div class="flex flex-wrap gap-2">
 			for _, typ := range audio.ReleaseTypes {
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" name="type" value={ string(typ) } checked?={ slices.Contains(f.Types, string(typ)) }/>
-					{ typ.Label() }
-				</label>
+				@choice("type", string(typ), typ.Label(), slices.Contains(f.Types, string(typ)), true)
 			}
 		</div>
 	</fieldset>
-	<fieldset>
-		<legend class="mb-1 text-sm font-medium">Skip</legend>
-		<div class="flex flex-wrap gap-4">
-			for _, s := range db.SecondaryTypes {
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" name="skip" value={ s } checked?={ slices.Contains(f.SkipSecondary, s) }/>
-					{ s }
-				</label>
+	<fieldset class="grid gap-2">
+		@sectionLabel("Skip")
+		<div class="flex flex-wrap gap-2">
+			for _, sk := range db.SecondaryTypes {
+				@choice("skip", sk, sk, slices.Contains(f.SkipSecondary, sk), true)
 			}
 		</div>
 	</fieldset>
@@ -102,12 +107,12 @@ templ followFilters(follow *db.Follow) {
 templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
 	{{ tab := filter.Status }}
 	@layout("Inbox", PageInbox) {
-		@pageHead("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist")))
-
-		<nav class="mb-4 flex gap-4 text-sm" aria-label="Inbox tabs">
-			@inboxTab("/inbox", "New", newCount, tab == "new")
-			@inboxTab("/inbox?tab=ignored", "Ignored", ignoredCount, tab == "ignored")
-		</nav>
+		@pageHead("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))) {
+			@segmented("Inbox tabs", []SegOption{
+				{Label: fmt.Sprintf("New (%d)", newCount), Href: "/inbox", On: tab == "new"},
+				{Label: fmt.Sprintf("Ignored (%d)", ignoredCount), Href: "/inbox?tab=ignored", On: tab == "ignored"},
+			})
+		}
 		<form
 			class="mb-4 flex flex-wrap items-end gap-3 text-sm"
 			hx-get="/inbox"
@@ -167,11 +172,11 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 					}
 				}
 			}
-			<div class="grid gap-4">
+			<div class="grid gap-6">
 				for _, g := range groupInbox(releases) {
 					<details class="inbox-group" data-artist={ g.ArtistID } open>
 						<summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 py-1">
-							<span class="font-semibold">{ g.Name } <span class="font-normal text-fg-muted">({ fmt.Sprint(len(g.Releases)) })</span></span>
+							<span class="section-label">{ g.Name } <span class="font-normal">({ fmt.Sprint(len(g.Releases)) })</span></span>
 							if tab == "new" && len(g.Releases) > 1 {
 								<button
 									class="btn"
@@ -180,9 +185,11 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 								>Confirm all</button>
 							}
 						</summary>
-						<div class="mt-2 grid gap-2">
-							for _, r := range g.Releases {
-								@inboxRelease(r, tab)
+						<div class="mt-1">
+							@list() {
+								for _, r := range g.Releases {
+									@inboxRelease(r, tab)
+								}
 							}
 						</div>
 					</details>
@@ -191,60 +198,50 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 		</div>
 		<script src="/assets/js/inbox.js" defer></script>
 		if len(follows) > 0 {
-			<h2 class="mt-10 mb-3 text-lg font-semibold">Following</h2>
-			<ul class="card divide-y divide-line">
-				for _, f := range follows {
-					<li class="flex flex-wrap items-center justify-between gap-2 py-2">
-						<a href={ templ.SafeURL("/artists/" + f.Artist.ID.String() + "/follow") }>{ f.Artist.Name }</a>
-						<span class="text-sm text-fg-muted">{ lastChecked(f.LastChecked) }</span>
-					</li>
+			<div class="mt-10">
+				@sectionLabel("Following")
+				@list() {
+					for _, f := range follows {
+						@row("row-2 row-pad") {
+							<a href={ templ.SafeURL("/artists/" + f.Artist.ID.String() + "/follow") }>{ f.Artist.Name }</a>
+							<span class="text-sm text-fg-muted">{ lastChecked(f.LastChecked) }</span>
+						}
+					}
 				}
-			</ul>
+			</div>
 		}
 	}
 }
 
-templ inboxTab(href, label string, n int, active bool) {
-	<a
-		href={ templ.SafeURL(href) }
-		class={ "border-b-2 pb-1 no-underline", templ.KV("border-accent font-semibold text-accent", active), templ.KV("border-transparent text-fg-muted", !active) }
-		if active {
-			aria-current="page"
-		}
-	>{ fmt.Sprintf("%s (%d)", label, n) }</a>
-}
-
 templ inboxRelease(r *db.InboxRelease, tab string) {
-	<article class="card py-2" id={ "inbox-" + r.ReleaseGroupMBID }>
-		<div class="flex flex-wrap items-center gap-3">
-			<img
-				class="size-10 shrink-0 rounded bg-panel-2 object-cover"
-				src={ r.Data.CoverURL }
-				alt=""
-				loading="lazy"
-				onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
-			/>
-			<div class="min-w-0 flex-1">
-				<h2 class="truncate font-semibold">
-					<a href={ templ.SafeURL("https://musicbrainz.org/release-group/" + r.ReleaseGroupMBID) } target="_blank" rel="noopener">{ r.Title }</a>
-				</h2>
-				<p class="truncate text-sm text-fg-muted">
-					{ r.ArtistName } · { audio.ReleaseType(r.Type).Label() }
-					if r.Date != "" {
-						{ " · " + r.Date }
-					}
-					{ fmt.Sprintf(" · %d of %d in library", r.Owned(), len(r.Data.Tracks)) }
-				</p>
-			</div>
-			<div class="flex gap-2">
-				<button class="btn btn-ghost" type="button" hx-get={ "/ui/inbox/" + r.ReleaseGroupMBID } hx-target="next .inbox-details" hx-swap="innerHTML">Show tracklist</button>
-				if tab == "ignored" {
-					<button class="btn btn-ghost" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/restore" }>Move back to New</button>
-				} else {
-					<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/confirm" }>Confirm</button>
-					<button class="btn btn-ghost" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/ignore" }>Don't ask again</button>
-				}
-			</div>
+	<article class="row row-inbox" id={ "inbox-" + r.ReleaseGroupMBID }>
+		<img
+			class="cover"
+			width="40"
+			height="40"
+			style="width:40px;height:40px"
+			src={ r.Data.CoverURL }
+			alt=""
+			onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+		/>
+		<div class="stack">
+			<b>
+				<a class="text-fg" href={ templ.SafeURL("https://musicbrainz.org/release-group/" + r.ReleaseGroupMBID) } target="_blank" rel="noopener">{ r.Title }</a>
+			</b>
+			<span>{ r.ArtistName + fmt.Sprintf(" · %d of %d in library", r.Owned(), len(r.Data.Tracks)) }</span>
+		</div>
+		<span class="inbox-kind">
+			@chipKind(audio.ReleaseType(r.Type).Label())
+		</span>
+		<span class="inbox-date mono text-fg-muted">{ r.Date }</span>
+		<div class="inbox-acts">
+			<button class="btn btn-ghost" type="button" hx-get={ "/ui/inbox/" + r.ReleaseGroupMBID } hx-target="next .inbox-details" hx-swap="innerHTML">Show tracklist</button>
+			if tab == "ignored" {
+				<button class="btn btn-ghost" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/restore" }>Move back to New</button>
+			} else {
+				<button class="btn" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/confirm" }>Confirm</button>
+				<button class="btn btn-ghost" hx-post={ "/ui/inbox/" + r.ReleaseGroupMBID + "/ignore" }>Don't ask again</button>
+			}
 		</div>
 		<div class="inbox-details"></div>
 	</article>
@@ -255,24 +252,25 @@ templ inboxRelease(r *db.InboxRelease, tab string) {
 templ InboxDetails(r *db.InboxRelease) {
 	<div class="mt-3 flex gap-4">
 		<img
-			class="size-32 shrink-0 rounded bg-panel-2 object-cover"
+			class="cover size-32"
 			src={ r.Data.CoverURL }
 			alt=""
-			loading="lazy"
 			onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
 		/>
-		<ol class="min-w-0 flex-1 text-sm">
+		<div class="list min-w-0 flex-1">
 			for _, t := range r.Data.Tracks {
-				<li class="flex gap-2">
-					<span class="w-8 shrink-0 text-right font-mono text-xs text-fg-muted tabular-nums">{ trackNumber(t) }</span>
-					<span class="flex-1 truncate">{ t.Title }</span>
-					if t.OwnedTrackID != "" {
-						<span class="text-st-done" title="In your library">✓</span>
-					}
-					<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(time.Duration(t.LengthMs) * time.Millisecond) }</span>
-				</li>
+				@row("row-3") {
+					<span class="mono text-right text-fg-muted">{ trackNumber(t) }</span>
+					<span class="truncate">
+						{ t.Title }
+						if t.OwnedTrackID != "" {
+							<span class="text-st-done" title="In your library">✓</span>
+						}
+					</span>
+					<span class="mono text-right text-fg-muted">{ formatDuration(time.Duration(t.LengthMs) * time.Millisecond) }</span>
+				}
 			}
-		</ol>
+		</div>
 	</div>
 }
 
