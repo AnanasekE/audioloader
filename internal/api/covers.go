@@ -1,9 +1,17 @@
 package api
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"uuid"
 
+	"audioloader/internal/avatar"
 	"audioloader/internal/db"
 )
 
@@ -55,12 +63,15 @@ func uploadCover(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/releases/"+id.String())
 }
 
+// getArtistImage serves the artist's own picture, else (normal mode) the
+// cover of their newest release, else a pixel initials tile. Its URL never
+// reveals a release ID.
 func getArtistImage(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathUUID(w, r, "artist_id")
-	if !ok || !visibleArtist(w, r, id.String()) {
+	if !ok {
 		return
 	}
-	path, err := db.ArtistImagePath(id)
+	artist, err := db.GetArtist(viewer(r), id.String())
 	if errors.Is(err, db.ErrNotFound) {
 		http.NotFound(w, r)
 		return
@@ -70,8 +81,48 @@ func getArtistImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	// the URL carries the file's name as its version, so a new picture gets a new URL
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	// fallbacks change without a new URL, so keep the cache short
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+
+	path, err := db.ArtistImagePath(id)
+	if err == nil {
+		serveFileETag(w, r, path, "p")
+		return
+	}
+	if !errors.Is(err, db.ErrNotFound) {
+		serverError(w, err)
+		return
+	}
+	releaseID, err := db.NewestReleaseCover(viewer(r), id.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if releaseID != "" {
+		if rid, perr := uuid.Parse(releaseID); perr == nil {
+			if path, err := db.CoverFilePath(rid); err == nil {
+				serveFileETag(w, r, path, "c")
+				return
+			}
+		}
+	}
+	tile, err := avatar.Tile(artist.Name)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	// hex, since an ETag may not hold spaces
+	name := strings.ToLower(strings.TrimSpace(artist.Name))
+	w.Header().Set("ETag", fmt.Sprintf(`"t-%x-%d"`, name, avatar.ColorIndex(name)))
+	http.ServeContent(w, r, "tile.png", time.Time{}, bytes.NewReader(tile))
+}
+
+// serveFileETag serves path with an ETag made of kind, the file's name and
+// its modification time, so a changed file never matches.
+func serveFileETag(w http.ResponseWriter, r *http.Request, path, kind string) {
+	if fi, err := os.Stat(path); err == nil {
+		w.Header().Set("ETag", fmt.Sprintf(`"%s-%s-%d"`, kind, filepath.Base(path), fi.ModTime().UnixNano()))
+	}
 	http.ServeFile(w, r, path)
 }
 

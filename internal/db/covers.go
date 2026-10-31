@@ -146,10 +146,32 @@ func SaveCoverImage(id uuid.UUID, r io.Reader) error {
 // ArtistImagesDir is where artist pictures are stored as <artist uuid>-<n><ext>.
 var ArtistImagesDir = "data/artists"
 
-// artistImgURL is the SQL for an artist's picture URL on a table aliased a:
-// the stored picture when there is one (the file name is the cache-busting
-// version), else the default image.
-const artistImgURL = `CASE WHEN a.image IS NULL THEN a.img_url ELSE '/artist-images/' || a.uuid || '?v=' || a.image END`
+// artistImgURL is the SQL for an artist's picture URL on a table aliased a.
+// It is always the endpoint, which serves the stored picture, else the
+// newest release's cover, else an initials tile. A stored picture's file
+// name is the cache-busting version; a changing fallback has none, and
+// relies on the endpoint's short max-age.
+const artistImgURL = `'/artist-images/' || a.uuid || CASE WHEN a.image IS NULL THEN '' ELSE '?v=' || a.image END`
+
+// NewestReleaseCover returns the ID of the artist's newest release that has
+// a cover and that v may see, by date then by when it was added, or "".
+// Secret mode never shows release covers.
+func NewestReleaseCover(v Viewer, artistID string) (string, error) {
+	if v.IsSecret() {
+		return "", nil
+	}
+	var id string
+	err := DB.QueryRow(`
+		SELECT r.uuid FROM releases r
+		JOIN release_artist_map m ON m.release_id = r.uuid
+		WHERE m.artist_id = ? AND r.img_url LIKE '/covers/%' AND `+v.releaseCond("r")+`
+		ORDER BY COALESCE(r.release_date, '') DESC, r.rowid DESC
+		LIMIT 1;`, artistID).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
+}
 
 // ArtistImagePath returns the path of the stored picture of artist id.
 func ArtistImagePath(id uuid.UUID) (string, error) {
@@ -195,7 +217,7 @@ func SaveArtistImage(id uuid.UUID, r io.Reader) error {
 	return nil
 }
 
-// RemoveArtistImage returns the artist to the default picture.
+// RemoveArtistImage drops the stored picture; the artist falls back to a release cover or tile.
 func RemoveArtistImage(id uuid.UUID) error {
 	var old sql.NullString
 	err := DB.QueryRow(`SELECT image FROM artists WHERE uuid = ?;`, id.String()).Scan(&old)

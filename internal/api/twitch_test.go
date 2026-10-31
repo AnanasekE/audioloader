@@ -93,7 +93,7 @@ func TestArtistTwitch(t *testing.T) {
 	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "no channel") {
 		t.Fatalf("unknown = %d %s", rec.Code, rec.Body.String())
 	}
-	if c := current(); c.login != "nobody" || strings.HasPrefix(c.img, "/artist-images/") {
+	if c := current(); c.login != "nobody" || strings.Contains(c.img, "?v=") {
 		t.Fatalf("after unknown: %+v", c)
 	}
 
@@ -102,7 +102,7 @@ func TestArtistTwitch(t *testing.T) {
 		t.Fatalf("known = %d %s", rec.Code, rec.Body.String())
 	}
 	c := current()
-	if c.login != "known" || !strings.HasPrefix(c.img, "/artist-images/") {
+	if c.login != "known" || !strings.Contains(c.img, "?v=") {
 		t.Fatalf("after known: %+v", c)
 	}
 	file, err := db.ArtistImagePath(a.ID)

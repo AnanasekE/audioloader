@@ -88,7 +88,7 @@ func TestArtistImage(t *testing.T) {
 	if _, err := os.Stat(second); !os.IsNotExist(err) {
 		t.Fatalf("picture still there: %v", err)
 	}
-	if got, _ := GetArtist(All, a.ID.String()); got.ImgURL != "/assets/img/default_pfp.png" {
+	if got, _ := GetArtist(All, a.ID.String()); got.ImgURL != "/artist-images/"+a.ID.String() {
 		t.Fatalf("ImgURL = %q", got.ImgURL)
 	}
 	// the track and release lists show it too
