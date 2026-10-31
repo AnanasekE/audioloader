@@ -16,13 +16,11 @@ The Expo app in `mobile/` browses and plays the library (see `FEATURES.md`). Sti
 
 The ☰ popover is small; decide whether it becomes a full-screen sheet or part of an expanded player.
 
-## Share to the app from iOS (secret auto-download)
+## Move YouTube imports onto their MusicBrainz release
 
-Sharing a page from the secret source in Safari (or another app) through the iOS share sheet sends it to audioloader, which downloads it as a secret track without opening the web form.
+A YouTube import (video or playlist) is auto-tagged, but it stays on the release chosen at import (often a single). When the applied match puts the recording on a different MusicBrainz release, for example an album, the track should be able to move there.
 
-- **Entry point:** an iOS Shortcut that shows in the share sheet, which needs no app, or a share extension in the Expo app above. The Shortcut can come first.
-- **Endpoint:** a POST that takes the page URL and queues the same job as the secret-mode "Download from URL" form. The same rules apply: only the configured host, https only, only the checked URL is fetched, and dedupe by `source_url` and fingerprint.
-- **Never name the site** in the repo, as for the existing secret source.
-- **Auth:** it must work without a browser session. A long random token in an env var (e.g. `AUDIOLOADER_SHARE_TOKEN`), sent as a header and compared in constant time. It is only valid for this one endpoint and always creates secret tracks.
-- **Creator question decided:** from the URL, as the Download from URL form does since plan 19. A "needs creators" state, where shared tracks wait in secret mode until creators are picked (as Downloads holds "needs a pick"), stays only as the fallback for URLs without an uploader.
-- **Feedback:** the share responds quickly with "queued" or a clear error (wrong host, already in library). The track appears in secret mode when the job finishes.
+- **Offer, don't overwrite:** the "never overwrites what you set" rule stays the default. The Tagging page offers "Move to <release>" on matches whose release differs from the track's, and the track moves only when the user accepts.
+- **The target release** is created from MusicBrainz as the Add page does (plan 23), with its artists, IDs and cover, or reused if the library has it. The other tracks of that release are not added; the release shows them as missing, like any partly owned release.
+- **The old release** is deleted if the move leaves it empty and it was created by the import (a single named after the video).
+- **Open:** whether matches scoring 90%+ should move without asking, as a setting.
