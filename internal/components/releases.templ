@@ -9,7 +9,7 @@ import (
 
 templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
 	@layout("Releases", PageReleases) {
-		@pageHeader("Releases", fmt.Sprintf("%d in library", len(releases))) {
+		@pageHead("Releases", fmt.Sprintf("%d in library", len(releases))) {
 		}
 		<details class="mb-8" open?={ len(releases) == 0 }>
 			<summary class="mb-2 cursor-pointer text-sm font-medium">New release</summary>
@@ -310,7 +310,7 @@ templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
 
 templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.Artist) {
 	@layout("Edit "+r.Title, PageReleases) {
-		@pageHeader("Edit release", r.Type.Label()+": "+r.Title) {
+		@pageHead("Edit release", r.Type.Label()+": "+r.Title) {
 			<a class="btn btn-ghost" href={ releaseURL(r) }>Cancel</a>
 		}
 		@releaseDetailsForm(r, artists)

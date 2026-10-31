@@ -23,6 +23,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /artist-images/{artist_id}", getArtistImage)
 	handle(mux, "GET /track-images/{track_id}", getTrackImage)
 	handle(mux, "GET /{$}", getIndex)
+	handle(mux, "GET /dev/kit", getDevKit)
 	handle(mux, "GET /vault", getVaultPage)
 	handle(mux, "POST /vault", unlockVault)
 	handle(mux, "POST /vault/lock", lockVault)

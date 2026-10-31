@@ -74,7 +74,7 @@ func DownloadsPage(active, needsPick, failed, notFound []*db.Download, ytErr, sp
 				ctx = templ.InitializeContext(ctx)
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Downloads", fmt.Sprintf("%d in progress · %d need a pick · %d failed · %d not found", len(active), len(needsPick), len(failed), len(notFound))).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Downloads", fmt.Sprintf("%d in progress · %d need a pick · %d failed · %d not found", len(active), len(needsPick), len(failed), len(notFound))).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -966,7 +966,7 @@ func YouTubeImportPage(recent []jobs.Job) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Import from YouTube", "Download a video or a whole playlist as tracks").Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Import from YouTube", "Download a video or a whole playlist as tracks").Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

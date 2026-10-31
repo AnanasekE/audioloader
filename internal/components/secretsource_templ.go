@@ -87,7 +87,7 @@ func SecretSourcePage(prefill string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Download from URL", "Paste the address of a page; you pick the creators yourself").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Download from URL", "Paste the address of a page; you pick the creators yourself").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -10,7 +10,7 @@ const PageShows = "shows"
 
 templ ShowsPage(shows []*audio.Show, continueListening []*audio.Track) {
 	@layout("Podcasts", PageShows) {
-		@pageHeader("Podcasts", plural(len(shows), "show")) {
+		@pageHead("Podcasts", plural(len(shows), "show")) {
 			<a class="btn" href="/upload#episode">Upload episode</a>
 		}
 		@ContinueListening(continueListening)

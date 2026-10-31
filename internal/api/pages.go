@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net"
 	"net/http"
 	"strings"
 
@@ -162,4 +163,15 @@ func uploadTargets(r *http.Request) ([]*audio.Release, error) {
 		}
 	}
 	return out, nil
+}
+
+// getDevKit shows the component kit. Temporary (plan 18, removed in step
+// 12), and only for requests from the machine itself.
+func getDevKit(w http.ResponseWriter, r *http.Request) {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if ip := net.ParseIP(host); err != nil || ip == nil || !ip.IsLoopback() {
+		http.NotFound(w, r)
+		return
+	}
+	render(w, r, components.DevKitPage())
 }

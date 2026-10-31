@@ -10,7 +10,7 @@ const PagePlaylists = "playlists"
 
 templ PlaylistsPage(playlists []*audio.Playlist) {
 	@layout("Playlists", PagePlaylists) {
-		@pageHeader("Playlists", plural(len(playlists), "playlist")) {
+		@pageHead("Playlists", plural(len(playlists), "playlist")) {
 		}
 		<form
 			class="card mb-6 flex flex-wrap items-center gap-2"
@@ -76,7 +76,7 @@ templ PlaylistPage(p *audio.Playlist) {
 
 templ PlaylistEditPage(p *audio.Playlist) {
 	@layout("Edit "+p.Name, PagePlaylists) {
-		@pageHeader("Edit playlist", p.Name) {
+		@pageHead("Edit playlist", p.Name) {
 			<a class="btn btn-ghost" href={ playlistURL(p) }>Cancel</a>
 		}
 		<form

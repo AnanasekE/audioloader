@@ -17,7 +17,7 @@ const PageInbox = "inbox"
 // candidates when unknown, and which releases to track.
 templ FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, searchErr string) {
 	@layout("Follow "+a.Name, PageArtists) {
-		@pageHeader("Follow "+a.Name, "Get new releases in your inbox") {
+		@pageHead("Follow "+a.Name, "Get new releases in your inbox") {
 			<a class="btn btn-ghost" href="/artists">Back</a>
 		}
 		<form
@@ -102,7 +102,7 @@ templ followFilters(follow *db.Follow) {
 templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
 	{{ tab := filter.Status }}
 	@layout("Inbox", PageInbox) {
-		@pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist")))
+		@pageHead("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist")))
 
 		<nav class="mb-4 flex gap-4 text-sm" aria-label="Inbox tabs">
 			@inboxTab("/inbox", "New", newCount, tab == "new")

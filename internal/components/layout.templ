@@ -229,26 +229,13 @@ templ navLinkBadge(href string, label string, current bool, badgeURL string) {
 	</li>
 }
 
-// pageHeader renders the page title and subtitle; children are actions on the right.
-templ pageHeader(title string, subtitle string) {
-	<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">{ title }</h1>
-			<p class="text-fg-muted">{ subtitle }</p>
-		</div>
-		<div>
-			{ children... }
-		</div>
-	</div>
-}
-
 // Notice is a short status message, swapped into a form's result area.
 templ Notice(msg string) {
 	<p class="mt-4 rounded-md border-l-4 border-st-done bg-panel px-3 py-2 text-sm">{ msg }</p>
 }
 
 templ emptyState() {
-	<p class="rounded-lg border border-dashed border-line p-8 text-center text-fg-muted">
+	<p class="rounded-lg border border-dashed border-line px-4 py-12 text-center text-fg-muted">
 		{ children... }
 	</p>
 }
@@ -380,24 +367,4 @@ templ icon(name string) {
 				<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
 		}
 	</svg>
-}
-
-// statusChip is a mono label tinted with the colour of its status:
-// queued, running, done, failed or review. Other statuses stay neutral.
-templ statusChip(status string, label string) {
-	<span class={ "inline-block rounded-sm px-1.5 py-0.5 font-mono text-xs", statusChipClass(status) }>{ label }</span>
-}
-
-func statusChipClass(status string) string {
-	switch status {
-	case "running":
-		return "bg-[color-mix(in_srgb,var(--st-running)_14%,transparent)] text-st-running"
-	case "done":
-		return "bg-[color-mix(in_srgb,var(--st-done)_14%,transparent)] text-st-done"
-	case "failed":
-		return "bg-[color-mix(in_srgb,var(--st-failed)_14%,transparent)] text-st-failed"
-	case "review":
-		return "bg-[color-mix(in_srgb,var(--st-review)_14%,transparent)] text-st-review"
-	}
-	return "bg-[color-mix(in_srgb,var(--st-queued)_14%,transparent)] text-st-queued"
 }

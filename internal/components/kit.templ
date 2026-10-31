@@ -1,0 +1,261 @@
+package components
+
+import "fmt"
+
+// The component kit: the parts every page is built from, ported from
+// docs/design/console-mockup.html. Their CSS is in styles/input.css.
+
+// pageHead is the page title, a muted meta line, and the page's actions on
+// the right (children). A filter is one of the actions: filterInput.
+templ pageHead(title string, meta string) {
+	<div class="page-head">
+		<div>
+			<h1>{ title }</h1>
+			if meta != "" {
+				<p class="meta">{ meta }</p>
+			}
+		</div>
+		<div class="actions">
+			{ children... }
+		</div>
+	</div>
+}
+
+// filterInput narrows the rows of a list marked data-filter-rows by their
+// text, in the browser (assets/js/filter.js).
+templ filterInput(placeholder string) {
+	<input class="input filter" type="search" placeholder={ placeholder } aria-label={ placeholder } autocomplete="off" data-filter/>
+}
+
+// sectionLabel is the small uppercase label above a group: a disc, a shelf.
+templ sectionLabel(text string) {
+	<h2 class="section-label">{ text }</h2>
+}
+
+// list is the panel that holds rows; listHead and row go inside it.
+templ list() {
+	<div class="list">
+		{ children... }
+	</div>
+}
+
+// listHead is a list's label row. cols fill the cells of cls, a row layout
+// such as row-track; a label that starts with ">" is right-aligned.
+templ listHead(cls string, cols ...string) {
+	<div class={ "row row-head", cls } aria-hidden="true">
+		for _, c := range cols {
+			if len(c) > 0 && c[0] == '>' {
+				<span class="r">{ c[1:] }</span>
+			} else {
+				<span>{ c }</span>
+			}
+		}
+	</div>
+}
+
+// row is a list row laid out by cls (row-track, row-3, row-2, or a grid of
+// the page's own).
+templ row(cls string) {
+	<div class={ "row", cls }>
+		{ children... }
+	</div>
+}
+
+// rowBar is the strip at the top or bottom of a list: a disc's total, a
+// count. Children are its two ends.
+templ rowBar(top bool) {
+	<div class={ "row row-bar", templ.KV("top", top) }>
+		{ children... }
+	</div>
+}
+
+// cover is a pixelated square image of size px.
+templ cover(src string, size int) {
+	<img class="cover" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) } loading="lazy"/>
+}
+
+// avatar is the round variant, for artists.
+templ avatar(src string, size int) {
+	<img class="avatar" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) } loading="lazy"/>
+}
+
+// plain turns text into a component, for the slots that take one.
+templ plain(s string) {
+	{ s }
+}
+
+// chip is a small tag.
+templ chip(label string) {
+	<span class="chip">{ label }</span>
+}
+
+// chipAccent is a chip in the accent colour: a matched tag, the current choice.
+templ chipAccent(label string) {
+	<span class="chip chip-accent">{ label }</span>
+}
+
+// chipKind is the uppercase release-type label above a title.
+templ chipKind(label string) {
+	<span class="chip chip-kind">{ label }</span>
+}
+
+// statusChip is a dot and a label tinted with the colour of its status:
+// queued, running, done, failed or review. Other statuses stay neutral.
+templ statusChip(status string, label string) {
+	<span class={ "status", statusChipClass(status) }>{ label }</span>
+}
+
+func statusChipClass(status string) string {
+	switch status {
+	case "running", "done", "failed", "review":
+		return "status-" + status
+	}
+	return ""
+}
+
+// mediaHeader is the header of a release, playlist or show: a big cover, a
+// kind label, the title, a line under it (artists, say), a mono meta line
+// such as "2024 · 12 tracks · 48:10", and the page's actions (children).
+templ mediaHeader(coverSrc string, kind string, title string, sub templ.Component, meta string) {
+	@mediaHead(coverSrc, kind, title, sub, meta, false) {
+		{ children... }
+	}
+}
+
+// avatarHeader is mediaHeader with a round picture, for artists.
+templ avatarHeader(src string, kind string, title string, sub templ.Component, meta string) {
+	@mediaHead(src, kind, title, sub, meta, true) {
+		{ children... }
+	}
+}
+
+templ mediaHead(src string, kind string, title string, sub templ.Component, meta string, round bool) {
+	<header class="media-head">
+		if round {
+			<img class="avatar" src={ src } alt=""/>
+		} else {
+			<img class="cover" src={ src } alt=""/>
+		}
+		<div class="min-w-0 flex-1">
+			if kind != "" {
+				@chipKind(kind)
+			}
+			<h1>{ title }</h1>
+			if sub != nil {
+				<div class="sub">
+					@sub
+				</div>
+			}
+			if meta != "" {
+				<p class="meta mono">{ meta }</p>
+			}
+			<div class="actions">
+				{ children... }
+			</div>
+		</div>
+	</header>
+}
+
+// cardGrid lays out card tiles.
+templ cardGrid() {
+	<div class="card-grid">
+		{ children... }
+	</div>
+}
+
+// card is a linked tile: a square cover, a title and a mono line under it.
+templ card(coverSrc string, title string, sub string, href string) {
+	<a class="tile" href={ templ.SafeURL(href) }>
+		<img class="cover" src={ coverSrc } alt="" loading="lazy"/>
+		<span class="stack">
+			<b class="truncate font-medium">{ title }</b>
+			if sub != "" {
+				<span class="mono truncate text-xs text-fg-muted">{ sub }</span>
+			}
+		</span>
+	</a>
+}
+
+// avatarCard is card with a round picture, for artists.
+templ avatarCard(src string, title string, sub string, href string) {
+	<a class="tile" href={ templ.SafeURL(href) }>
+		<img class="avatar" src={ src } alt="" loading="lazy"/>
+		<span class="stack">
+			<b class="truncate font-medium">{ title }</b>
+			if sub != "" {
+				<span class="mono truncate text-xs text-fg-muted">{ sub }</span>
+			}
+		</span>
+	</a>
+}
+
+// progress is the thin bar of a download or an episode.
+templ progress(pct int) {
+	<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={ fmt.Sprint(pct) }>
+		<i style={ fmt.Sprintf("width:%d%%", pct) }></i>
+	</div>
+}
+
+// SegOption is one choice of a segmented control. It is a link, so the
+// choice lives in the URL; Attrs adds e.g. hx-* attributes.
+type SegOption struct {
+	Label string
+	Href  string
+	On    bool
+	Attrs templ.Attributes
+}
+
+// segmented is the mockup's seg control: a sort order, all/any, a tab.
+templ segmented(label string, options []SegOption) {
+	<nav class="seg" aria-label={ label }>
+		for _, o := range options {
+			if o.On {
+				<a href={ templ.SafeURL(o.Href) } aria-current="page" { o.Attrs... }>{ o.Label }</a>
+			} else {
+				<a href={ templ.SafeURL(o.Href) } { o.Attrs... }>{ o.Label }</a>
+			}
+		}
+	</nav>
+}
+
+// formPanel is the panel a form sits in, its fields stacked 16px apart.
+templ formPanel() {
+	<div class="form-panel">
+		{ children... }
+	</div>
+}
+
+// field is a label, the control (children) and an optional hint under it.
+// Wrapping the control in the label keeps them associated without ids.
+templ field(label string, hint string) {
+	<label class="field">
+		<span class="label">{ label }</span>
+		{ children... }
+		if hint != "" {
+			<span class="hint">{ hint }</span>
+		}
+	</label>
+}
+
+// choice is a pill that is a radio button (or a checkbox, with multi).
+templ choice(name string, value string, label string, checked bool, multi bool) {
+	<label class="choice">
+		<input
+			class="sr-only"
+			if multi {
+				type="checkbox"
+			} else {
+				type="radio"
+			}
+			name={ name }
+			value={ value }
+			checked?={ checked }
+		/>
+		{ label }
+	</label>
+}
+
+// eqBars are the animated playing bars.
+templ eqBars() {
+	<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+}

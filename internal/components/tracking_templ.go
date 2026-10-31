@@ -74,7 +74,7 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Follow "+a.Name, "Get new releases in your inbox").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Follow "+a.Name, "Get new releases in your inbox").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -479,7 +479,7 @@ func InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ign
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = pageHeader("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

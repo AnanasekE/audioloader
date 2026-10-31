@@ -10,7 +10,7 @@ import (
 // SearchPage shows every kind of match for q.
 templ SearchPage(q string, res *db.SearchResults) {
 	@layout("Search", "") {
-		@pageHeader("Search", searchSubtitle(q)) {
+		@pageHead("Search", searchSubtitle(q)) {
 		}
 		if q != "" && !secretMode(ctx) {
 			<p class="mb-6 text-sm text-fg-muted">

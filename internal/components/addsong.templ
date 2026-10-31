@@ -27,7 +27,7 @@ func (c SongCandidate) Owned() bool { return c.OwnedTrackID != "" }
 // searches at once.
 templ AddSongPage(q string) {
 	@layout("Add a song", PageAddSong) {
-		@pageHeader("Add a song", "Search MusicBrainz, then YouTube") {
+		@pageHead("Add a song", "Search MusicBrainz, then YouTube") {
 			<a class="btn" href="/upload">Upload</a>
 		}
 		<div hx-on::after-request="document.getElementById('add-status').textContent = event.detail.successful ? '' : event.detail.xhr.responseText">

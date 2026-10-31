@@ -9,7 +9,7 @@
 Each step ticks its own box in the same commit. The last ticked step is always a working app (`make build && ./audioloader`); resume at the first unticked box with a clean `git status`.
 
 - [x] 1. Demo data and screenshot script
-- [ ] 2. Component kit
+- [x] 2. Component kit
 - [ ] 3. Tracks and search
 - [ ] 4. Release page
 - [ ] 5. Releases and artists

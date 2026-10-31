@@ -105,7 +105,7 @@ func TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHeader("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
+			templ_7745c5c3_Err = pageHead("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
 				status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

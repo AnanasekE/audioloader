@@ -12,7 +12,7 @@ import (
 
 templ ArtistsPage(artists []*audio.Artist) {
 	@layout("Artists", PageArtists) {
-		@pageHeader("Artists", fmt.Sprintf("%d in library", len(artists))) {
+		@pageHead("Artists", fmt.Sprintf("%d in library", len(artists))) {
 		}
 		@AddArtistForm()
 		if !secretMode(ctx) {

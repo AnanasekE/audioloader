@@ -9,6 +9,7 @@
 # @show, @track-edit. With no pages it shoots all of them.
 # Output: tmp/shots/<name>-<w>.png, and mock-<view>-<w>.png for the mockup.
 # SHOTS_RESEED=1 starts over with a fresh seeded database.
+# SHOTS_H=2400 makes the screenshots taller, to see a long page.
 # SHOTS_THEME=light shoots the light theme (name gets a -light suffix).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,7 +20,7 @@ PORT=${SHOTS_PORT:-18090}
 SPORT=$((PORT + 1))
 BASE=http://127.0.0.1:$PORT
 SBASE=http://127.0.0.1:$SPORT
-SIZES=("1440 900" "390 844")
+SIZES=("1440 ${SHOTS_H:-900}" "390 ${SHOTS_H:-844}")
 THEME=${SHOTS_THEME:-dark}
 SUFFIX=; [ "$THEME" = light ] && SUFFIX=-light
 

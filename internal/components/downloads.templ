@@ -21,7 +21,7 @@ const PageDownloads = "downloads"
 // spErr are why yt-dlp and spotDL are unavailable, or "".
 templ DownloadsPage(active, needsPick, failed, notFound []*db.Download, ytErr, spErr string) {
 	@layout("Downloads", PageDownloads) {
-		@pageHeader("Downloads", fmt.Sprintf("%d in progress · %d need a pick · %d failed · %d not found", len(active), len(needsPick), len(failed), len(notFound))) {
+		@pageHead("Downloads", fmt.Sprintf("%d in progress · %d need a pick · %d failed · %d not found", len(active), len(needsPick), len(failed), len(notFound))) {
 		}
 		if ytErr != "" {
 			<p class="card mb-6 text-sm">YouTube downloads are off: { ytErr }.</p>
@@ -243,7 +243,7 @@ func formatSeconds(s float64) string {
 // YouTubeImportPage imports videos or a playlist as new tracks.
 templ YouTubeImportPage(recent []jobs.Job) {
 	@layout("Import from YouTube", PageUpload) {
-		@pageHeader("Import from YouTube", "Download a video or a whole playlist as tracks") {
+		@pageHead("Import from YouTube", "Download a video or a whole playlist as tracks") {
 			<a class="btn" href="/upload">Upload</a>
 		}
 		<form

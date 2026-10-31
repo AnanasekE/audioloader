@@ -22,7 +22,7 @@ const (
 // come), creator or tag.
 templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy string) {
 	@layout("Tracks", PageTracks) {
-		@pageHeader("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
+		@pageHead("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
 			if !secretMode(ctx) {
 				<a class="btn" href="/add">Add song</a>
 			}
@@ -114,7 +114,7 @@ func GroupTracks(tracks []*audio.Track, sortBy string) []TrackGroup {
 // uploaded together in batch mode. The switch is CSS only (group-has).
 templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 	@layout("Upload", PageUpload) {
-		@pageHeader("Upload", "Add music to the library") {
+		@pageHead("Upload", "Add music to the library") {
 			<div class="flex flex-wrap gap-2">
 				<a class="btn btn-ghost" href="/upload/import">Import library</a>
 				<a class="btn btn-ghost" href="/upload/batch">Batch mode</a>
@@ -274,35 +274,35 @@ templ trackMenu(t *audio.Track) {
 	if t.HasFile {
 		<details class="relative" data-track-menu>
 			<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8" aria-label={ "More for " + t.Title }>⋯</summary>
-			<div class="absolute right-0 z-10 mt-1 grid w-44 rounded-md border border-line bg-panel p-1 text-sm shadow-(--shadow-pop)">
-				<button type="button" class="rounded px-2 py-1 text-left hover:bg-panel-2" data-queue="next">Play next</button>
-				<button type="button" class="rounded px-2 py-1 text-left hover:bg-panel-2" data-queue="add">Add to queue</button>
+			<div class="pop absolute right-0 z-10 mt-1 grid w-48">
+				<button type="button" class="menu-item" data-queue="next">Play next</button>
+				<button type="button" class="menu-item" data-queue="add">Add to queue</button>
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-panel-2"
+					class="menu-item"
 					hx-get={ "/ui/playlists/picker?track_id=" + t.ID.String() }
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
-				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-panel-2 hover:no-underline" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
+				<a class="menu-item" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
 				if !t.IsEpisode() && !t.Secret {
-					<a class="rounded px-2 py-1 text-left text-inherit hover:bg-panel-2 hover:no-underline" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
+					<a class="menu-item" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
 				}
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-panel-2"
+					class="menu-item"
 					hx-get={ "/ui/tracks/" + t.ID.String() + "/trim" }
 					hx-swap="outerHTML"
 				>Trim silence…</button>
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-panel-2"
+					class="menu-item"
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
 				if vaultEnabled(ctx) {
 					<button
 						type="button"
-						class="rounded px-2 py-1 text-left hover:bg-panel-2"
+						class="menu-item"
 						hx-post={ "/ui/tracks/" + t.ID.String() + "/secret" }
 						hx-confirm={ secretConfirm(t) }
 					>
@@ -477,7 +477,7 @@ templ TrimPreview(t *audio.Track, p trim.Plan, errMsg string) {
 			<p>{ formatDuration(p.Total) + " → " + formatDuration(p.CutAt) }</p>
 			<button
 				type="button"
-				class="rounded px-2 py-1 text-left hover:bg-panel-2"
+				class="menu-item"
 				hx-post={ "/ui/tracks/" + t.ID.String() + "/trim" }
 				hx-confirm={ trimConfirm(t, p) }
 				hx-indicator="next .htmx-indicator"
@@ -526,7 +526,7 @@ templ secretTrackDetails(t *audio.Track, highlight map[string]bool) {
 // episode can change kind, and only into a song.
 templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 	@layout("Edit "+t.Title, PageTracks) {
-		@pageHeader("Edit track", t.Title) {
+		@pageHead("Edit track", t.Title) {
 			<a class="btn btn-ghost" href="/tracks">Cancel</a>
 		}
 		if uploader != "" {

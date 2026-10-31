@@ -230,7 +230,8 @@
 		document.querySelectorAll("[data-play-track]").forEach((btn) => {
 			const playing = btn.dataset.id === playingID;
 			btn.setAttribute("aria-pressed", String(playing));
-			btn.textContent = playing ? "❚❚" : "▶";
+			// data-bare buttons draw their own state from aria-pressed (CSS)
+			if (!btn.hasAttribute("data-bare")) btn.textContent = playing ? "❚❚" : "▶";
 		});
 	}
 

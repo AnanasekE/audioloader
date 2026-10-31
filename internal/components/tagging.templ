@@ -25,7 +25,7 @@ type TaggingStatus struct {
 
 templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion, covers []db.CoverSuggestion) {
 	@layout("Tagging", PageTagging) {
-		@pageHeader("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
+		@pageHead("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
 			status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])) {
 			<div class="flex flex-wrap gap-2">
 				<button class="btn" hx-post="/ui/tagging/run">Auto-tag library</button>

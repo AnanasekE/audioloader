@@ -98,7 +98,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = pageHeader("Batch upload", "Into "+release.Type.Label()+": "+release.Title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = pageHead("Batch upload", "Into "+release.Type.Label()+": "+release.Title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -121,7 +121,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = pageHeader("Batch upload", "Each file becomes a secret track").Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = pageHead("Batch upload", "Each file becomes a secret track").Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -144,7 +144,7 @@ func BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []*
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = pageHeader("Batch upload", "Tracks without a release each become a single").Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = pageHead("Batch upload", "Tracks without a release each become a single").Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
