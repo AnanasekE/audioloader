@@ -120,16 +120,14 @@ templ uploadForms(artists []*audio.Artist, shows []*audio.Show) {
 			<div class="flex flex-wrap gap-2">
 				if secretMode(ctx) {
 					// secret tracks have no releases
-					@kindChoice("kind-single", "single", "Track", "episode-form", true)
+					@kindChoice("kind-single", "single", "Track", true)
 				}
 				for _, typ := range audio.ReleaseTypes {
 					if !secretMode(ctx) {
-						// form= ties the choice to the release form, which needs the type
-						@kindChoice("kind-"+string(typ), string(typ), typ.Label(), "new-release-form", typ == audio.ReleaseSingle)
+												@kindChoice("kind-"+string(typ), string(typ), typ.Label(), typ == audio.ReleaseSingle)
 					}
 				}
-				// not part of the release form: an episode isn't a release
-				@kindChoice("kind-episode", "episode", "Podcast episode", "episode-form", false)
+								@kindChoice("kind-episode", "episode", "Podcast episode", false)
 			</div>
 		</fieldset>
 		<div class="hidden group-has-[#kind-single:checked]:block">

@@ -271,11 +271,13 @@ templ popover(label string) {
 	</details>
 }
 
-// kindChoice is a choice pill with an id (for CSS that looks at it) and a
-// form it belongs to, for the upload page's kind of upload.
-templ kindChoice(id string, value string, label string, formID string, checked bool) {
+// kindChoice is a choice pill with an id (for CSS that looks at it), for the
+// upload page's kind of upload. The pills have no form owner: radios only
+// group within one form, so a form= here would split them into groups that
+// can't uncheck each other. upload.js copies the pick into the release form.
+templ kindChoice(id string, value string, label string, checked bool) {
 	<label class="choice">
-		<input id={ id } class="sr-only" type="radio" name="type" value={ value } form={ formID } checked?={ checked }/>
+		<input id={ id } class="sr-only" type="radio" name="kind" value={ value } checked?={ checked }/>
 		{ label }
 	</label>
 }

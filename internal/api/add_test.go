@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -199,5 +200,24 @@ func TestAddPageSecretWithoutSource(t *testing.T) {
 	}
 	if rec := a.do(true, "POST", "/ui/add/lookup", url.Values{"q": {"words"}}); rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != msgSecretNoLinks {
 		t.Errorf("lookup = %d %q", rec.Code, rec.Body)
+	}
+}
+
+// The kind choices on /add must be one radio group: radios only group within
+// the same form owner, so a form= on some of them would leave the episode
+// choice checked for good.
+func TestAddKindChoicesShareOneGroup(t *testing.T) {
+	a := newModeApp(t)
+	re := regexp.MustCompile(`<input id="kind-[^>]*>`)
+	for _, mode := range []bool{false, true} {
+		inputs := re.FindAllString(a.do(mode, "GET", "/add", nil).Body.String(), -1)
+		if len(inputs) < 2 {
+			t.Fatalf("secret %v: found %d kind choices", mode, len(inputs))
+		}
+		for _, in := range inputs {
+			if !strings.Contains(in, `name="kind"`) || strings.Contains(in, "form=") {
+				t.Errorf("secret %v: choice not in the shared group: %s", mode, in)
+			}
+		}
 	}
 }

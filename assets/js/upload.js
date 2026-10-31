@@ -1,5 +1,15 @@
 // Single upload form (AddTrackForm in internal/components/tracks.templ):
 // checks the picked file against the library before it can be submitted.
+// The kind pills (kindChoice in kit.templ) are one radio group with no form
+// owner; the release form gets the picked type through a hidden input.
+(() => {
+	const pick = document.getElementById("release-type-pick");
+	if (!pick) return;
+	document.querySelectorAll("input[type=radio][name=kind]").forEach((r) =>
+		r.addEventListener("change", () => r.checked && (pick.value = r.value)),
+	);
+})();
+
 (() => {
 	const form = document.getElementById("upload-form");
 	if (!form) return;

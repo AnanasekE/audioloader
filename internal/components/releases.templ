@@ -68,6 +68,8 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 			</div>
 			if upload {
 				<input type="hidden" name="next" value="batch"/>
+				// the kind pick (upload.js keeps this in step with it)
+				<input id="release-type-pick" type="hidden" name="type" value="single"/>
 			}
 			<div class="grid grid-cols-2 gap-4">
 				if !upload {
