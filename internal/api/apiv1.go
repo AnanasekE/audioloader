@@ -24,6 +24,9 @@ func registerV1(mux *http.ServeMux) {
 	handle(mux, "GET /api/v1/me", getMe)
 	handle(mux, "POST /api/v1/vault", unlockVaultJSON)
 	handle(mux, "POST /api/v1/vault/lock", lockVaultJSON)
+	handle(mux, "GET /api/v1/tracks", getTracksJSON)
+	handle(mux, "GET /api/v1/tracks/{track_id}", getTrackJSON)
+	handle(mux, "GET /api/v1/search", getSearchJSON)
 }
 
 // writeJSON sends v as JSON with the given status. It encodes into a buffer

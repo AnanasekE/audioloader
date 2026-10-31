@@ -170,6 +170,10 @@ func ClearPosition(trackID string) error {
 	return err
 }
 
+// AttachPositions fills in Position and Finished of tracks that were not
+// read through a show, e.g. a single episode.
+func AttachPositions(tracks []*audio.Track) error { return attachPositions(tracks) }
+
 // attachPositions fills in Position and Finished.
 func attachPositions(tracks []*audio.Track) error {
 	if len(tracks) == 0 {
