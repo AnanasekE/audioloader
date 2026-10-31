@@ -213,43 +213,16 @@ templ artistLinks(artists []*audio.Artist) {
 // that aren't on any of those releases, then the covers of their songs.
 templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, covers []*audio.Track, others []*audio.Artist, twitchOn bool, uploaders []string) {
 	@layout(a.Name, PageArtists) {
-		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-			<img class="pixelated size-40 shrink-0 rounded-full bg-panel-2 object-cover" src={ a.ImgURL } alt=""/>
-			<div class="min-w-0">
-				<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Artist</p>
-				<h1 class="text-2xl font-semibold tracking-tight">{ a.Name }</h1>
-				<p class="mt-1 text-sm">
-					if a.MBID != "" && !secretMode(ctx) {
-						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
-						{ " · " }
-					}
-					if a.TwitchLogin != "" {
-						<a href={ templ.SafeURL("https://www.twitch.tv/" + a.TwitchLogin) } rel="noopener noreferrer">Twitch</a>
-						{ " · " }
-					}
-					if !secretMode(ctx) {
-						<a href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
-							if a.Followed {
-								Following
-							} else {
-								Follow releases
-							}
-						</a>
-						{ " · " }
-					}
-					<a href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
-				</p>
-				for _, u := range uploaders {
-					<p class="mt-1 text-sm">@UploaderLink(u)</p>
+		@avatarHeader(a.ImgURL, "Artist", a.Name, artistSub(a, uploaders), releaseCountLabel(len(releases))) {
+			if !secretMode(ctx) {
+				if a.Followed {
+					<a class="btn btn-ghost" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>Following</a>
+				} else {
+					<a class="btn" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>Follow releases</a>
 				}
-			</div>
-		</div>
-		@artistImageForm(a)
-		@artistTwitchForm(a, twitchOn)
-		if a.MBID == "" && !secretMode(ctx) {
-			@artistLinkSection(a)
+			}
+			<a class="btn btn-ghost" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
 		}
-		@artistManageForm(a, others)
 		if len(releases) == 0 && len(tracks) == 0 && len(covers) == 0 {
 			@emptyState() {
 				Nothing by this artist yet.
@@ -257,8 +230,8 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 		}
 		for _, typ := range audio.ReleaseTypes {
 			if rs := releasesOfType(releases, typ); len(rs) > 0 {
-				<section class="mb-10">
-					<h2 class="mb-4 text-xl font-semibold">{ pluralLabel(typ) }</h2>
+				<section class="mb-8">
+					@sectionLabel(pluralLabel(typ))
 					if typ == audio.ReleaseSingle {
 						@singleList(rs)
 					} else {
@@ -268,25 +241,54 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 			}
 		}
 		if len(tracks) > 0 {
-			<section class="mb-10">
-				<h2 class="mb-4 text-xl font-semibold">Other tracks</h2>
+			<section class="mb-8">
+				@sectionLabel("Other tracks")
 				@TrackList(tracks)
 			</section>
 		}
 		if len(covers) > 0 {
-			<section class="mb-10">
-				<h2 class="mb-4 text-xl font-semibold">Covered by</h2>
+			<section class="mb-8">
+				@sectionLabel("Covered by")
 				@TrackList(covers)
 			</section>
 		}
+		<details class="mb-8">
+			<summary class="btn btn-ghost inline-flex cursor-pointer list-none">Manage</summary>
+			<div class="mt-3">
+				@formPanel() {
+					@artistImageForm(a)
+					@artistTwitchForm(a, twitchOn)
+					if a.MBID == "" && !secretMode(ctx) {
+						@artistLinkSection(a)
+					}
+					@artistManageForm(a, others)
+				}
+			</div>
+		</details>
 	}
 }
 
+// artistSub is the line under an artist's name: links to their MusicBrainz
+// and Twitch pages as chips, and where their tracks come from.
+templ artistSub(a *audio.Artist, uploaders []string) {
+	<div class="flex flex-wrap items-center gap-2 text-sm">
+		if a.MBID != "" && !secretMode(ctx) {
+			<a class="chip" href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
+		}
+		if a.TwitchLogin != "" {
+			<a class="chip" href={ templ.SafeURL("https://www.twitch.tv/" + a.TwitchLogin) } rel="noopener noreferrer">Twitch</a>
+		}
+		for _, u := range uploaders {
+			@UploaderLink(u)
+		}
+	</div>
+}
+
 templ artistImageForm(a *audio.Artist) {
-	<details class="mb-8">
+	<details>
 		<summary class="cursor-pointer text-sm font-medium">Change picture</summary>
 		<form
-			class="card mt-2 grid max-w-lg gap-2"
+			class="mt-2 grid gap-2"
 			hx-post={ "/ui/artists/" + a.ID.String() + "/image" }
 			hx-encoding="multipart/form-data"
 			hx-target="#artist-image-result"
@@ -312,10 +314,10 @@ templ artistImageForm(a *audio.Artist) {
 // channel's picture for an artist with the default picture; Update replaces
 // the picture on request only.
 templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
-	<details class="mb-8">
+	<details>
 		<summary class="cursor-pointer text-sm font-medium">Twitch channel</summary>
 		<form
-			class="card mt-2 grid max-w-lg gap-2"
+			class="mt-2 grid gap-2"
 			hx-post={ "/ui/artists/" + a.ID.String() + "/twitch" }
 			hx-target="#artist-twitch-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('artist-twitch-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
@@ -346,9 +348,9 @@ templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
 
 // artistManageForm renames an artist or merges them into another one.
 templ artistManageForm(a *audio.Artist, others []*audio.Artist) {
-	<details class="mb-8">
+	<details>
 		<summary class="cursor-pointer text-sm font-medium">Rename or merge</summary>
-		<div class="card mt-2 grid max-w-lg gap-4">
+		<div class="mt-2 grid gap-4">
 			<form
 				class="flex gap-2"
 				hx-post={ "/ui/artists/" + a.ID.String() + "/rename" }
@@ -470,7 +472,7 @@ func joinNonEmpty(sep string, parts ...string) string {
 // artistLinkSection links an artist without a MusicBrainz ID. The
 // MusicBrainz search only runs when the user asks for it.
 templ artistLinkSection(a *audio.Artist) {
-	<details class="mb-8">
+	<details>
 		<summary class="cursor-pointer text-sm font-medium">Link to MusicBrainz</summary>
 		<div class="mt-2 max-w-lg">
 			@artistLinkButton(a, "")
