@@ -68,7 +68,7 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn\" href=\"/artists\">Back</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"btn btn-ghost\" href=\"/artists\">Back</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -135,7 +135,7 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a> <span class=\"text-zinc-500\">(linked)</span></label> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a> <span class=\"text-fg-muted\">(linked)</span></label> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -203,14 +203,14 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 				}
 			}
 			if searchErr != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<p class=\"text-sm text-red-600 dark:text-red-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<p class=\"text-sm text-st-failed\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(searchErr)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 46, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 46, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -249,27 +249,27 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 				return templ_7745c5c3_Err
 			}
 			if follow != nil {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<button class=\"btn\" type=\"button\" hx-post=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<button class=\"btn btn-ghost\" type=\"button\" hx-post=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/artists/" + a.ID.String() + "/check")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 63, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 63, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\">Check now</button> <button class=\"btn\" type=\"button\" hx-post=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\">Check now</button> <button class=\"btn btn-ghost\" type=\"button\" hx-post=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/artists/" + a.ID.String() + "/unfollow")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 64, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 64, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 				if templ_7745c5c3_Err != nil {
@@ -282,13 +282,13 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue("Stop following " + a.Name + "?")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 64, Col: 141}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 64, Col: 151}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">Unfollow</button> <span class=\"text-sm text-zinc-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">Unfollow</button> <span class=\"text-sm text-fg-muted\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -306,7 +306,7 @@ func FollowPage(a *audio.Artist, follow *db.Follow, candidates []mb.Artist, sear
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span id=\"follow-result\" class=\"text-sm text-red-600 dark:text-red-400\" aria-live=\"polite\"></span></div></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span id=\"follow-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></div></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -710,7 +710,7 @@ func InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ign
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, " <span class=\"font-normal text-zinc-500\">(")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, " <span class=\"font-normal text-fg-muted\">(")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -779,7 +779,7 @@ func InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ign
 				return templ_7745c5c3_Err
 			}
 			if len(follows) > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<h2 class=\"mt-10 mb-3 text-lg font-semibold\">Following</h2><ul class=\"card divide-y divide-zinc-200 dark:divide-zinc-700\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<h2 class=\"mt-10 mb-3 text-lg font-semibold\">Following</h2><ul class=\"card divide-y divide-line\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -810,7 +810,7 @@ func InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ign
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</a> <span class=\"text-sm text-zinc-500\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</a> <span class=\"text-sm text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -864,7 +864,7 @@ func inboxTab(href, label string, n int, active bool) templ.Component {
 			templ_7745c5c3_Var38 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var39 = []any{"border-b-2 pb-1 no-underline", templ.KV("border-zinc-900 font-semibold dark:border-zinc-100", active), templ.KV("border-transparent text-zinc-500", !active)}
+		var templ_7745c5c3_Var39 = []any{"border-b-2 pb-1 no-underline", templ.KV("border-accent font-semibold text-accent", active), templ.KV("border-transparent text-fg-muted", !active)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var39...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -960,7 +960,7 @@ func inboxRelease(r *db.InboxRelease, tab string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\"><div class=\"flex flex-wrap items-center gap-3\"><img class=\"size-10 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\"><div class=\"flex flex-wrap items-center gap-3\"><img class=\"size-10 shrink-0 rounded bg-panel-2 object-cover\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -999,7 +999,7 @@ func inboxRelease(r *db.InboxRelease, tab string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</a></h2><p class=\"truncate text-sm text-zinc-500 dark:text-zinc-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</a></h2><p class=\"truncate text-sm text-fg-muted\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1053,14 +1053,14 @@ func inboxRelease(r *db.InboxRelease, tab string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</p></div><div class=\"flex gap-2\"><button class=\"btn\" type=\"button\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</p></div><div class=\"flex gap-2\"><button class=\"btn btn-ghost\" type=\"button\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/inbox/" + r.ReleaseGroupMBID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 240, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 240, Col: 90}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 		if templ_7745c5c3_Err != nil {
@@ -1071,14 +1071,14 @@ func inboxRelease(r *db.InboxRelease, tab string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if tab == "ignored" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<button class=\"btn\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<button class=\"btn btn-ghost\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/inbox/" + r.ReleaseGroupMBID + "/restore")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 242, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 242, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 			if templ_7745c5c3_Err != nil {
@@ -1102,14 +1102,14 @@ func inboxRelease(r *db.InboxRelease, tab string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\">Confirm</button> <button class=\"btn\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\">Confirm</button> <button class=\"btn btn-ghost\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/inbox/" + r.ReleaseGroupMBID + "/ignore")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 245, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 245, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 			if templ_7745c5c3_Err != nil {
@@ -1151,7 +1151,7 @@ func InboxDetails(r *db.InboxRelease) templ.Component {
 			templ_7745c5c3_Var56 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<div class=\"mt-3 flex gap-4\"><img class=\"size-32 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<div class=\"mt-3 flex gap-4\"><img class=\"size-32 shrink-0 rounded bg-panel-2 object-cover\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1169,14 +1169,14 @@ func InboxDetails(r *db.InboxRelease) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, t := range r.Data.Tracks {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<li class=\"flex gap-2\"><span class=\"w-8 shrink-0 text-right text-zinc-500 tabular-nums\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<li class=\"flex gap-2\"><span class=\"w-8 shrink-0 text-right font-mono text-xs text-fg-muted tabular-nums\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(trackNumber(t))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 267, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 267, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1200,19 +1200,19 @@ func InboxDetails(r *db.InboxRelease) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if t.OwnedTrackID != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<span class=\"text-emerald-600 dark:text-emerald-400\" title=\"In your library\">✓</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<span class=\"text-st-done\" title=\"In your library\">✓</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"text-zinc-500 tabular-nums\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"font-mono text-xs text-fg-muted tabular-nums\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(formatDuration(time.Duration(t.LengthMs) * time.Millisecond))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 272, Col: 108}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tracking.templ`, Line: 272, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {

@@ -81,14 +81,14 @@ func TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db
 					return templ_7745c5c3_Err
 				}
 				if status.Jobs["failed"] > 0 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<button class=\"btn\" hx-post=\"/ui/tagging/retry\">Retry ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<button class=\"btn btn-ghost\" hx-post=\"/ui/tagging/retry\">Retry ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(status.Jobs["failed"]))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 33, Col: 94}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 33, Col: 104}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -110,7 +110,7 @@ func TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<section class=\"card mb-6 text-sm text-zinc-600 dark:text-zinc-300\"><p>Queue: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<section class=\"card mb-6 text-sm text-fg-muted\"><p>Queue: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -291,7 +291,7 @@ func artistSuggestions(suggestions []db.ArtistSuggestion) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"card mb-6\"><h2 class=\"font-semibold\">Link artists?</h2><p class=\"mb-2 text-sm text-zinc-500 dark:text-zinc-400\">These artists have no MusicBrainz link, but applied matches credit a similar name.</p><ul class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"card mb-6\"><h2 class=\"font-semibold\">Link artists?</h2><p class=\"mb-2 text-sm text-fg-muted\">These artists have no MusicBrainz link, but applied matches credit a similar name.</p><ul class=\"divide-y divide-line\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -322,14 +322,14 @@ func artistSuggestions(suggestions []db.ArtistSuggestion) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</a> <span class=\"text-zinc-500 dark:text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</a> <span class=\"text-fg-muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(" · credited as “" + s.CreditedName + "”")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 91, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 91, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -379,7 +379,7 @@ func coverSuggestions(covers []db.CoverSuggestion) templ.Component {
 			templ_7745c5c3_Var15 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<section class=\"card mb-6\"><h2 class=\"font-semibold\">Cover songs?</h2><p class=\"mb-2 text-sm text-zinc-500 dark:text-zinc-400\">MusicBrainz lists these tracks as covers. Applying only adds a reference; the credits stay.</p><ul class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<section class=\"card mb-6\"><h2 class=\"font-semibold\">Cover songs?</h2><p class=\"mb-2 text-sm text-fg-muted\">MusicBrainz lists these tracks as covers. Applying only adds a reference; the credits stay.</p><ul class=\"divide-y divide-line\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -484,14 +484,14 @@ func coverSuggestions(covers []db.CoverSuggestion) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\">Apply</button> <button class=\"btn\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\">Apply</button> <button class=\"btn btn-ghost\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/tagging/" + c.Track.ID.String() + "/cover-of/reject")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 125, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 125, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 			if templ_7745c5c3_Err != nil {
@@ -544,7 +544,7 @@ func taggingReview(rv TaggingReview) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</h2><p class=\"mb-3 text-sm text-zinc-500 dark:text-zinc-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</h2><p class=\"mb-3 text-sm text-fg-muted\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -615,7 +615,7 @@ func taggingReview(rv TaggingReview) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</p><ul class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</p><ul class=\"divide-y divide-line\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -646,7 +646,7 @@ func taggingReview(rv TaggingReview) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</a> <span class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</a> <span class=\"text-sm text-fg-muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -677,7 +677,7 @@ func taggingReview(rv TaggingReview) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if m.ReleaseTitle != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<span class=\"block text-sm text-zinc-500 dark:text-zinc-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<span class=\"block text-sm text-fg-muted\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -764,14 +764,14 @@ func taggingReview(rv TaggingReview) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "\">Apply</button> <button class=\"btn\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "\">Apply</button> <button class=\"btn btn-ghost\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/tagging/" + rv.Track.ID.String() + "/" + m.RecordingID + "/reject")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 165, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 165, Col: 117}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var41)
 			if templ_7745c5c3_Err != nil {

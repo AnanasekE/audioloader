@@ -32,13 +32,13 @@ templ DownloadsPage(active, needsPick, failed, notFound []*db.Download, ytErr, s
 		<h2 class="mb-3 text-lg font-semibold">In progress</h2>
 		@DownloadsActive(active)
 		<h2 class="mt-8 mb-1 text-lg font-semibold">Needs a pick</h2>
-		<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+		<p class="mb-3 text-sm text-fg-muted">
 			No other source had these. Pick the right YouTube video; nothing is downloaded from YouTube on a guess.
 		</p>
 		@downloadList(needsPick, false)
 		<h2 class="mt-8 mb-1 text-lg font-semibold">Failed</h2>
 		if len(failed) > 0 {
-			<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+			<p class="mb-3 text-sm text-fg-muted">
 				YouTube often changes in ways that break yt-dlp; updating it usually fixes failed downloads.
 			</p>
 		}
@@ -64,14 +64,16 @@ templ DownloadsActive(active []*db.Download) {
 				Nothing downloading.
 			}
 		} else {
-			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ul class="card divide-y divide-line">
 				for _, d := range active {
 					<li class="flex flex-wrap items-center justify-between gap-2 py-2">
 						@downloadTrack(d)
-						<span class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-							{ downloadStatus(d) }
+						<span class="flex items-center gap-2 text-sm text-fg-muted">
+							@statusChip(downloadChipStatus(d), downloadStatus(d))
 							if d.Status == db.DownloadDownloading {
-								<progress class="w-24" max="1" value={ fmt.Sprint(d.Progress) }></progress>
+								<span class="block h-1 w-24 overflow-hidden rounded-full bg-panel-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={ fmt.Sprint(int(d.Progress * 100)) }>
+									<span class="block h-full bg-st-running" style={ fmt.Sprintf("width:%d%%", int(d.Progress*100)) }></span>
+								</span>
 							}
 						</span>
 					</li>
@@ -87,17 +89,17 @@ templ downloadList(list []*db.Download, retry bool) {
 			None.
 		}
 	} else {
-		<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+		<ul class="card divide-y divide-line">
 			for _, d := range list {
 				<li class="grid gap-2 py-3">
 					<div class="flex flex-wrap items-center justify-between gap-2">
 						@downloadTrack(d)
 						if retry {
-							<button class="btn" hx-post={ "/ui/downloads/" + d.Track.ID.String() + "/retry" }>Retry</button>
+							<button class="btn btn-ghost" hx-post={ "/ui/downloads/" + d.Track.ID.String() + "/retry" }>Retry</button>
 						}
 					</div>
 					if d.LastError != "" {
-						<p class="text-sm break-words text-red-600 dark:text-red-400">{ d.LastError }</p>
+						<p class="text-sm break-words text-st-failed">{ d.LastError }</p>
 					}
 					@downloadFix(d.Track)
 				</li>
@@ -129,20 +131,31 @@ templ downloadFix(t *audio.Track) {
 			<input type="file" name="track" accept={ audioAccept } aria-label={ "File for " + t.Title } required/>
 			<button class="btn" type="submit">Upload</button>
 		</form>
-		<span class="fix-result text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+		<span class="fix-result text-sm text-st-failed" aria-live="polite"></span>
 	</div>
 }
 
 templ downloadTrack(d *db.Download) {
 	<span class="min-w-0">
 		<span class="block truncate">{ d.Track.Title }</span>
-		<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+		<span class="block truncate text-sm text-fg-muted">
 			{ artistNames(d.Track.Artists) }
 			if d.Release != nil {
 				{ " · " }<a href={ releaseURL(d.Release) }>{ d.Release.Title }</a>{ fmt.Sprintf(" #%d", d.Position) }
 			}
 		</span>
 	</span>
+}
+
+// downloadChipStatus maps a download's state to a statusChip colour.
+func downloadChipStatus(d *db.Download) string {
+	switch d.Status {
+	case db.DownloadQueued:
+		return "queued"
+	case db.DownloadSearching, db.DownloadDownloading:
+		return "running"
+	}
+	return d.Status
 }
 
 func downloadStatus(d *db.Download) string {
@@ -162,7 +175,7 @@ templ releaseMissing(r *audio.Release) {
 	if n := missingCount(r); n > 0 {
 		<section class="card mt-6">
 			<h2 class="font-semibold">{ fmt.Sprintf("%d tracks not in your library yet", n) }</h2>
-			<p class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+			<p class="mb-3 text-sm text-fg-muted">
 				See <a href="/downloads">Downloads</a>, or fill them from a YouTube playlist of this release.
 			</p>
 			<form
@@ -174,10 +187,10 @@ templ releaseMissing(r *audio.Release) {
 			>
 				<input class="input w-80" type="url" name="url" placeholder="YouTube playlist URL" aria-label="YouTube playlist URL" required/>
 				<button class="btn" type="submit">Match tracks</button>
-				<span id="playlist-loading" class="htmx-indicator text-sm text-zinc-500">Reading the playlist…</span>
+				<span id="playlist-loading" class="htmx-indicator text-sm text-fg-muted">Reading the playlist…</span>
 			</form>
 			<div id="playlist-mapping" class="mt-4 text-sm"></div>
-			<ul class="mt-4 divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ul class="mt-4 divide-y divide-line">
 				for _, rt := range r.Tracks {
 					if !rt.Track.HasFile {
 						<li class="py-2">
@@ -206,7 +219,7 @@ templ PlaylistMapping(r *audio.Release, mapping []downloads.Mapping, videos []yt
 	<form hx-post={ "/ui/releases/" + r.ID.String() + "/youtube/confirm" } class="grid gap-2">
 		for _, m := range mapping {
 			<label class="grid items-center gap-2 sm:grid-cols-[2rem_1fr_1fr]">
-				<span class="text-right text-zinc-500 tabular-nums">{ fmt.Sprint(m.Track.Position) }</span>
+				<span class="text-right text-fg-muted tabular-nums">{ fmt.Sprint(m.Track.Position) }</span>
 				<span class="truncate">{ m.Track.Track.Title }</span>
 				<input type="hidden" name="track_id" value={ m.Track.Track.ID.String() }/>
 				<select class="input" name="video_id" aria-label={ "Video for " + m.Track.Track.Title }>
@@ -242,18 +255,18 @@ templ YouTubeImportPage(recent []jobs.Job) {
 		>
 			<input class="input flex-1" type="url" name="url" placeholder="YouTube video or playlist URL" aria-label="YouTube URL" required/>
 			<button class="btn" type="submit">Read</button>
-			<span id="youtube-loading" class="htmx-indicator text-sm text-zinc-500">Reading…</span>
+			<span id="youtube-loading" class="htmx-indicator text-sm text-fg-muted">Reading…</span>
 		</form>
 		<div id="youtube-preview" class="mt-6"></div>
 		if len(recent) > 0 {
 			<h2 class="mt-8 mb-3 text-lg font-semibold">Recent imports</h2>
-			<ul class="card divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ul class="card divide-y divide-line">
 				for _, j := range recent {
 					<li class="flex flex-wrap justify-between gap-2 py-2 text-sm">
 						<span>{ importTitle(j) }</span>
-						<span class="text-zinc-500">{ j.Status }</span>
+						@statusChip(j.Status, j.Status)
 						if j.LastError != "" {
-							<span class="w-full break-words text-red-600 dark:text-red-400">{ j.LastError }</span>
+							<span class="w-full break-words text-st-failed">{ j.LastError }</span>
 						}
 					</li>
 				}
@@ -280,7 +293,7 @@ templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist,
 		hx-target="#youtube-import-result"
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('youtube-import-result').textContent = event.detail.xhr.responseText"
 	>
-		<p class="text-sm text-zinc-500 dark:text-zinc-400">
+		<p class="text-sm text-fg-muted">
 			if info.Type == "playlist" {
 				{ fmt.Sprintf("%s: %d videos", info.Title, len(info.Videos())) }
 			} else {
@@ -292,7 +305,7 @@ templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist,
 				<li class="grid items-center gap-2 sm:grid-cols-[auto_1fr_4rem]">
 					<input type="checkbox" name="video_id" value={ v.ID } checked aria-label={ "Import " + v.Title }/>
 					<input class="input" type="text" name={ "title_" + v.ID } value={ titles[i] } aria-label="Title" required/>
-					<span class="text-sm text-zinc-500 tabular-nums">{ formatSeconds(v.Duration) }</span>
+					<span class="text-sm text-fg-muted tabular-nums">{ formatSeconds(v.Duration) }</span>
 				</li>
 			}
 		</ol>
@@ -304,12 +317,12 @@ templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist,
 			<div>
 				<span class="mb-1 block text-sm font-medium">Release</span>
 				@releaseSelect("", releases, nil, "input")
-				<p class="mt-1 text-xs text-zinc-500">On a release, videos are added after its last track, in this order.</p>
+				<p class="mt-1 text-xs text-fg-muted">On a release, videos are added after its last track, in this order.</p>
 			</div>
 		</div>
 		<div class="flex items-center gap-4">
 			<button class="btn" type="submit">Import</button>
-			<span id="youtube-import-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			<span id="youtube-import-result" class="text-sm text-st-failed" aria-live="polite"></span>
 		</div>
 	</form>
 }
@@ -327,19 +340,19 @@ templ youTubePickButton(t *audio.Track) {
 			hx-on::after-request="if (!event.detail.successful) this.parentElement.querySelector('.yt-pick').textContent = event.detail.xhr.responseText"
 			aria-label={ "Pick from YouTube for " + t.Title }
 		>Pick from YouTube</button>
-		<span class="yt-loading htmx-indicator text-sm text-zinc-500">Searching YouTube…</span>
-		<div class="yt-pick mt-2 text-sm text-red-600 dark:text-red-400" aria-live="polite"></div>
+		<span class="yt-loading htmx-indicator text-sm text-fg-muted">Searching YouTube…</span>
+		<div class="yt-pick mt-2 text-sm text-st-failed" aria-live="polite"></div>
 	</div>
 }
 
 // YouTubeCandidates lists YouTube search results for a missing track. The
 // thumbnails are loaded by the browser from YouTube's image host.
 templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
-	<div class="text-zinc-900 dark:text-zinc-100">
+	<div class="text-fg">
 		if len(found) == 0 {
-			<p class="text-zinc-500 dark:text-zinc-400">YouTube found nothing.</p>
+			<p class="text-fg-muted">YouTube found nothing.</p>
 		} else {
-			<ul class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ul class="divide-y divide-line">
 				for _, c := range found {
 					@youTubeCandidate(c, t.Duration) {
 						<button
@@ -360,21 +373,21 @@ templ YouTubeCandidates(t *audio.Track, found []ytdlp.Entry) {
 // (against expected, if known) and a Preview link, then the caller's buttons.
 templ youTubeCandidate(c ytdlp.Entry, expected time.Duration) {
 	<li class="flex flex-wrap items-center gap-3 py-2">
-		<img class="h-14 w-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
+		<img class="h-14 w-24 shrink-0 rounded bg-panel-2 object-cover" src={ c.Thumbnail } alt="" loading="lazy" referrerpolicy="no-referrer"/>
 		<span class="min-w-0 flex-1">
 			<span class="block truncate">{ c.Title }</span>
-			<span class="block truncate text-zinc-500 dark:text-zinc-400">
+			<span class="block truncate text-fg-muted">
 				{ channelName(c) } · { formatSeconds(c.Duration) }
 				if d := lengthDiff(c.Duration, expected); d != "" {
 					{ " (" + d + ")" }
 				}
 				for _, b := range channelBadges(c) {
-					<span class="ml-1 rounded bg-zinc-200 px-1.5 text-xs dark:bg-zinc-700">{ b }</span>
+					<span class="ml-1 rounded bg-panel-2 px-1.5 text-xs">{ b }</span>
 				}
 			</span>
 		</span>
 		<span class="flex items-center gap-2">
-			<a class="btn" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
+			<a class="btn btn-ghost" href={ templ.SafeURL(ytdlp.VideoURL(c.ID)) } target="_blank" rel="noopener noreferrer">Preview</a>
 			{ children... }
 		</span>
 	</li>
