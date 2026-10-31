@@ -20,7 +20,7 @@ Each step ticks its own box in the same commit, so `git log` and this list alway
 - [x] 8. Forms: upload, batch, import, edit pages
 - [x] 9. ⌘K search
 - [x] 10. Tags page (secret mode)
-- [ ] 11. Docs
+- [x] 11. Docs
 
 ## Rules for this plan
 

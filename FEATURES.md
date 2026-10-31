@@ -109,7 +109,8 @@
 - Secret tracks are simpler: on no release, no "Cover of", never auto-tagged or matched as owned in the inbox. They have creators, a description, tags and an optional picture (JPEG, PNG, WebP; a placeholder otherwise)
 - Secret mode's track list sorts by date added (default), creator or tag
 - Releases, Inbox, Tagging, Downloads, Follow, "From YouTube" and the other background pages don't exist in secret mode: no nav link, and the routes answer 404
-- Another look in secret mode: violet accent, a "Secret" badge in the nav
+- Another look in secret mode: violet accent, a "Secret" badge in the top strip
+- Tags page at `/tags` (secret mode only, 404 in normal mode): pick tags to include or exclude, match all or any, and see the tracks and the tags that are left with their counts. The state is in the URL (`?in=…&ex=…&match=any&sort=creator`), every control is a plain link that htmx upgrades to a swap of one region, and counting and filtering are SQL. Typing filters the chips (Enter includes the top one, Shift+Enter excludes it, Backspace in an empty box drops the last token); right-click or a long press excludes. On a phone the field shows the top 12 tags and an "All tags" sheet
 - Uploads in secret mode (single, batch, import, episodes) create secret tracks; the server sets the flag from the mode, never from the form. The forms show title, creators, description and tags, with no release controls
 - "Make secret" / "Make public" in the track menu moves a track to the other mode. Going secret takes it off its releases (the confirm dialog lists them; a release left empty is deleted) and off playlists of the other mode; going public leaves it without a release
 - The player's saved state and queue belong to the mode they were saved in: a page of the other mode drops them, and Lock clears the player at once, with its lock screen metadata
@@ -135,9 +136,18 @@
 - Search also matches the original's title and artists (ranked lower); artist pages list "Covered by"
 - Auto-tagging suggests the original from MusicBrainz (a recording's `cover` performance relation on a work); Apply or Reject on the Tagging page, never overwrites a set original
 
-### Tooling and UI
+### UI
 
-- Tailwind via the standalone CLI (no Node), dark mode
+- "Console" look: dark by default with a light theme (toggle in the sidebar, remembered in `localStorage`), all colours as tokens in `styles/input.css`, system fonts only. Secret mode swaps just the accent (violet)
+- Left sidebar with Library (Tracks, Releases, Artists, Playlists, Podcasts) and Queue (Inbox, Tagging, Downloads with counts), a top strip with the search, dense track rows with monospace numbers, status chips on the queue pages
+- Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, More; in secret mode Tracks, Tags, Creators) and a More sheet for Playlists, Podcasts, Tagging and Downloads
+- Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
+- Vault button in the sidebar and the phone top strip (when a vault is configured); in secret mode the same place has Lock
+- Player with a play button, seek bar and elapsed/remaining time
+
+### Tooling
+
+- Tailwind via the standalone CLI (no Node)
 - air live reload with browser refresh; Makefile (`build`, `css`, `css-watch`, `dev`)
 - Favicon and default track/artist images
 - SQLite foreign keys enforced
