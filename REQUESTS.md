@@ -12,15 +12,5 @@ A native app for iOS (and Android, since Expo builds both) that talks to the sam
 - **Same modes:** normal and secret mode, with the vault unlocked in the app. Secret state never shows in normal mode, as on the web.
 - **Needs a JSON API:** today the server mostly returns HTML for htmx. The app needs JSON endpoints for lists, track details, the queue and progress. These must follow `db.Viewer` exactly like the pages, and the leak test must cover them.
 - **Auth:** the server has no login and relies on Tailscale. The app needs the vault cookie, or a token, for secret mode. Decide which.
+- **Share extension** in the app, calling `POST /api/share` (plan 22 may do it).
 - **To decide:** offline downloads of tracks for listening without a connection, and whether uploading from the phone belongs here.
-
-## Share to the app from iOS (secret auto-download)
-
-Sharing a page from the secret source in Safari (or another app) through the iOS share sheet sends it to audioloader, which downloads it as a secret track without opening the web form.
-
-- **Entry point:** an iOS Shortcut that shows in the share sheet, which needs no app, or a share extension in the Expo app above. The Shortcut can come first.
-- **Endpoint:** a POST that takes the page URL and queues the same job as the secret-mode "Download from URL" form. The same rules apply: only the configured host, https only, only the checked URL is fetched, and dedupe by `source_url` and fingerprint.
-- **Never name the site** in the repo, as for the existing secret source.
-- **Auth:** it must work without a browser session. A long random token in an env var (e.g. `AUDIOLOADER_SHARE_TOKEN`), sent as a header and compared in constant time. It is only valid for this one endpoint and always creates secret tracks.
-- **Creator question decided:** from the URL, as the Download from URL form does since plan 19. A "needs creators" state, where shared tracks wait in secret mode until creators are picked (as Downloads holds "needs a pick"), stays only as the fallback for URLs without an uploader.
-- **Feedback:** the share responds quickly with "queued" or a clear error (wrong host, already in library). The track appears in secret mode when the job finishes.

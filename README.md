@@ -44,6 +44,8 @@ Copy `.env.example` to `.env` and uncomment what you need.
 | `AUDIOLOADER_SECRET` | bcrypt hash of the vault passphrase; enables secret tracks. Make one with `./audioloader -hash-secret`. |
 | `AUDIOLOADER_SECRET_SOURCE` | The host of the pages the secret source downloads from, as a bare host name. Only `https` page URLs on exactly this host are accepted. Without it, "Download from URL" in secret mode is off. |
 | `AUDIOLOADER_SECRET_SOURCE_MEDIA` | Comma-separated hosts the audio files may be fetched from, if they aren't on the page host. Redirects to any other host are refused. |
+| `AUDIOLOADER_SHARE_TOKEN` | A random token, at least 32 characters (`openssl rand -hex 32`), that lets an iOS Shortcut queue a secret source page through `POST /api/share`. Without it, or without the vault or the secret source, the endpoint is off. See [docs/ios-share.md](docs/ios-share.md). |
+| `AUDIOLOADER_PUBLIC_URL` | The address the app is reached at, e.g. `https://audioloader.example.net`, used for the link in a share that needs a creator. Defaults to the address of the request. |
 
 Missing tracks are looked up in a fixed order, and the first source that has one wins: your own files (`AUDIOLOADER_WATCH`, or an upload), then YouTube Music, then spotDL, then YouTube. spotDL uses a Spotify link from MusicBrainz when the release or track has one, else a search whose title and length must match. YouTube Music (searched with yt-dlp, official songs only) is taken automatically only on a confident match: the track's length known and within 2 s, a title that fits and one of the track's artists named. YouTube itself is never used on a guess: the top 5 results wait on the Downloads page for you to pick one.
 

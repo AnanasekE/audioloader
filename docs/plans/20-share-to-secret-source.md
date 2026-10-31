@@ -8,7 +8,7 @@
 
 - [x] 1. Share token config
 - [x] 2. The share endpoint
-- [ ] 3. Shortcut setup and docs
+- [x] 3. Shortcut setup and docs
 
 ## Rules
 
