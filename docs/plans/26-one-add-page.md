@@ -10,7 +10,7 @@
 
 - [x] 1. Ask MusicBrainz for the cover link when adding
 - [x] 2. Set the cover on added songs
-- [ ] 3. Backfill songs added before
+- [x] 3. Backfill songs added before
 - [ ] 4. One box that routes links
 - [ ] 5. Merge the pages
 - [ ] 6. Docs

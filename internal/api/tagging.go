@@ -18,7 +18,7 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	jobCounts, err := jobs.Counts(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf)
+	jobCounts, err := jobs.Counts(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf, tagging.JobCoverOfApply, tagging.JobCoverBackfill)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -106,7 +106,7 @@ func runTagging(w http.ResponseWriter, r *http.Request) {
 }
 
 func retryTagging(w http.ResponseWriter, r *http.Request) {
-	if err := jobs.RetryFailed(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf); err != nil {
+	if err := jobs.RetryFailed(tagging.JobTag, tagging.JobCover, tagging.JobCoverOf, tagging.JobCoverOfApply, tagging.JobCoverBackfill); err != nil {
 		serverError(w, err)
 		return
 	}

@@ -33,6 +33,9 @@ const (
 	JobCoverOf = "suggest_cover_of"
 	// JobCoverOfApply sets the original of a song added from MusicBrainz
 	JobCoverOfApply = "apply_cover_of"
+	// JobCoverBackfill suggests covers for songs matched before covers were
+	// looked up; a migration queues it once
+	JobCoverBackfill = "backfill_cover_of"
 )
 
 // Score thresholds: at or above AutoApply a match is applied without asking;
@@ -115,6 +118,16 @@ func Register() {
 		}
 		return Default().ApplyCoverOf(ctx, p.TrackID, p.WorkID, p.RecordingID)
 	})
+	jobs.Register(JobCoverBackfill, func(ctx context.Context, _ json.RawMessage) error {
+		return Default().BackfillCovers(ctx)
+	})
+}
+
+// EnqueueBackfill queues the one-off cover lookup for songs from before
+// covers were read from MusicBrainz. It queues it once per database, so it
+// can be called at every startup.
+func EnqueueBackfill() error {
+	return jobs.EnqueueOnce(JobCoverBackfill, map[string]string{})
 }
 
 // Enqueue queues a track for auto-tagging, unless it is already queued.
@@ -512,6 +525,33 @@ func (tg *Tagger) SuggestCoverOf(ctx context.Context, trackID, workID, recording
 		return err
 	}
 	return db.SaveCoverSuggestion(trackID, db.CoverSuggestion{Title: orig.Title, Artists: orig.Artists, MBID: orig.MBID})
+}
+
+// BackfillCovers asks MusicBrainz about every song that has a recording MBID
+// and no original or suggestion yet. Covers become suggestions, not applied
+// originals, because those songs may have been matched automatically.
+func (tg *Tagger) BackfillCovers(ctx context.Context) error {
+	list, err := db.CoverBackfillTracks()
+	if err != nil {
+		return err
+	}
+	for _, c := range list {
+		rec, err := tg.MB.GetRecording(ctx, c.RecordingMBID)
+		if errors.Is(err, mb.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		w := rec.CoverWork()
+		if w == nil {
+			continue
+		}
+		if err := tg.SuggestCoverOf(ctx, c.ID, w.ID, c.RecordingMBID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // original is the song a cover is of, as the text a cover reference keeps.

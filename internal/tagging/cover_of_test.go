@@ -2,6 +2,7 @@ package tagging
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -232,5 +233,74 @@ func TestApplyCoverOfNeverOverwritesOrTouchesSecret(t *testing.T) {
 	}
 	if st, _ := db.GetTrack(db.All, secretID); st.CoverOf != nil {
 		t.Fatalf("secret track got a cover: %+v", st.CoverOf)
+	}
+}
+
+func TestBackfillCovers(t *testing.T) {
+	dbtest.New(t)
+	tg := coverTagger(t, "work_cover.json")
+
+	// queued once, however often startup asks, even after it ran
+	for range 2 {
+		if err := EnqueueBackfill(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if counts, _ := jobs.Counts(JobCoverBackfill); counts["queued"] != 1 {
+		t.Fatalf("backfill jobs = %v", counts)
+	}
+	jobs.Register(JobCoverBackfill, func(context.Context, json.RawMessage) error { return nil })
+	if ran, err := jobs.RunOnce(context.Background(), jobs.Lane{Only: []string{JobCoverBackfill}}); !ran || err != nil {
+		t.Fatalf("run = %v, %v", ran, err)
+	}
+	if err := EnqueueBackfill(); err != nil {
+		t.Fatal(err)
+	}
+	if counts, _ := jobs.Counts(JobCoverBackfill); counts["queued"] != 0 {
+		t.Fatalf("queued again after it ran: %v", counts)
+	}
+
+	cover, _ := addTrack(t, "Hurt", "Johnny Cash", 218*time.Second, hurtCover, "Hurt", audio.ReleaseSingle)
+	// an original: no cover work, so nothing
+	orig, _ := addTrack(t, "Hurt", "Nine Inch Nails", 373*time.Second, hurtOriginal, "The Downward Spiral", audio.ReleaseAlbum)
+	// a cover that already has its original set, and one that was suggested before
+	set, _ := addTrack(t, "Hurt 2", "A", time.Minute, hurtCover, "S2", audio.ReleaseSingle)
+	seen, _ := addTrack(t, "Hurt 3", "B", time.Minute, hurtCover, "S3", audio.ReleaseSingle)
+	for _, id := range []string{set} {
+		tr, _ := db.GetTrack(db.All, id)
+		c := db.CoverEdit{Title: "My Own Pick"}
+		if err := db.UpdateTrack(db.All, id, db.TrackEdit{Title: tr.Title, Kind: audio.KindMusic, ArtistIDs: []string{tr.Artists[0].ID.String()}, Cover: &c}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SaveCoverSuggestion(seen, db.CoverSuggestion{Title: "Old", Artists: "X"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RejectCoverSuggestion(db.All, seen); err != nil {
+		t.Fatal(err)
+	}
+	// a secret track is never sent to MusicBrainz
+	secret, _ := addTrack(t, "Hurt 4", "C", time.Minute, hurtCover, "S4", audio.ReleaseSingle)
+	if err := db.SetSecret(secret, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := tg.BackfillCovers(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	sugg, err := db.PendingCoverSuggestions(db.All)
+	if err != nil || len(sugg) != 1 {
+		t.Fatalf("suggestions = %+v, %v", sugg, err)
+	}
+	if s := sugg[0]; s.Track.ID.String() != cover || s.String() != "Hurt by Nine Inch Nails" {
+		t.Fatalf("suggestion = %+v", s)
+	}
+	for _, id := range []string{orig, set, seen, secret} {
+		if ok, _ := db.HasCoverSuggestion(id); ok && id != seen {
+			t.Fatalf("%s got a suggestion", id)
+		}
+	}
+	if tr, _ := db.GetTrack(db.All, cover); tr.CoverOf != nil {
+		t.Fatal("the backfill applied a cover")
 	}
 }

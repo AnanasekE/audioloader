@@ -104,6 +104,25 @@ func EnqueueAt(typ, key string, payload any, at time.Time) error {
 	return err
 }
 
+// EnqueueOnce adds a job unless a job of this type was ever queued, whatever
+// became of it. Call it at startup for one-off work.
+func EnqueueOnce(typ string, payload any) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	res, err := db.DB.Exec(
+		`INSERT INTO jobs(type, payload, run_after) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE type = ?);`,
+		typ, string(data), sqlTime(time.Now()), typ,
+	)
+	if err == nil {
+		if n, _ := res.RowsAffected(); n > 0 {
+			wakeAll()
+		}
+	}
+	return err
+}
+
 // sqlTime formats t like SQLite's datetime(), so it compares as text.
 func sqlTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02 15:04:05")

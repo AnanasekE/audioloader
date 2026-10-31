@@ -57,6 +57,9 @@ func main() {
 	if err := jobs.ResetRunning(); err != nil {
 		log.Fatal(err)
 	}
+	if err := tagging.EnqueueBackfill(); err != nil {
+		log.Fatal(err)
+	}
 	// downloads get their own workers, so a long download and a long
 	// MusicBrainz check don't hold each other up
 	downloadJobs := []string{downloads.JobDownload, downloads.JobYouTubeImport, downloads.JobSecretDownload}

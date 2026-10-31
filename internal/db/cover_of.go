@@ -247,3 +247,30 @@ func TrackByRecording(v Viewer, recordingMBID, exceptID string) (string, error) 
 	}
 	return id, err
 }
+
+// CoverBackfillTrack is a song to check for a cover link.
+type CoverBackfillTrack struct{ ID, RecordingMBID string }
+
+// CoverBackfillTracks lists the normal-mode songs that have a recording MBID
+// but no original and no stored suggestion (not even a rejected one).
+func CoverBackfillTracks() ([]CoverBackfillTrack, error) {
+	rows, err := DB.Query(`
+		SELECT t.uuid, t.mbid FROM tracks t
+		WHERE t.kind = 'music' AND COALESCE(t.mbid, '') != '' AND `+Normal.trackCond("t")+`
+		AND t.original_track_id IS NULL AND t.original_title IS NULL
+		AND NOT EXISTS (SELECT 1 FROM cover_suggestions s WHERE s.track_id = t.uuid)
+		ORDER BY t.rowid;`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []CoverBackfillTrack
+	for rows.Next() {
+		var c CoverBackfillTrack
+		if err := rows.Scan(&c.ID, &c.RecordingMBID); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
