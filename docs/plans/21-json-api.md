@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. JSON helpers and mode endpoints
+- [x] 1. JSON helpers and mode endpoints
 - [ ] 2. Tracks and search
 - [ ] 3. Artists, releases, playlists, shows
 - [ ] 4. Leak test and docs

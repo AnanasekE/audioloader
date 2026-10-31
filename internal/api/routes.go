@@ -135,6 +135,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /api/tracks/exists", checkTracksExist)
 	handle(mux, "POST /api/artists/resolve", resolveArtists)
 	handleNormal(mux, "POST /api/releases", createReleaseJSON)
+
+	registerV1(mux)
 }
 
 // Routes lists every registered pattern, e.g. "GET /tracks", for tests

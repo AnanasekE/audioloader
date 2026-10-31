@@ -41,15 +41,23 @@ func unlockVault(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if !theVault.Check(r.FormValue("passphrase")) {
-		// slows down guessing, on top of bcrypt's cost
-		time.Sleep(time.Second)
+	if !checkPassphrase(r.FormValue("passphrase")) {
 		http.Redirect(w, r, "/vault?wrong", http.StatusSeeOther)
 		return
 	}
 	http.SetCookie(w, theVault.Cookie(time.Now(), r.TLS != nil))
 	// a full page load, so the player and pages start over unlocked
 	http.Redirect(w, r, "/tracks", http.StatusSeeOther)
+}
+
+// checkPassphrase checks pass against the vault, which must be on. A wrong
+// one sleeps first: that slows down guessing, on top of bcrypt's cost.
+func checkPassphrase(pass string) bool {
+	if theVault.Check(pass) {
+		return true
+	}
+	time.Sleep(time.Second)
+	return false
 }
 
 func lockVault(w http.ResponseWriter, r *http.Request) {

@@ -26,6 +26,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 17 | [UI rework](17-ui-rework.md) | The "Console" look: sidebar, phone tab bar, player, Vault button, ⌘K, Tags page |
 | 18 | [Page redesign](18-page-redesign.md) | Every page rebuilt on a component kit to match the Console mockup |
 | 19 | [Creator from the secret source URL](19-secret-creator-from-url.md) | The Download from URL form suggests the creator from the uploader in the address |
+| 21 | [JSON API](21-json-api.md) | Read-only JSON endpoints for the mobile app (`docs/api.md`) |
 
 ## Rules for every plan
 
