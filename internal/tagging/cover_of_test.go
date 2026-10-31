@@ -159,3 +159,78 @@ func TestNoCoverSuggestionForOriginal(t *testing.T) {
 		t.Fatalf("an original queued a lookup: %v", counts)
 	}
 }
+
+// queuedSong adds the cover recording as a placeholder, like Add does.
+func queuedSong(t *testing.T) string {
+	t.Helper()
+	id, _, _, err := db.AddSong(db.NewSong{
+		RecordingMBID: hurtCover, Title: "Hurt", LengthMs: 218000,
+		Artists: []db.MatchArtist{{Name: "Johnny Cash"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func TestApplyCoverOfText(t *testing.T) {
+	dbtest.New(t)
+	tg := coverTagger(t, "work_cover.json")
+	id := queuedSong(t)
+	if err := tg.ApplyCoverOf(context.Background(), id, hurtWork, hurtCover); err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := db.GetTrack(db.All, id)
+	if tr.CoverOf == nil || tr.CoverOf.String() != "Hurt by Nine Inch Nails" || tr.CoverOf.MBID != hurtOriginal || tr.CoverOf.TrackID != "" {
+		t.Fatalf("cover of = %+v", tr.CoverOf)
+	}
+	if sugg, _ := db.PendingCoverSuggestions(db.All); len(sugg) != 0 {
+		t.Fatalf("applied songs get no suggestion: %+v", sugg)
+	}
+}
+
+func TestApplyCoverOfLinksLibraryTrack(t *testing.T) {
+	dbtest.New(t)
+	tg := coverTagger(t, "work_cover.json")
+	origID, _ := addTrack(t, "Hurt", "Nine Inch Nails", 373*time.Second, hurtOriginal, "The Downward Spiral", audio.ReleaseAlbum)
+	id := queuedSong(t)
+	if err := tg.ApplyCoverOf(context.Background(), id, hurtWork, hurtCover); err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := db.GetTrack(db.All, id)
+	if tr.CoverOf == nil || tr.CoverOf.TrackID != origID {
+		t.Fatalf("cover of = %+v", tr.CoverOf)
+	}
+}
+
+func TestApplyCoverOfNeverOverwritesOrTouchesSecret(t *testing.T) {
+	dbtest.New(t)
+	tg := coverTagger(t, "work_cover.json")
+	id := queuedSong(t)
+	tr, _ := db.GetTrack(db.All, id)
+	set := db.CoverEdit{Title: "My Own Pick"}
+	err := db.UpdateTrack(db.All, id, db.TrackEdit{Title: "Hurt", Kind: audio.KindMusic, ArtistIDs: []string{tr.Artists[0].ID.String()}, Cover: &set})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tg.ApplyCoverOf(context.Background(), id, hurtWork, hurtCover); err != nil {
+		t.Fatal(err)
+	}
+	if tr, _ := db.GetTrack(db.All, id); tr.CoverOf == nil || tr.CoverOf.Title != "My Own Pick" {
+		t.Fatalf("overwritten: %+v", tr.CoverOf)
+	}
+	if err := db.ApplyCover(id, db.CoverEdit{Title: "x"}); err != db.ErrCoverSet {
+		t.Fatalf("ApplyCover over a set original = %v", err)
+	}
+
+	secretID, _ := addTrack(t, "Hurt", "Someone Else", 218*time.Second, hurtCover+"x", "Hurt", audio.ReleaseSingle)
+	if err := db.SetSecret(secretID, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := tg.ApplyCoverOf(context.Background(), secretID, hurtWork, hurtCover); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ := db.GetTrack(db.All, secretID); st.CoverOf != nil {
+		t.Fatalf("secret track got a cover: %+v", st.CoverOf)
+	}
+}

@@ -31,6 +31,8 @@ const (
 	JobCover = "fetch_cover"
 	// JobCoverOf looks up the original of a track whose match is a cover
 	JobCoverOf = "suggest_cover_of"
+	// JobCoverOfApply sets the original of a song added from MusicBrainz
+	JobCoverOfApply = "apply_cover_of"
 )
 
 // Score thresholds: at or above AutoApply a match is applied without asking;
@@ -105,6 +107,13 @@ func Register() {
 			return jobs.Permanent(err)
 		}
 		return Default().SuggestCoverOf(ctx, p.TrackID, p.WorkID, p.RecordingID)
+	})
+	jobs.Register(JobCoverOfApply, func(ctx context.Context, payload json.RawMessage) error {
+		var p struct{ TrackID, WorkID, RecordingID string }
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return jobs.Permanent(err)
+		}
+		return Default().ApplyCoverOf(ctx, p.TrackID, p.WorkID, p.RecordingID)
 	})
 }
 
@@ -498,29 +507,83 @@ func (tg *Tagger) SuggestCoverOf(ctx context.Context, trackID, workID, recording
 		return err
 	}
 
+	orig, err := tg.findOriginal(ctx, workID, recordingID)
+	if err != nil || orig == nil {
+		return err
+	}
+	return db.SaveCoverSuggestion(trackID, db.CoverSuggestion{Title: orig.Title, Artists: orig.Artists, MBID: orig.MBID})
+}
+
+// original is the song a cover is of, as the text a cover reference keeps.
+type original struct{ Title, Artists, MBID string }
+
+// findOriginal names the earliest recording of the work that isn't a cover
+// (or live, partial...) and isn't recordingID itself. nil if the work is
+// gone or has none.
+func (tg *Tagger) findOriginal(ctx context.Context, workID, recordingID string) (*original, error) {
 	work, err := tg.MB.GetWork(ctx, workID)
 	if errors.Is(err, mb.ErrNotFound) {
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	orig := work.Original(recordingID)
 	if orig == nil {
-		return nil
+		return nil, nil
 	}
 	credit := orig.ArtistCredit
 	if len(credit) == 0 {
 		// the work's relations may leave out the credits; the recording has them
 		full, err := tg.MB.GetRecording(ctx, orig.ID)
 		if err != nil && !errors.Is(err, mb.ErrNotFound) {
-			return err
+			return nil, err
 		}
 		if err == nil {
 			credit = full.ArtistCredit
 		}
 	}
-	return db.SaveCoverSuggestion(trackID, db.CoverSuggestion{Title: orig.Title, Artists: credit.String(), MBID: orig.ID})
+	return &original{Title: orig.Title, Artists: credit.String(), MBID: orig.ID}, nil
+}
+
+// ApplyCoverOf sets the original of a song the person added from MusicBrainz:
+// they picked that very recording, so its cover link is trusted. The cover is
+// linked to the library's track for the original when there is one, else kept
+// as text. An original that is already set is never replaced. The track may
+// still be a placeholder waiting for its download.
+func (tg *Tagger) ApplyCoverOf(ctx context.Context, trackID, workID, recordingID string) error {
+	t, err := db.GetTrack(db.All, trackID)
+	if errors.Is(err, db.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	withFile := *t
+	withFile.HasFile = true // a placeholder is what we expect here
+	for _, skip := range Skip {
+		if skip(&withFile) {
+			return nil
+		}
+	}
+	if t.CoverOf != nil {
+		return nil
+	}
+	orig, err := tg.findOriginal(ctx, workID, recordingID)
+	if err != nil || orig == nil {
+		return err
+	}
+	edit := db.CoverEdit{Title: orig.Title, Artists: orig.Artists, MBID: orig.MBID}
+	if id, err := db.TrackByRecording(db.Normal, orig.MBID, trackID); err != nil {
+		return err
+	} else if id != "" {
+		edit = db.CoverEdit{TrackID: id}
+	}
+	if err := db.ApplyCover(trackID, edit); errors.Is(err, db.ErrCoverSet) {
+		return nil
+	} else {
+		return err
+	}
 }
 
 func best(ms []db.Match) float64 {

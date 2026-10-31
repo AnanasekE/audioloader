@@ -17,6 +17,9 @@ type NewSong struct {
 	SpotifyURL    string
 	Artists       []MatchArtist
 	Release       *NewSongRelease // nil: the track becomes its own single
+	// CoverWorkID is the MusicBrainz work this recording covers, if it is a
+	// cover. AddSong doesn't store it; the caller queues the original lookup.
+	CoverWorkID string
 }
 
 type NewSongRelease struct {

@@ -211,3 +211,39 @@ func RejectCoverSuggestion(v Viewer, trackID string) error {
 		WHERE track_id = ? AND status = 'pending'
 		AND track_id IN (SELECT t.uuid FROM tracks t WHERE `+v.trackCond("t")+`);`, trackID))
 }
+
+// ApplyCover sets the original of a track unless it has one (ErrCoverSet).
+func ApplyCover(trackID string, c CoverEdit) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var set bool
+	err = tx.QueryRow(`SELECT original_track_id IS NOT NULL OR original_title IS NOT NULL FROM tracks WHERE uuid = ?;`, trackID).Scan(&set)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if set {
+		return ErrCoverSet
+	}
+	if err := setCover(tx, Normal, trackID, c); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// TrackByRecording finds a song v can see by its recording MBID, other than
+// exceptID. "" if there is none.
+func TrackByRecording(v Viewer, recordingMBID, exceptID string) (string, error) {
+	var id string
+	err := DB.QueryRow(`SELECT t.uuid FROM tracks t WHERE t.mbid = ? AND t.uuid != ? AND t.kind = 'music' AND `+v.trackCond("t")+`
+		ORDER BY t.has_file DESC, t.rowid LIMIT 1;`, recordingMBID, exceptID).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
+}

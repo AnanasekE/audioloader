@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/url"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
 	"audioloader/internal/mb"
+	"audioloader/internal/tagging"
 )
 
 const (
@@ -289,5 +291,54 @@ func TestAddReleaseFromMusicBrainzTooBig(t *testing.T) {
 	}
 	if counts, _ := jobs.Counts(downloads.JobDownload); counts["queued"] != 0 {
 		t.Fatalf("download jobs = %v", counts)
+	}
+}
+
+// A release with one cover and one song that isn't: Add all queues the
+// original lookup for the cover only, and the job sets "Cover of".
+func TestAddReleaseQueuesCoverOf(t *testing.T) {
+	dbtest.New(t)
+	const (
+		rel      = "aaaaaaaa-0000-4000-8000-000000000001"
+		coverRec = "c0c0c0c0-0000-4000-8000-000000000001"
+		plainRec = "c0c0c0c0-0000-4000-8000-000000000009"
+		origRec  = "c0c0c0c0-0000-4000-8000-000000000002"
+		work     = "e0e0e0e0-0000-4000-8000-000000000001"
+	)
+	credit := `[{"name":"Johnny Cash","joinphrase":"","artist":{"id":"d0d0d0d0-0000-4000-8000-000000000001","name":"Johnny Cash"}}]`
+	release := `{"id":"` + rel + `","title":"Mixed","date":"2002","artist-credit":` + credit + `,"release-group":{"id":"bbbbbbbb-0000-4000-8000-000000000001","primary-type":"Album"},
+	"media":[{"position":1,"tracks":[
+	 {"id":"t1","position":1,"title":"Hurt","length":218000,"recording":{"id":"` + coverRec + `","title":"Hurt","length":218000,"artist-credit":` + credit + `,
+	  "relations":[{"type":"performance","target-type":"work","direction":"forward","attributes":["cover"],"work":{"id":"` + work + `","title":"Hurt"}}]}},
+	 {"id":"t2","position":2,"title":"Own Song","length":100000,"recording":{"id":"` + plainRec + `","title":"Own Song","length":100000,"artist-credit":` + credit + `,
+	  "relations":[{"type":"performance","target-type":"work","direction":"forward","attributes":[],"work":{"id":"e0e0e0e0-0000-4000-8000-000000000002","title":"Own Song"}}]}}]}]}`
+	fakeMusicBrainz(t, map[string]string{
+		"/release/": release,
+		"/work/":    mustRead(t, "../mb/testdata/work_cover.json"),
+	})
+	h := downloadsHandler(t)
+	if rec := do(h, "POST", "/ui/add/musicbrainz/release", url.Values{"release_id": {rel}}); rec.Code != 200 {
+		t.Fatalf("add all = %d %s", rec.Code, rec.Body)
+	}
+	if counts, _ := jobs.Counts(tagging.JobCoverOfApply); counts["queued"] != 1 {
+		t.Fatalf("apply jobs = %v", counts)
+	}
+	recent, _ := jobs.Recent(tagging.JobCoverOfApply, 5)
+	var p struct{ TrackID, WorkID, RecordingID string }
+	if len(recent) != 1 || json.Unmarshal(recent[0].Payload, &p) != nil || p.WorkID != work || p.RecordingID != coverRec {
+		t.Fatalf("job = %+v", recent)
+	}
+	if err := tagging.Default().ApplyCoverOf(context.Background(), p.TrackID, p.WorkID, p.RecordingID); err != nil {
+		t.Fatal(err)
+	}
+	tr, _ := db.GetTrack(db.All, p.TrackID)
+	if tr.Title != "Hurt" || tr.CoverOf == nil || tr.CoverOf.String() != "Hurt by Nine Inch Nails" {
+		t.Fatalf("cover = %+v", tr.CoverOf)
+	}
+	all, _ := db.ListTracks(db.All)
+	for _, x := range all {
+		if x.Title == "Own Song" && x.CoverOf != nil {
+			t.Fatalf("non-cover got a cover: %+v", x.CoverOf)
+		}
 	}
 }

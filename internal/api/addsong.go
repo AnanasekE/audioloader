@@ -11,6 +11,7 @@ import (
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
+	"audioloader/internal/jobs"
 	"audioloader/internal/mb"
 	"audioloader/internal/sources/ytdlp"
 	"audioloader/internal/tagging"
@@ -201,6 +202,7 @@ func releaseSongs(rel *mb.Release) []releaseSong {
 					LengthMs:      it.LengthMs,
 					SpotifyURL:    mb.SpotifyURL(t.Recording.Relations, "track"),
 					Artists:       it.Artists,
+					CoverWorkID:   coverWorkID(t.Recording),
 					Release: &db.NewSongRelease{
 						MBID:             rel.ID,
 						ReleaseGroupMBID: rel.ReleaseGroup.ID,
@@ -217,6 +219,13 @@ func releaseSongs(rel *mb.Release) []releaseSong {
 		}
 	}
 	return out
+}
+
+func coverWorkID(rec mb.Recording) string {
+	if w := rec.CoverWork(); w != nil {
+		return w.ID
+	}
+	return ""
 }
 
 // songTrack is the recording as an inbox tracklist entry, which is what the
@@ -309,6 +318,7 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 			LengthMs:      rec.Length,
 			SpotifyURL:    mb.SpotifyURL(rec.Relations, "track"),
 			Artists:       it.Artists,
+			CoverWorkID:   coverWorkID(*rec),
 		}
 	}
 
@@ -384,6 +394,12 @@ func queueSong(library []*audio.Track, song db.NewSong, it db.InboxTrack) error 
 	}
 	if err := downloads.Enqueue(trackID); err != nil {
 		return err
+	}
+	if song.CoverWorkID != "" {
+		payload := map[string]string{"TrackID": trackID, "WorkID": song.CoverWorkID, "RecordingID": song.RecordingMBID}
+		if err := jobs.EnqueueAt(tagging.JobCoverOfApply, trackID, payload, time.Time{}); err != nil {
+			return err
+		}
 	}
 	if newRelease {
 		return tagging.EnqueueCover(newReleaseID)
