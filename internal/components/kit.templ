@@ -76,7 +76,7 @@ templ cover(src string, size int) {
 
 // avatar is the round variant, for artists.
 templ avatar(src string, size int) {
-	<img class="avatar" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) } loading="lazy"/>
+	<img class="avatar" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) }/>
 }
 
 // plain turns text into a component, for the slots that take one.
@@ -166,7 +166,7 @@ templ cardGrid() {
 // card is a linked tile: a square cover, a title and a mono line under it.
 templ card(coverSrc string, title string, sub string, href string) {
 	<a class="tile" href={ templ.SafeURL(href) }>
-		<img class="cover" src={ coverSrc } alt="" loading="lazy"/>
+		<img class="cover" src={ coverSrc } alt=""/>
 		<span class="stack">
 			<b class="truncate font-medium">{ title }</b>
 			if sub != "" {
@@ -179,7 +179,7 @@ templ card(coverSrc string, title string, sub string, href string) {
 // avatarCard is card with a round picture, for artists.
 templ avatarCard(src string, title string, sub string, href string) {
 	<a class="tile" href={ templ.SafeURL(href) }>
-		<img class="avatar" src={ src } alt="" loading="lazy"/>
+		<img class="avatar" src={ src } alt=""/>
 		<span class="stack">
 			<b class="truncate font-medium">{ title }</b>
 			if sub != "" {
@@ -258,4 +258,15 @@ templ choice(name string, value string, label string, checked bool, multi bool) 
 // eqBars are the animated playing bars.
 templ eqBars() {
 	<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+}
+
+// popover is a button that opens a panel (children) under it: a small form
+// that doesn't deserve its own page. open starts it open.
+templ popover(label string, open bool) {
+	<details class="pop-wrap" open?={ open }>
+		<summary class="btn btn-ghost">{ label }</summary>
+		<div class="pop pop-panel">
+			{ children... }
+		</div>
+	</details>
 }

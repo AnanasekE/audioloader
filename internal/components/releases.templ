@@ -7,14 +7,16 @@ import (
 	"audioloader/internal/audio"
 )
 
-templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
+// ReleasesPage lists the library's releases as shelves by type; filter is
+// one type to show alone, or "" for all.
+templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist, filter string) {
 	@layout("Releases", PageReleases) {
 		@pageHead("Releases", fmt.Sprintf("%d in library", len(releases))) {
+			@segmented("Release type", releaseFilters(filter))
+			@popover("New release", len(releases) == 0) {
+				@NewReleaseForm(artists, false)
+			}
 		}
-		<details class="mb-8" open?={ len(releases) == 0 }>
-			<summary class="mb-2 cursor-pointer text-sm font-medium">New release</summary>
-			@NewReleaseForm(artists, false)
-		</details>
 		if len(releases) == 0 {
 			@emptyState() {
 				No releases yet.
@@ -22,9 +24,9 @@ templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
 		}
 		// one shelf per type: singles are never mixed in with albums
 		for _, typ := range audio.ReleaseTypes {
-			if rs := releasesOfType(releases, typ); len(rs) > 0 {
-				<section class="mb-10">
-					<h2 class="mb-4 text-xl font-semibold">{ pluralLabel(typ) }</h2>
+			if rs := releasesOfType(releases, typ); len(rs) > 0 && (filter == "" || filter == string(typ)) {
+				<section class="mb-8">
+					@sectionLabel(pluralLabel(typ))
 					if typ == audio.ReleaseSingle {
 						@singleList(rs)
 					} else {
@@ -35,6 +37,14 @@ templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
 		}
 		<script src="/assets/js/artist-picker.js" defer></script>
 	}
+}
+
+func releaseFilters(filter string) []SegOption {
+	opts := []SegOption{{Label: "All", Href: "/releases", On: filter == ""}}
+	for _, typ := range audio.ReleaseTypes {
+		opts = append(opts, SegOption{Label: pluralLabel(typ), Href: "/releases?type=" + string(typ), On: filter == string(typ)})
+	}
+	return opts
 }
 
 // NewReleaseForm creates a release. With upload set it's the upload page's
@@ -102,41 +112,27 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 }
 
 templ releaseGrid(releases []*audio.Release) {
-	<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
+	@cardGrid() {
 		for _, r := range releases {
-			<a class="card block p-3 text-inherit hover:no-underline" href={ releaseURL(r) }>
-				<img class="pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
-				<strong class="block truncate">{ r.Title }</strong>
-				<span class="block truncate text-sm text-fg-muted">{ artistNames(r.Artists) }</span>
-				if r.Year() != "" {
-					<span class="text-sm text-fg-muted">{ r.Year() }</span>
-				}
-			</a>
+			@card(r.ImgURL, r.Title, joinDot([]string{artistNames(r.Artists), r.Year()}), string(releaseURL(r)))
 		}
-	</div>
+	}
 }
 
 // singleList shows singles as song rows rather than album covers.
 templ singleList(releases []*audio.Release) {
-	<ul class="divide-y divide-line">
+	@list() {
 		for _, r := range releases {
-			<li>
-				<a class="flex items-center gap-4 py-2 text-inherit hover:no-underline" href={ releaseURL(r) }>
-					<img class="pixelated size-12 rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
-					<span class="min-w-0 flex-1">
-						<strong class="block truncate">{ r.Title }</strong>
-						<span class="block truncate text-sm text-fg-muted">{ artistNames(r.Artists) }</span>
-					</span>
-					<span class="text-sm text-fg-muted">
-						Single
-						if r.Year() != "" {
-							· { r.Year() }
-						}
-					</span>
-				</a>
-			</li>
+			<a class="row row-single text-inherit hover:no-underline" href={ releaseURL(r) }>
+				@cover(r.ImgURL, 28)
+				<span class="stack">
+					<b>{ r.Title }</b>
+					<span>{ artistNames(r.Artists) }</span>
+				</span>
+				<span class="mono text-fg-muted">{ r.Year() }</span>
+			</a>
 		}
-	</ul>
+	}
 }
 
 templ ReleasePage(r *audio.Release) {
@@ -522,8 +518,11 @@ func formatLongDuration(d time.Duration) string {
 
 func joinDot(parts []string) string {
 	out := ""
-	for i, p := range parts {
-		if i > 0 {
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		if out != "" {
 			out += " · "
 		}
 		out += p

@@ -250,6 +250,11 @@
 			display: none;
 		}
 	}
+	/* a single in a shelf: cover, title over artists, year */
+	.row-single {
+		grid-template-columns: 28px minmax(0, 1fr) auto;
+		padding-block: 4px;
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
 	}
@@ -434,6 +439,21 @@
 	}
 
 	/* popovers: the track menu, the queue, suggestions */
+	.pop-wrap {
+		@apply relative;
+	}
+	.pop-wrap > summary {
+		@apply cursor-pointer list-none;
+	}
+	.pop-wrap > summary::-webkit-details-marker {
+		display: none;
+	}
+	.pop-panel {
+		@apply absolute top-full left-0 z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] p-3 min-[720px]:right-0 min-[720px]:left-auto;
+	}
+	.pop-panel .card {
+		@apply border-0 bg-transparent p-0;
+	}
 	.pop {
 		@apply rounded-lg border border-line bg-panel p-1.5 text-sm shadow-(--shadow-pop);
 	}

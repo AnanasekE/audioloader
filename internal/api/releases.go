@@ -29,7 +29,7 @@ func getReleasesPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.ReleasesPage(releases, artists))
+	render(w, r, components.ReleasesPage(releases, artists, r.URL.Query().Get("type")))
 }
 
 func getReleasePage(w http.ResponseWriter, r *http.Request) {

@@ -12,7 +12,7 @@ Each step ticks its own box in the same commit. The last ticked step is always a
 - [x] 2. Component kit
 - [x] 3. Tracks and search
 - [x] 4. Release page
-- [ ] 5. Releases and artists
+- [x] 5. Releases and artists
 - [ ] 6. Artist page
 - [ ] 7. Playlists and podcasts
 - [ ] 8. Inbox and follow

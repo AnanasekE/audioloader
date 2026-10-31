@@ -16,7 +16,8 @@ var ErrArtistExists = errors.New("an artist with that name already exists")
 
 func ListArtists(v Viewer) ([]*audio.Artist, error) {
 	rows, err := DB.Query(`
-		SELECT a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL
+		SELECT a.uuid, a.name, ` + artistImgURL + `, COALESCE(a.mbid, ''), f.artist_id IS NOT NULL,
+			(SELECT COUNT(*) FROM release_artist_map m WHERE m.artist_id = a.uuid)
 		FROM artists a LEFT JOIN artist_follows f ON f.artist_id = a.uuid
 		WHERE ` + v.artistCond("a") + `
 		ORDER BY a.name COLLATE NOCASE;`)
@@ -28,7 +29,7 @@ func ListArtists(v Viewer) ([]*audio.Artist, error) {
 	artists := make([]*audio.Artist, 0)
 	for rows.Next() {
 		var a audio.Artist
-		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.ImgURL, &a.MBID, &a.Followed, &a.ReleaseCount); err != nil {
 			return nil, err
 		}
 		artists = append(artists, &a)

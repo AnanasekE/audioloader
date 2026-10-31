@@ -13,14 +13,17 @@ import (
 templ ArtistsPage(artists []*audio.Artist) {
 	@layout("Artists", PageArtists) {
 		@pageHead("Artists", fmt.Sprintf("%d in library", len(artists))) {
-		}
-		@AddArtistForm()
-		if !secretMode(ctx) {
-			@AddArtistFromMusicBrainz()
+			@popover("Add artist", len(artists) == 0) {
+				@AddArtistForm()
+			}
+			if !secretMode(ctx) {
+				@popover("Add from MusicBrainz", false) {
+					@AddArtistFromMusicBrainz()
+				}
+			}
 		}
 		<div
 			id="artist-list"
-			class="mt-6"
 			hx-get="/ui/artists"
 			hx-trigger="artistsChanged from:body"
 			hx-swap="innerHTML"
@@ -168,20 +171,14 @@ templ artistPicker(artists []*audio.Artist, selected []string) {
 }
 
 templ Artist(a *audio.Artist) {
-	<article class="card flex flex-col items-center gap-2 px-2 py-4 text-center">
-		<img class="pixelated size-20 rounded-full bg-panel-2 object-cover" src={ a.ImgURL } alt=""/>
-		<a class="block max-w-full truncate" href={ artistURL(a) }>{ a.Name }</a>
-		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
-		if !secretMode(ctx) {
-			<a class="text-sm" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>
-				if a.Followed {
-					Following
-				} else {
-					Follow releases
-				}
-			</a>
-		}
-	</article>
+	@avatarCard(a.ImgURL, a.Name, releaseCountLabel(a.ReleaseCount), string(artistURL(a)))
+}
+
+func releaseCountLabel(n int) string {
+	if n == 1 {
+		return "1 release"
+	}
+	return fmt.Sprintf("%d releases", n)
 }
 
 templ ArtistList(artists []*audio.Artist) {
@@ -190,11 +187,11 @@ templ ArtistList(artists []*audio.Artist) {
 			No artists yet.
 		}
 	} else {
-		<div class="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-4">
+		@cardGrid() {
 			for _, artist := range artists {
 				@Artist(artist)
 			}
-		</div>
+		}
 	}
 }
 

@@ -87,6 +87,8 @@ type Artist struct {
 	TwitchLogin string
 	// Followed is set by artist listings: new releases are tracked
 	Followed bool
+	// ReleaseCount is how many releases the artist is on, set by ListArtists
+	ReleaseCount int
 }
 
 type ReleaseType string
