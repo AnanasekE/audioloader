@@ -3,44 +3,123 @@
 
 @source "../internal/components/**/*.templ";
 
+/* dark: follows <html data-theme>, not the OS */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* inline: utilities read var(--bg) etc. directly, so the secret-mode
+   overrides on body still apply */
+@theme inline {
+	--color-bg: var(--bg);
+	--color-panel: var(--panel);
+	--color-panel-2: var(--panel-2);
+	--color-line: var(--line);
+	--color-fg: var(--fg);
+	--color-fg-muted: var(--fg-muted);
+	--color-fg-subtle: var(--fg-subtle);
+	--color-accent: var(--accent);
+	--color-accent-ink: var(--accent-ink);
+	--color-accent-dim: var(--accent-dim);
+	--color-st-queued: var(--st-queued);
+	--color-st-running: var(--st-running);
+	--color-st-done: var(--st-done);
+	--color-st-failed: var(--st-failed);
+	--color-st-review: var(--st-review);
+	--font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--text-xs: 0.6875rem;
+	--text-sm: 0.8125rem;
+	--text-base: 0.875rem;
+	--text-lg: 1rem;
+	--text-xl: 1.25rem;
+	--text-2xl: 1.625rem;
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 10px;
+}
+
 @layer base {
-	body {
-		@apply bg-white text-zinc-800 antialiased dark:bg-zinc-900 dark:text-zinc-100;
-	}
-
-	/* the accent: links and focus rings. Secret mode swaps it, see data-mode on body */
 	:root {
-		--accent: var(--color-sky-600);
-		--accent-dark: var(--color-sky-400);
-		--accent-ring: var(--color-sky-500);
+		color-scheme: dark;
+		scrollbar-color: var(--line) transparent;
+		--bg: #0e0f11;
+		--panel: #15171a;
+		--panel-2: #1c1f23;
+		--line: #262a30;
+		--fg: #e7e9ec;
+		--fg-muted: #9aa1ab;
+		--fg-subtle: #6b727c;
+		--accent: #3ddc97;
+		--accent-ink: #04140c;
+		--accent-dim: rgba(61, 220, 151, 0.14);
+		--st-queued: #8a919b;
+		--st-running: #5aa9ff;
+		--st-done: #3ddc97;
+		--st-failed: #ff5d5d;
+		--st-review: #f5b84a;
+		--shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
 	}
 
+	:root[data-theme="light"] {
+		color-scheme: light;
+		--bg: #f7f7f8;
+		--panel: #ffffff;
+		--panel-2: #f0f1f3;
+		--line: #e2e4e8;
+		--fg: #16181b;
+		--fg-muted: #5b636e;
+		--fg-subtle: #8a919b;
+		--accent: #0f9d64;
+		--accent-ink: #ffffff;
+		--accent-dim: rgba(15, 157, 100, 0.1);
+		--st-done: #0f9d64;
+		--st-failed: #d93636;
+		--st-review: #b7791f;
+		--shadow-pop: 0 8px 24px rgba(16, 24, 40, 0.12);
+	}
+
+	/* secret mode swaps only the accent group */
 	body[data-mode="secret"] {
-		--accent: var(--color-violet-600);
-		--accent-dark: var(--color-violet-400);
-		--accent-ring: var(--color-violet-500);
+		--accent: #b48cff;
+		--accent-ink: #140a26;
+		--accent-dim: rgba(180, 140, 255, 0.16);
+	}
+
+	:root[data-theme="light"] body[data-mode="secret"] {
+		--accent: #7c4dff;
+		--accent-ink: #ffffff;
+		--accent-dim: rgba(124, 77, 255, 0.1);
+	}
+
+	body {
+		@apply bg-bg font-sans text-base text-fg antialiased;
 	}
 
 	a {
-		@apply text-(--accent) hover:underline dark:text-(--accent-dark);
+		@apply text-accent hover:underline;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 }
 
 @layer components {
 	.btn {
-		@apply inline-flex cursor-pointer items-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white no-underline hover:bg-zinc-700 hover:no-underline dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-zinc-900 dark:disabled:hover:bg-zinc-100;
+		@apply inline-flex cursor-pointer items-center rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-ink no-underline transition-colors duration-120 ease-out hover:bg-accent hover:no-underline hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
 	}
 
-	[data-mode="secret"] .btn {
-		@apply bg-violet-700 hover:bg-violet-600 dark:bg-violet-300 dark:text-violet-950 dark:hover:bg-violet-200;
+	/* secondary actions */
+	.btn-ghost {
+		@apply bg-panel-2 text-fg hover:bg-panel-2 hover:brightness-125;
 	}
 
 	.input {
-		@apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-(--accent-ring) focus:ring-2 focus:ring-(--accent-ring)/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800;
+		@apply w-full rounded-md border border-line bg-panel-2 px-3 py-2 text-sm text-fg transition-colors duration-120 ease-out focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none;
 	}
 
 	.card {
-		@apply rounded-lg bg-zinc-100 p-5 dark:bg-zinc-800/60;
+		@apply rounded-lg border border-line bg-panel p-5;
 	}
 
 	.pixelated {

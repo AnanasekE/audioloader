@@ -10,9 +10,11 @@ const (
 
 templ layout(title string, active string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
+			// apply the saved theme before first paint
+			<script>try{var t=localStorage.theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } · audioloader</title>
 			// htmx doesn't swap error responses by default; a 409 carries a
