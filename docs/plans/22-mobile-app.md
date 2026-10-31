@@ -12,7 +12,7 @@
 - [x] 4. Player, queue and background audio
 - [x] 5. Episode positions
 - [x] 6. Secret mode in the app
-- [ ] 7. Docs
+- [x] 7. Docs
 
 ## Rules
 

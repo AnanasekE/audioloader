@@ -153,6 +153,13 @@
 - SQLite foreign keys enforced
 - Versioned migrations (`PRAGMA user_version`), DB tests (`go test ./...`)
 
+### Mobile app
+
+- Expo app in `mobile/` (iOS and Android, runs in Expo Go over Tailscale): server address on first launch, tabs for tracks, artists, releases, playlists, podcasts and search, detail screens, paged lists
+- Queue (play now, play next, add to end, remove, reorder) with a mini player and a full-screen player, background audio and lock-screen / Control Center controls
+- Episodes resume at their saved position and save it every 15 s, on pause and at the end
+- Normal and secret mode: unlock and lock the vault in Settings; switching mode clears the cache, stops playback and empties the queue
+
 ## Not implemented yet
 
 ### Library and editing

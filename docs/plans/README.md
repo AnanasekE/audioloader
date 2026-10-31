@@ -26,6 +26,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 17 | [UI rework](17-ui-rework.md) | The "Console" look: sidebar, phone tab bar, player, Vault button, ⌘K, Tags page |
 | 18 | [Page redesign](18-page-redesign.md) | Every page rebuilt on a component kit to match the Console mockup |
 | 19 | [Creator from the secret source URL](19-secret-creator-from-url.md) | The Download from URL form suggests the creator from the uploader in the address |
+| 22 | [Mobile app](22-mobile-app.md) | Expo app for iOS and Android: browse, play, queue, background audio, secret mode |
 
 ## Rules for every plan
 
