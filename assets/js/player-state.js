@@ -7,6 +7,16 @@ window.playerState = {
 	volumeFromSlider: (v) => Math.min(1, Math.max(0, Number(v) || 0)) ** 2,
 	sliderFromVolume: (vol) => Math.sqrt(Math.min(1, Math.max(0, Number(vol) || 0))),
 
+	// sleepFrom returns the sleep timer to restore from a saved state: {endsAt}
+	// or {endOfTrack: true}, or null. A timer that ended while the page was
+	// closed, or a malformed one, is dropped.
+	sleepFrom(state, now) {
+		const s = state?.sleep;
+		if (!s || typeof s !== "object") return null;
+		if (typeof s.endsAt === "number" && Number.isFinite(s.endsAt)) return s.endsAt > now ? { endsAt: s.endsAt } : null;
+		return s.endOfTrack === true ? { endOfTrack: true } : null;
+	},
+
 	// audioSettings returns the volume and mute to restore from a saved state;
 	// a missing or bad field gives null, meaning "leave as it is".
 	audioSettings(state) {

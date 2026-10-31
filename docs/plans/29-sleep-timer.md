@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Timer logic (web)
+- [x] 1. Timer logic (web)
 - [ ] 2. Timer UI (web)
 - [ ] 3. Mobile app
 

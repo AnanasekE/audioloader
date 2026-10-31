@@ -63,6 +63,18 @@ test("saved volume and muted are restored, bad values are ignored", () => {
 	assert.deepEqual(a(null), { volume: null, muted: null });
 });
 
+test("a saved sleep timer is restored, an expired or bad one dropped", () => {
+	const f = window.playerState.sleepFrom;
+	assert.deepEqual(f({ sleep: { endsAt: 2000 } }, 1000), { endsAt: 2000 });
+	assert.equal(f({ sleep: { endsAt: 1000 } }, 1000), null);
+	assert.equal(f({ sleep: { endsAt: 500 } }, 1000), null);
+	assert.deepEqual(f({ sleep: { endOfTrack: true } }, 1000), { endOfTrack: true });
+	assert.equal(f({ sleep: { endsAt: "soon" } }, 1000), null);
+	assert.equal(f({ sleep: "x" }, 1000), null);
+	assert.equal(f({}, 1000), null);
+	assert.equal(f(null, 1000), null);
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);
