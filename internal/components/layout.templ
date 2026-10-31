@@ -25,6 +25,10 @@ templ layout(title string, active string) {
 			// message meant for the form's result area
 			<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"409","swap":true,"error":false},{"code":"[45]..","swap":false,"error":true}]}'/>
 			<link rel="icon" type="image/png" href="/assets/img/favicon.png"/>
+			<link rel="apple-touch-icon" href="/assets/img/icon-180.png"/>
+			<link rel="manifest" href="/assets/manifest.webmanifest"/>
+			<meta name="theme-color" content="#0e0f11"/>
+			<meta name="apple-mobile-web-app-capable" content="yes"/>
 			<link rel="stylesheet" href="/assets/css/app.css"/>
 			<script src="/assets/js/htmx.min.js" defer></script>
 			<script src="/assets/js/player-state.js" defer></script>
@@ -139,27 +143,30 @@ templ sidebar(active string) {
 			<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
 			audioloader
 		</a>
-		<a class="btn w-full justify-center" href="/upload"
+		<a class="btn w-full justify-center gap-2" href="/upload"
 			if active == PageUpload {
 				aria-current="page"
 			}
-		>Upload</a>
+		>
+			@icon("upload")
+			Upload
+		</a>
 		<nav aria-label="Library">
 			@navLabel("Library")
 			<ul class="flex flex-col gap-0.5">
-				@navLink("/tracks", "Tracks", active == PageTracks)
+				@navLink("/tracks", "Tracks", "tracks", active == PageTracks)
 				if secretMode(ctx) && tagsPage {
-					@navLink("/tags", "Tags", active == PageTags)
+					@navLink("/tags", "Tags", "tags", active == PageTags)
 				}
 				if !secretMode(ctx) {
-					@navLink("/releases", "Releases", active == PageReleases)
+					@navLink("/releases", "Releases", "releases", active == PageReleases)
 				}
 				if secretMode(ctx) {
-					@navLink("/artists", "Creators", active == PageArtists)
+					@navLink("/artists", "Creators", "artists", active == PageArtists)
 				} else {
-					@navLink("/artists", "Artists", active == PageArtists)
-					@navLink("/playlists", "Playlists", active == PagePlaylists)
-					@navLink("/shows", "Podcasts", active == PageShows)
+					@navLink("/artists", "Artists", "artists", active == PageArtists)
+					@navLink("/playlists", "Playlists", "playlists", active == PagePlaylists)
+					@navLink("/shows", "Podcasts", "shows", active == PageShows)
 				}
 			</ul>
 		</nav>
@@ -167,9 +174,9 @@ templ sidebar(active string) {
 			<nav aria-label="Queue">
 				@navLabel("Queue")
 				<ul class="flex flex-col gap-0.5">
-					@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
-					@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
-					@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
+					@navLinkBadge("/inbox", "Inbox", "inbox", active == PageInbox, "/ui/badges/inbox")
+					@navLinkBadge("/tagging", "Tagging", "tagging", active == PageTagging, "/ui/badges/tagging")
+					@navLinkBadge("/downloads", "Downloads", "downloads", active == PageDownloads, "/ui/badges/downloads")
 				</ul>
 			</nav>
 		}
@@ -238,25 +245,31 @@ templ topStrip() {
 	</header>
 }
 
-templ navLink(href string, label string, current bool) {
+templ navLink(href string, label string, iconName string, current bool) {
 	<li>
-		@navAnchor(href, label, current)
+		@navAnchor(href, label, iconName, current)
 	</li>
 }
 
-templ navAnchor(href string, label string, current bool) {
+templ navAnchor(href string, label string, iconName string, current bool) {
 	if current {
-		<a href={ templ.SafeURL(href) } aria-current="page" class="flex flex-1 items-center rounded-md bg-accent-dim px-2 py-1.5 font-medium text-accent hover:no-underline">{ label }</a>
+		<a href={ templ.SafeURL(href) } aria-current="page" class="flex flex-1 items-center gap-2 rounded-md bg-accent-dim px-2 py-1.5 font-medium text-accent hover:no-underline">
+			@icon(iconName)
+			{ label }
+		</a>
 	} else {
-		<a href={ templ.SafeURL(href) } class="flex flex-1 items-center rounded-md px-2 py-1.5 text-fg-muted hover:bg-panel-2 hover:text-fg hover:no-underline">{ label }</a>
+		<a href={ templ.SafeURL(href) } class="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-fg-muted hover:bg-panel-2 hover:text-fg hover:no-underline">
+			@icon(iconName)
+			{ label }
+		</a>
 	}
 }
 
 // navLinkBadge is a nav link with a count loaded from badgeURL after the
 // page, so pages don't each have to look the count up.
-templ navLinkBadge(href string, label string, current bool, badgeURL string) {
+templ navLinkBadge(href string, label string, iconName string, current bool, badgeURL string) {
 	<li class="relative flex items-center">
-		@navAnchor(href, label, current)
+		@navAnchor(href, label, iconName, current)
 		<span hx-get={ badgeURL } hx-trigger="load" hx-swap="outerHTML"></span>
 	</li>
 }

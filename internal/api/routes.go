@@ -1,6 +1,7 @@
 package api
 
 import (
+	"mime"
 	"net/http"
 	"time"
 
@@ -17,6 +18,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	SecretOnly = nil
 	SecretModeOnly = nil
 	TokenOnly = nil
+	// the file server's type table doesn't know the web app manifest
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	mux.Handle("GET /assets/", http.StripPrefix(
 		"/assets/",
 		http.FileServer(http.Dir("assets")),

@@ -35,3 +35,22 @@ func TestUploadRefusesFilesThatArentAudio(t *testing.T) {
 		t.Errorf("X-Content-Type-Options = %q", got)
 	}
 }
+
+func TestHomeScreenIcon(t *testing.T) {
+	a := newModeApp(t)
+	t.Chdir("../..") // the assets are served from ./assets
+	page := a.do(false, "GET", "/tracks", nil).Body.String()
+	for _, want := range []string{`rel="apple-touch-icon"`, `rel="manifest" href="/assets/manifest.webmanifest"`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("layout lacks %s", want)
+		}
+	}
+	w := httptest.NewRecorder()
+	WithSecurityHeaders(a.h).ServeHTTP(w, httptest.NewRequest("GET", "/assets/manifest.webmanifest", nil))
+	if ct := w.Header().Get("Content-Type"); w.Code != 200 || !strings.Contains(ct, "json") {
+		t.Errorf("manifest = %d, %q", w.Code, ct)
+	}
+	if icon := a.do(false, "GET", "/assets/img/icon-180.png", nil); icon.Code != 200 {
+		t.Errorf("icon-180 = %d", icon.Code)
+	}
+}

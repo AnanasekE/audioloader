@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. App icon images
-- [ ] 2. Web: sidebar icons and home-screen icon
+- [x] 2. Web: sidebar icons and home-screen icon
 - [ ] 3. Mobile: tab and header icons, app icon
 
 ## Rules
