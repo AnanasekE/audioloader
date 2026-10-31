@@ -670,3 +670,43 @@ func TestVaultButton(t *testing.T) {
 		t.Error("normal mode without a vault links to /vault")
 	}
 }
+
+func TestTagsPage(t *testing.T) {
+	a := newModeApp(t)
+	for _, route := range SecretModeOnly {
+		method, path, _ := strings.Cut(route, " ")
+		if rec := a.do(false, method, path, nil); rec.Code != http.StatusNotFound {
+			t.Errorf("%s in normal mode = %d", route, rec.Code)
+		}
+	}
+	if len(SecretModeOnly) != 1 {
+		t.Fatalf("secret-mode routes = %v", SecretModeOnly)
+	}
+	body := a.do(true, "GET", "/tags", nil).Body.String()
+	if !strings.Contains(body, `id="tag-lens"`) || !strings.Contains(body, `href="/tags"`) || !strings.Contains(body, "<html") {
+		t.Errorf("/tags page = %q", body)
+	}
+	// a region swap gets just the region; a boosted visit the whole page
+	req := func(h map[string]string) string {
+		r := httptest.NewRequest("GET", "/tags?in=x", nil)
+		r.AddCookie(a.v.Cookie(time.Now(), false))
+		for k, v := range h {
+			r.Header.Set(k, v)
+		}
+		rec := httptest.NewRecorder()
+		a.h.ServeHTTP(rec, r)
+		return rec.Body.String()
+	}
+	if b := req(map[string]string{"HX-Request": "true"}); strings.Contains(b, "<html") || !strings.Contains(b, `id="tag-lens"`) {
+		t.Errorf("region = %q", b)
+	}
+	if b := req(map[string]string{"HX-Request": "true", "HX-Boosted": "true"}); !strings.Contains(b, "<html") {
+		t.Error("boosted visit got a fragment")
+	}
+	if !strings.Contains(a.do(true, "GET", "/tracks", nil).Body.String(), `href="/tags"`) {
+		t.Error("secret nav has no Tags link")
+	}
+	if strings.Contains(a.do(false, "GET", "/tracks", nil).Body.String(), `href="/tags"`) {
+		t.Error("normal nav links to Tags")
+	}
+}

@@ -17,8 +17,8 @@ const (
 	PageTags     = "tags"
 )
 
-// tagsPage says whether the secret-mode Tags page exists yet (plan 17, step 10).
-const tagsPage = false
+// tagsPage says whether the secret-mode Tags page exists yet (plan 17, step 10); the links stay behind this flag.
+const tagsPage = true
 
 func layout(title string, active string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

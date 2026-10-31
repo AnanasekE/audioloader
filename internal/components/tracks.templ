@@ -238,6 +238,12 @@ templ AddTrackForm(artists []*audio.Artist) {
 }
 
 templ Track(t *audio.Track) {
+	@trackRow(t, nil)
+}
+
+// trackRow is a track list row; highlight is a set of lower-case tags to
+// show in the accent colour on a secret track (the Tags page uses it).
+templ trackRow(t *audio.Track, highlight map[string]bool) {
 	<article class="group/row grid min-h-11 grid-cols-[auto_1.75rem_1fr_auto_auto] items-center gap-x-3 rounded-md px-2 py-1 hover:bg-panel-2 min-[720px]:min-h-9" data-track-row>
 		@playButton(t, "size-7")
 		<img class="pixelated size-7 rounded-sm bg-panel-2 object-cover" src={ t.ImgURL } alt=""/>
@@ -254,7 +260,7 @@ templ Track(t *audio.Track) {
 			</span>
 			@coverOfLine(t)
 			if t.Secret {
-				@secretTrackDetails(t)
+				@secretTrackDetails(t, highlight)
 			}
 		</div>
 		<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(t.Duration) }</span>
@@ -503,14 +509,14 @@ func secretConfirm(t *audio.Track) string {
 
 // secretTrackDetails shows what a secret track has instead of releases: its
 // description, cut to a line, and its tags.
-templ secretTrackDetails(t *audio.Track) {
+templ secretTrackDetails(t *audio.Track, highlight map[string]bool) {
 	if t.Description != "" {
 		<span class="block truncate text-xs text-fg-muted">{ t.Description }</span>
 	}
 	if len(t.Tags) > 0 {
 		<span class="flex flex-wrap gap-1 pt-0.5">
 			for _, tag := range t.Tags {
-				<span class="rounded-sm bg-accent-dim px-1.5 text-xs text-accent">{ tag }</span>
+				<span class={ "rounded-sm px-1.5 text-xs", templ.KV("bg-accent-dim text-accent", highlight[strings.ToLower(tag)]), templ.KV("bg-panel-2 text-fg-muted", !highlight[strings.ToLower(tag)]) }>{ tag }</span>
 			}
 		</span>
 	}

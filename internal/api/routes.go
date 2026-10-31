@@ -13,6 +13,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	Routes = nil
 	NormalOnly = nil
 	SecretOnly = nil
+	SecretModeOnly = nil
 	mux.Handle("GET /assets/", http.StripPrefix(
 		"/assets/",
 		http.FileServer(http.Dir("assets")),
@@ -31,6 +32,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "GET /upload/batch", getBatchUploadPage)
 	handle(mux, "GET /upload/import", getImportPage)
 	handle(mux, "GET /artists", getArtistsPage)
+	handleSecretMode(mux, "GET /tags", getTagsPage)
 	handleNormal(mux, "GET /releases", getReleasesPage)
 	handleNormal(mux, "GET /releases/{release_id}", getReleasePage)
 	handleNormal(mux, "GET /releases/{release_id}/edit", getReleaseEditPage)
@@ -147,6 +149,22 @@ var NormalOnly []string
 // SecretOnly lists the patterns that exist in secret mode only, and only
 // when a secret source is configured. Anywhere else they answer 404.
 var SecretOnly []string
+
+// SecretModeOnly lists the patterns that exist in secret mode only, source or not.
+var SecretModeOnly []string
+
+// handleSecretMode registers a route that exists in secret mode only; unlike
+// handleSecret it doesn't need a secret source to be configured.
+func handleSecretMode(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
+	SecretModeOnly = append(SecretModeOnly, pattern)
+	handle(mux, pattern, func(w http.ResponseWriter, r *http.Request) {
+		if !viewer(r).IsSecret() {
+			http.NotFound(w, r)
+			return
+		}
+		h(w, r)
+	})
+}
 
 // handleSecret registers a route that needs secret mode and a secret source.
 func handleSecret(mux *http.ServeMux, pattern string, h http.HandlerFunc) {

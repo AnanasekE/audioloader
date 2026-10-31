@@ -1,0 +1,456 @@
+package components
+
+import (
+	"fmt"
+	"net/url"
+	"sort"
+	"strings"
+	"time"
+
+	"audioloader/internal/audio"
+	"audioloader/internal/db"
+)
+
+// TagLens is what the Tags page shows: the query from the URL, the count of
+// every tag among the tracks that match it, the count of every tag in the
+// library, and the matching tracks.
+type TagLens struct {
+	Query  db.TagQuery
+	Counts map[string]int // tags of the matching tracks
+	All    map[string]int // every tag
+	Tracks []*audio.Track
+}
+
+// tagChip is one tag in the field.
+type tagChip struct {
+	Tag   string
+	Count int
+	State int // tagNeutral, tagInclude or tagExclude
+	Tier  int // 0, 1, 2: small, normal, large
+}
+
+const (
+	tagNeutral = iota
+	tagInclude
+	tagExclude
+)
+
+// phoneChips is how many chips the phone field shows before "All tags".
+const phoneChips = 12
+
+func tagState(q db.TagQuery, tag string) int {
+	for _, t := range q.Include {
+		if strings.EqualFold(t, tag) {
+			return tagInclude
+		}
+	}
+	for _, t := range q.Exclude {
+		if strings.EqualFold(t, tag) {
+			return tagExclude
+		}
+	}
+	return tagNeutral
+}
+
+// chips lists every tag, most used among the matches first; tags no
+// match has come last.
+func (l TagLens) chips() (with, without []tagChip) {
+	counts := map[string]int{}
+	for t, n := range l.Counts {
+		counts[strings.ToLower(t)] = n
+	}
+	max := 0
+	for _, n := range counts {
+		if n > max {
+			max = n
+		}
+	}
+	for tag := range l.All {
+		n := counts[strings.ToLower(tag)]
+		c := tagChip{Tag: tag, Count: n, State: tagState(l.Query, tag), Tier: 1}
+		if max >= 3 {
+			switch {
+			case n*3 > max*2:
+				c.Tier = 2
+			case n*3 <= max:
+				c.Tier = 0
+			}
+		}
+		if n > 0 || c.State != tagNeutral {
+			with = append(with, c)
+		} else {
+			without = append(without, c)
+		}
+	}
+	byCount := func(cs []tagChip) {
+		sort.Slice(cs, func(i, j int) bool {
+			if cs[i].Count != cs[j].Count {
+				return cs[i].Count > cs[j].Count
+			}
+			return strings.ToLower(cs[i].Tag) < strings.ToLower(cs[j].Tag)
+		})
+	}
+	byCount(with)
+	byCount(without)
+	return with, without
+}
+
+// tagsLink is the /tags URL for q. The defaults (all-of, date added) stay
+// out of it.
+func tagsLink(q db.TagQuery) string {
+	v := url.Values{}
+	for _, t := range q.Include {
+		v.Add("in", t)
+	}
+	for _, t := range q.Exclude {
+		v.Add("ex", t)
+	}
+	if q.Any {
+		v.Set("match", "any")
+	}
+	if q.Sort == "creator" || q.Sort == "tag" {
+		v.Set("sort", q.Sort)
+	}
+	if len(v) == 0 {
+		return "/tags"
+	}
+	return "/tags?" + v.Encode()
+}
+
+func dropTag(tags []string, tag string) []string {
+	out := []string{}
+	for _, t := range tags {
+		if !strings.EqualFold(t, tag) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// tagSet returns q with tag moved to state.
+func tagSet(q db.TagQuery, tag string, state int) db.TagQuery {
+	q.Include, q.Exclude = dropTag(q.Include, tag), dropTag(q.Exclude, tag)
+	switch state {
+	case tagInclude:
+		q.Include = append(q.Include, tag)
+	case tagExclude:
+		q.Exclude = append(q.Exclude, tag)
+	}
+	return q
+}
+
+// tagCycleLink is what clicking a chip does: neutral, include, exclude, neutral.
+func tagCycleLink(q db.TagQuery, tag string) string {
+	return tagsLink(tagSet(q, tag, (tagState(q, tag)+1)%3))
+}
+
+func tagIncludeLink(q db.TagQuery, tag string) string { return tagsLink(tagSet(q, tag, tagInclude)) }
+
+func tagExcludeLink(q db.TagQuery, tag string) string {
+	if tagState(q, tag) == tagExclude {
+		return tagsLink(tagSet(q, tag, tagNeutral))
+	}
+	return tagsLink(tagSet(q, tag, tagExclude))
+}
+
+func tagRemoveLink(q db.TagQuery, tag string) string { return tagsLink(tagSet(q, tag, tagNeutral)) }
+
+func tagMatchLink(q db.TagQuery, any bool) string {
+	q.Any = any
+	return tagsLink(q)
+}
+
+func tagSortLink(q db.TagQuery, sortBy string) string {
+	q.Sort = sortBy
+	return tagsLink(q)
+}
+
+// dropLastLink removes the last token: the last exclude, else the last include.
+func tagDropLastLink(q db.TagQuery) string {
+	if n := len(q.Exclude); n > 0 {
+		return tagRemoveLink(q, q.Exclude[n-1])
+	}
+	if n := len(q.Include); n > 0 {
+		return tagRemoveLink(q, q.Include[n-1])
+	}
+	return tagsLink(q)
+}
+
+func tagHighlight(q db.TagQuery) map[string]bool {
+	m := map[string]bool{}
+	for _, t := range q.Include {
+		m[strings.ToLower(t)] = true
+	}
+	return m
+}
+
+func tagTotal(tracks []*audio.Track) string {
+	var d time.Duration
+	for _, t := range tracks {
+		d += t.Duration
+	}
+	return fmt.Sprintf("%s · %s", plural(len(tracks), "track"), formatDuration(d))
+}
+
+func chipClass(c tagChip) string {
+	base := "inline-flex min-h-11 items-center gap-1.5 rounded-md border px-2.5 no-underline hover:no-underline min-[720px]:min-h-0 min-[720px]:py-1 "
+	switch c.State {
+	case tagInclude:
+		base += "border-accent bg-accent-dim text-accent "
+	case tagExclude:
+		base += "border-st-failed text-st-failed line-through "
+	default:
+		base += "border-line bg-panel text-fg hover:bg-panel-2 "
+		if c.Count == 0 {
+			base += "opacity-35 "
+		}
+	}
+	switch c.Tier {
+	case 0:
+		base += "text-xs"
+	case 2:
+		base += "text-lg"
+	default:
+		base += "text-sm"
+	}
+	return base
+}
+
+// TagsPage is the secret-mode tag lens: pick tags to include or exclude and
+// see the tracks and the tags that are left.
+templ TagsPage(l TagLens) {
+	@layout("Tags", PageTags) {
+		@tagLens(l)
+		<script src="/assets/js/tag-lens.js" defer></script>
+	}
+}
+
+// TagLensRegion is just the region, for htmx swaps.
+templ TagLensRegion(l TagLens) {
+	@tagLens(l)
+}
+
+// tagLens is the region htmx swaps: every control in it is a link that
+// works without JS and is upgraded to a swap of this region.
+templ tagLens(l TagLens) {
+	<div id="tag-lens">
+		@tagQueryBar(l)
+		@tagField(l)
+		@tagResults(l)
+	</div>
+}
+
+templ tagQueryBar(l TagLens) {
+	<div class="sticky top-12 z-10 -mx-4 mb-4 flex items-center gap-2 border-b border-line bg-bg px-4 py-2 min-[720px]:-mx-6 min-[720px]:px-6">
+		<ul class="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto" aria-label="Tag filters">
+			for _, t := range l.Query.Include {
+				<li class="flex shrink-0 items-center rounded-md bg-accent-dim text-sm text-accent">
+					<span class="pl-2">{ t }</span>
+					<a
+						class="flex min-h-9 items-center px-2 text-accent no-underline hover:no-underline"
+						href={ templ.SafeURL(tagRemoveLink(l.Query, t)) }
+						hx-get={ tagRemoveLink(l.Query, t) }
+						hx-target="#tag-lens"
+						hx-select="#tag-lens"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+						hx-boost="false"
+						data-token-remove
+						aria-label={ "Remove " + t }
+					>×</a>
+				</li>
+			}
+			for _, t := range l.Query.Exclude {
+				<li class="flex shrink-0 items-center rounded-md border border-st-failed text-sm text-st-failed">
+					<span class="pl-2 line-through"><span class="no-underline">−</span>{ t }</span>
+					<a
+						class="flex min-h-9 items-center px-2 text-st-failed no-underline hover:no-underline"
+						href={ templ.SafeURL(tagRemoveLink(l.Query, t)) }
+						hx-get={ tagRemoveLink(l.Query, t) }
+						hx-target="#tag-lens"
+						hx-select="#tag-lens"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+						hx-boost="false"
+						data-token-remove
+						aria-label={ "Remove " + t }
+					>×</a>
+				</li>
+			}
+			<li class="min-w-32 flex-1">
+				<input id="tag-filter" class="input py-1.5" type="text" placeholder="Filter tags" aria-label="Filter tags" autocomplete="off"/>
+			</li>
+		</ul>
+		<div class="flex shrink-0 items-center rounded-md border border-line text-sm" role="group" aria-label="Match">
+			<a
+				class={ "px-2 py-1.5 no-underline hover:no-underline", templ.KV("bg-accent-dim text-accent", !l.Query.Any), templ.KV("text-fg-muted", l.Query.Any) }
+				href={ templ.SafeURL(tagMatchLink(l.Query, false)) }
+				hx-get={ tagMatchLink(l.Query, false) }
+				hx-target="#tag-lens"
+				hx-select="#tag-lens"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+				hx-boost="false"
+			>All</a>
+			<a
+				class={ "px-2 py-1.5 no-underline hover:no-underline", templ.KV("bg-accent-dim text-accent", l.Query.Any), templ.KV("text-fg-muted", !l.Query.Any) }
+				href={ templ.SafeURL(tagMatchLink(l.Query, true)) }
+				hx-get={ tagMatchLink(l.Query, true) }
+				hx-target="#tag-lens"
+				hx-select="#tag-lens"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+				hx-boost="false"
+			>Any</a>
+		</div>
+		if len(l.Query.Include)+len(l.Query.Exclude) > 0 {
+			<a
+				class="shrink-0 text-sm text-fg-muted"
+				href="/tags"
+				hx-get="/tags"
+				hx-target="#tag-lens"
+				hx-select="#tag-lens"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+				hx-boost="false"
+			>Clear</a>
+		}
+	</div>
+}
+
+templ tagChipLink(l TagLens, c tagChip, extra string) {
+	<a
+		class={ chipClass(c), extra }
+		href={ templ.SafeURL(tagCycleLink(l.Query, c.Tag)) }
+		hx-get={ tagCycleLink(l.Query, c.Tag) }
+		hx-target="#tag-lens"
+		hx-select="#tag-lens"
+		hx-swap="outerHTML"
+		hx-push-url="true"
+		hx-boost="false"
+		data-tag-chip
+		data-tag={ c.Tag }
+		data-in-href={ tagIncludeLink(l.Query, c.Tag) }
+		data-ex-href={ tagExcludeLink(l.Query, c.Tag) }
+	>
+		<span>{ c.Tag }</span>
+		<span class="font-mono text-xs opacity-70">{ fmt.Sprint(c.Count) }</span>
+	</a>
+}
+
+templ tagChipList(l TagLens, limit int) {
+	{{ listed, unmatched := l.chips() }}
+	{{ shown := 0 }}
+	for _, c := range listed {
+		{{ shown++ }}
+		if limit > 0 && shown > limit {
+			@tagChipLink(l, c, "max-[720px]:hidden")
+		} else {
+			@tagChipLink(l, c, "")
+		}
+	}
+	if len(unmatched) > 0 {
+		<span class="w-full pt-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase max-[720px]:hidden">No matches</span>
+		for _, c := range unmatched {
+			{{ shown++ }}
+			if limit > 0 && shown > limit {
+				@tagChipLink(l, c, "max-[720px]:hidden")
+			} else {
+				@tagChipLink(l, c, "")
+			}
+		}
+	}
+}
+
+templ tagField(l TagLens) {
+	<section aria-label="Tags" class="mb-6">
+		if len(l.All) == 0 {
+			@emptyState() {
+				No tags yet. Add some when you edit a track.
+			}
+		} else {
+			<div class="flex flex-wrap items-center gap-2" data-tag-field>
+				@tagChipList(l, phoneChips)
+				if len(l.All) > phoneChips {
+					<button type="button" class="btn btn-ghost min-h-11 min-[720px]:hidden" data-sheet-open="tags-sheet">{ fmt.Sprintf("All tags (%d)", len(l.All)) }</button>
+				}
+			</div>
+			if len(l.All) > phoneChips {
+				<dialog id="tags-sheet" class="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[80dvh] w-full max-w-none overflow-y-auto rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-(--shadow-pop) backdrop:bg-black/50 min-[720px]:hidden" aria-label="All tags">
+					<div class="flex flex-wrap gap-2">
+						@tagChipList(l, 0)
+					</div>
+				</dialog>
+			}
+		}
+	</section>
+}
+
+templ tagResults(l TagLens) {
+	<section aria-label="Tracks">
+		if len(l.Query.Include)+len(l.Query.Exclude) == 0 {
+			<p class="py-6 text-center text-fg-muted">Pick tags to narrow down { plural(len(l.Tracks), "track") }</p>
+		} else {
+			<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+				<p class="font-mono text-xs text-fg-muted">{ tagTotal(l.Tracks) }</p>
+				<nav class="flex items-center gap-3 text-sm" aria-label="Sort results">
+					<span class="text-fg-muted">Sort</span>
+					for _, s := range []struct{ Key, Label string }{{"", "Added"}, {"creator", "Creator"}, {"tag", "Tag"}} {
+						<a
+							class={ "no-underline hover:no-underline", templ.KV("font-medium text-accent", s.Key == l.Query.Sort || (s.Key == "" && l.Query.Sort != "creator" && l.Query.Sort != "tag")), templ.KV("text-fg-muted", !(s.Key == l.Query.Sort || (s.Key == "" && l.Query.Sort != "creator" && l.Query.Sort != "tag"))) }
+							href={ templ.SafeURL(tagSortLink(l.Query, s.Key)) }
+							hx-get={ tagSortLink(l.Query, s.Key) }
+							hx-target="#tag-lens"
+							hx-select="#tag-lens"
+							hx-swap="outerHTML"
+							hx-push-url="true"
+							hx-boost="false"
+						>{ s.Label }</a>
+					}
+				</nav>
+			</div>
+			if len(l.Tracks) == 0 {
+				<div class="rounded-lg border border-dashed border-line p-8 text-center text-fg-muted">
+					<p>
+						if l.Query.Any {
+							No track has any of these.
+						} else {
+							No track has all of these.
+						}
+					</p>
+					<p class="mt-2 text-sm">
+						if !l.Query.Any && len(l.Query.Include) > 1 {
+							<a
+								href={ templ.SafeURL(tagMatchLink(l.Query, true)) }
+								hx-get={ tagMatchLink(l.Query, true) }
+								hx-target="#tag-lens"
+								hx-select="#tag-lens"
+								hx-swap="outerHTML"
+								hx-push-url="true"
+								hx-boost="false"
+							>Match any instead</a>
+							{ " · " }
+						}
+						<a
+							href={ templ.SafeURL(tagDropLastLink(l.Query)) }
+							hx-get={ tagDropLastLink(l.Query) }
+							hx-target="#tag-lens"
+							hx-select="#tag-lens"
+							hx-swap="outerHTML"
+							hx-push-url="true"
+							hx-boost="false"
+						>Drop the last tag</a>
+					</p>
+				</div>
+			} else {
+				<ul class="flex flex-col" data-track-list>
+					for _, t := range l.Tracks {
+						<li>
+							@trackRow(t, tagHighlight(l.Query))
+						</li>
+					}
+				</ul>
+			}
+		}
+	</section>
+}
