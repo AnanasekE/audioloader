@@ -12,7 +12,7 @@ Each step ticks its own box in the same commit, so `git log` and this list alway
 
 - [x] 1. Tokens and theme
 - [x] 2. App shell: sidebar and top strip
-- [ ] 3. Phone layout: tab bar and More sheet
+- [x] 3. Phone layout: tab bar and More sheet
 - [ ] 4. Vault button
 - [ ] 5. Player
 - [ ] 6. Library pages: tracks, releases, artists, playlists, podcasts

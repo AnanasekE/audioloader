@@ -6,7 +6,11 @@ const (
 	PageUpload   = "upload"
 	PageArtists  = "artists"
 	PageReleases = "releases"
+	PageTags     = "tags"
 )
+
+// tagsPage says whether the secret-mode Tags page exists yet (plan 17, step 10).
+const tagsPage = false
 
 templ layout(title string, active string) {
 	<!DOCTYPE html>
@@ -25,6 +29,7 @@ templ layout(title string, active string) {
 			<script src="/assets/js/htmx.min.js" defer></script>
 			<script src="/assets/js/player-state.js" defer></script>
 			<script src="/assets/js/player.js" defer></script>
+			<script src="/assets/js/nav.js" defer></script>
 		</head>
 		// hx-boost turns links into htmx swaps of the body, so the page never
 		// reloads while browsing and the hx-preserve'd player keeps playing
@@ -35,18 +40,20 @@ templ layout(title string, active string) {
 				@sidebar(active)
 				<div class="min-w-0">
 					@topStrip()
-					<main class="mx-auto max-w-5xl px-4 pt-6 pb-28 min-[720px]:px-6">
+					<main class="mx-auto max-w-5xl px-4 pt-6 pb-40 min-[720px]:px-6 min-[720px]:pb-28">
 						{ children... }
 					</main>
 				</div>
 			</div>
+			@tabBar(active)
+			@moreSheet(active)
 			@player()
 		</body>
 	</html>
 }
 
 templ player() {
-	<div id="player" hx-preserve class="fixed inset-x-0 bottom-0 z-20 min-[720px]:left-[232px] border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95" hidden>
+	<div id="player" hx-preserve class="fixed inset-x-0 bottom-14 z-20 min-[720px]:bottom-0 min-[720px]:left-[232px] border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95" hidden>
 		<div class="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2">
 			<img id="player-cover" class="pixelated size-10 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" alt=""/>
 			<div class="w-32 min-w-0 shrink-0 sm:w-56">
@@ -89,7 +96,7 @@ templ player() {
 }
 
 templ sidebar(active string) {
-	<aside class="flex flex-col gap-4 border-b border-line bg-panel p-3 min-[720px]:sticky min-[720px]:top-0 min-[720px]:h-dvh min-[720px]:overflow-y-auto min-[720px]:border-r min-[720px]:border-b-0">
+	<aside class="flex flex-col gap-4 max-[720px]:hidden border-b border-line bg-panel p-3 min-[720px]:sticky min-[720px]:top-0 min-[720px]:h-dvh min-[720px]:overflow-y-auto min-[720px]:border-r min-[720px]:border-b-0">
 		<a class="flex items-center gap-2 px-2 py-1 font-semibold text-fg hover:no-underline" href="/">
 			<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
 			audioloader
@@ -103,6 +110,9 @@ templ sidebar(active string) {
 			@navLabel("Library")
 			<ul class="flex flex-col gap-0.5">
 				@navLink("/tracks", "Tracks", active == PageTracks)
+				if secretMode(ctx) && tagsPage {
+					@navLink("/tags", "Tags", active == PageTags)
+				}
 				if !secretMode(ctx) {
 					@navLink("/releases", "Releases", active == PageReleases)
 				}
@@ -156,8 +166,11 @@ templ topStrip() {
 			/>
 			<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
 		</form>
+		<a href="/upload" class="ml-auto flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg min-[720px]:hidden" aria-label="Upload">
+			@icon("upload")
+		</a>
 		if secretMode(ctx) {
-			<div class="ml-auto flex items-center gap-3">
+			<div class="flex items-center gap-3">
 				<span class="rounded bg-accent-dim px-2 py-0.5 text-xs font-semibold tracking-wide text-accent uppercase">Secret</span>
 				<form method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
 					<button type="submit" class="text-fg-muted hover:text-fg">Lock</button>
@@ -212,4 +225,133 @@ templ emptyState() {
 	<p class="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
 		{ children... }
 	</p>
+}
+
+// tabBar is the phone navigation under the player; the sidebar replaces it
+// from 720px up.
+templ tabBar(active string) {
+	<nav class="fixed inset-x-0 bottom-0 z-30 flex h-14 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] min-[720px]:hidden" aria-label="Main">
+		@tab("/tracks", "Tracks", "tracks", active == PageTracks, "")
+		if secretMode(ctx) {
+			if tagsPage {
+				@tab("/tags", "Tags", "tags", active == PageTags, "")
+			}
+			@tab("/artists", "Creators", "artists", active == PageArtists, "")
+		} else {
+			@tab("/releases", "Releases", "releases", active == PageReleases, "")
+			@tab("/artists", "Artists", "artists", active == PageArtists, "")
+			@tab("/inbox", "Inbox", "inbox", active == PageInbox, "/ui/badges/inbox")
+			<button
+				type="button"
+				class={ tabClass(active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads) }
+				data-sheet-open="more-sheet"
+			>
+				<span class="relative inline-flex [&>span]:top-[-4px] [&>span]:right-[-14px]">
+					@icon("more")
+					<span hx-get="/ui/badges/more" hx-trigger="load" hx-swap="outerHTML"></span>
+				</span>
+				More
+			</button>
+		}
+	</nav>
+}
+
+func tabClass(current bool) string {
+	c := "flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 text-xs hover:no-underline "
+	if current {
+		return c + "text-accent"
+	}
+	return c + "text-fg-muted"
+}
+
+templ tab(href string, label string, iconName string, current bool, badgeURL string) {
+	<a href={ templ.SafeURL(href) } class={ tabClass(current) }>
+		<span class="relative inline-flex [&>span]:top-[-4px] [&>span]:right-[-14px]">
+			@icon(iconName)
+			if badgeURL != "" {
+				<span hx-get={ badgeURL } hx-trigger="load" hx-swap="outerHTML"></span>
+			}
+		</span>
+		{ label }
+	</a>
+}
+
+// moreSheet lists the pages that don't fit in the tab bar. nav.js opens it.
+templ moreSheet(active string) {
+	if !secretMode(ctx) {
+		<dialog id="more-sheet" class="fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop:bg-black/50 min-[720px]:hidden" aria-label="More">
+			<ul class="flex flex-col">
+				@sheetLink("/playlists", "Playlists", "playlists", active == PagePlaylists, "")
+				@sheetLink("/shows", "Podcasts", "shows", active == PageShows, "")
+				@sheetLink("/tagging", "Tagging", "tagging", active == PageTagging, "/ui/badges/tagging")
+				@sheetLink("/downloads", "Downloads", "downloads", active == PageDownloads, "/ui/badges/downloads")
+			</ul>
+		</dialog>
+	}
+}
+
+templ sheetLink(href string, label string, iconName string, current bool, badgeURL string) {
+	<li class="relative flex items-center">
+		<a
+			href={ templ.SafeURL(href) }
+			class={ "flex min-h-11 flex-1 items-center gap-3 rounded-md px-3 hover:no-underline", templ.KV("bg-accent-dim text-accent", current), templ.KV("text-fg", !current) }
+			if current {
+				aria-current="page"
+			}
+		>
+			@icon(iconName)
+			{ label }
+		</a>
+		if badgeURL != "" {
+			<span hx-get={ badgeURL } hx-trigger="load" hx-swap="outerHTML"></span>
+		}
+	</li>
+}
+
+// icon is a 16px inline SVG that takes the text colour.
+templ icon(name string) {
+	<svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		switch name {
+			case "tracks":
+				<path d="M9 18V5l12-2v13"></path>
+				<circle cx="6" cy="18" r="3"></circle>
+				<circle cx="18" cy="16" r="3"></circle>
+			case "releases":
+				<circle cx="12" cy="12" r="10"></circle>
+				<circle cx="12" cy="12" r="3"></circle>
+			case "artists":
+				<circle cx="12" cy="8" r="4"></circle>
+				<path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path>
+			case "inbox":
+				<path d="M22 12h-6l-2 3h-4l-2-3H2"></path>
+				<path d="M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z"></path>
+			case "more":
+				<circle cx="5" cy="12" r="1"></circle>
+				<circle cx="12" cy="12" r="1"></circle>
+				<circle cx="19" cy="12" r="1"></circle>
+			case "upload":
+				<path d="M12 16V4"></path>
+				<path d="M7 9l5-5 5 5"></path>
+				<path d="M4 20h16"></path>
+			case "tags":
+				<path d="M20 12l-8 8-9-9V3h8z"></path>
+				<circle cx="7.5" cy="7.5" r="1"></circle>
+			case "playlists":
+				<path d="M3 6h13M3 12h13M3 18h8"></path>
+				<path d="M19 9v9"></path>
+				<circle cx="17" cy="18" r="2"></circle>
+			case "shows":
+				<rect x="9" y="2" width="6" height="12" rx="3"></rect>
+				<path d="M5 11a7 7 0 0 0 14 0M12 18v4"></path>
+			case "tagging":
+				<path d="M20 6L9 17l-5-5"></path>
+			case "downloads":
+				<path d="M12 4v12"></path>
+				<path d="M7 11l5 5 5-5"></path>
+				<path d="M4 20h16"></path>
+			case "lock":
+				<rect x="4" y="11" width="16" height="10" rx="2"></rect>
+				<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+		}
+	</svg>
 }
