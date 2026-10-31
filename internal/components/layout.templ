@@ -174,7 +174,7 @@ templ topStrip() {
 	<header class="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-line bg-bg/95 px-4 backdrop-blur min-[720px]:px-6">
 		<form action="/search" class="relative min-w-0 flex-1 max-w-md" role="search">
 			<input
-				class="input"
+				class="input peer min-[720px]:pr-16"
 				type="search"
 				name="q"
 				placeholder="Search"
@@ -185,6 +185,7 @@ templ topStrip() {
 				hx-target="#search-suggest"
 				hx-sync="this:replace"
 			/>
+			<kbd id="search-hint" class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-sm border border-line px-1.5 font-mono text-xs text-fg-subtle max-[720px]:hidden peer-focus:hidden">Ctrl K</kbd>
 			<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
 		</form>
 		<a href="/upload" class="ml-auto flex size-11 items-center justify-center rounded-md text-fg-muted hover:bg-panel-2 hover:text-fg min-[720px]:hidden" aria-label="Upload">

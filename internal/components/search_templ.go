@@ -263,7 +263,7 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if q != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"absolute right-0 z-30 mt-1 w-80 rounded-md border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"absolute top-full left-0 z-30 mt-1 w-full min-w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -274,14 +274,14 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 				}
 			}
 			for _, a := range res.Artists {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 templ.SafeURL
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(searchURL(a.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 67, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 67, Col: 125}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -319,14 +319,14 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 				}
 			}
 			for _, s := range res.Shows {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 templ.SafeURL
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(showURL(s.ID.String()))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 72, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 72, Col: 130}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -364,14 +364,14 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 				}
 			}
 			for _, r := range res.Releases {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 templ.SafeURL
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(releaseURL(r))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 77, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 77, Col: 121}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -409,14 +409,14 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 				}
 			}
 			for _, t := range res.Tracks {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<a class=\"block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(trackURL(t))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 82, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 82, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -453,14 +453,14 @@ func SearchSuggest(q string, res *db.SearchResults) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<a class=\"mt-1 block border-t border-line px-2 pt-2\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<a class=\"mt-1 block rounded border-t border-line px-2 pt-2 focus:bg-panel-2\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 templ.SafeURL
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(searchURL(q))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 86, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/search.templ`, Line: 86, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
