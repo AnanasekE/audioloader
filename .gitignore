@@ -6,3 +6,9 @@ bin/
 tmp/
 database.db.bak-*
 .env
+
+# mobile app
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/expo-env.d.ts
