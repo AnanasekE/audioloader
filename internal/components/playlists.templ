@@ -11,65 +11,54 @@ const PagePlaylists = "playlists"
 templ PlaylistsPage(playlists []*audio.Playlist) {
 	@layout("Playlists", PagePlaylists) {
 		@pageHead("Playlists", plural(len(playlists), "playlist")) {
+			@popover("New playlist", len(playlists) == 0) {
+				<form
+					class="flex flex-wrap items-center gap-2"
+					hx-post="/ui/playlists"
+					hx-target="#playlist-result"
+					hx-on::after-request="if (!event.detail.successful) document.getElementById('playlist-result').textContent = event.detail.xhr.responseText"
+				>
+					<label for="playlist-name" class="sr-only">Name</label>
+					<input id="playlist-name" class="input min-w-0 flex-1" type="text" name="name" placeholder="New playlist name" required/>
+					<button class="btn" type="submit">Create playlist</button>
+					<span id="playlist-result" class="w-full text-sm text-st-failed empty:hidden" aria-live="polite"></span>
+				</form>
+			}
 		}
-		<form
-			class="card mb-6 flex flex-wrap items-center gap-2"
-			hx-post="/ui/playlists"
-			hx-target="#playlist-result"
-			hx-on::after-request="if (!event.detail.successful) document.getElementById('playlist-result').textContent = event.detail.xhr.responseText"
-		>
-			<label for="playlist-name" class="sr-only">Name</label>
-			<input id="playlist-name" class="input flex-1" type="text" name="name" placeholder="New playlist name" required/>
-			<button class="btn" type="submit">Create playlist</button>
-			<span id="playlist-result" class="text-sm text-st-failed" aria-live="polite"></span>
-		</form>
 		if len(playlists) == 0 {
 			@emptyState() {
 				No playlists yet. Add tracks to one from a track's ⋯ menu.
 			}
 		} else {
-			<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
+			@cardGrid() {
 				for _, p := range playlists {
-					<a class="card block hover:no-underline" href={ playlistURL(p) }>
-						<img class="pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover" src={ p.ImgURL } alt=""/>
-						<strong class="block truncate text-fg">{ p.Name }</strong>
-						<span class="font-mono text-xs text-fg-muted">{ plural(p.Count, "track") }</span>
-					</a>
+					@card(p.ImgURL, p.Name, plural(p.Count, "track")+" · "+formatLongDuration(p.Duration), string(playlistURL(p)))
 				}
-			</div>
+			}
 		}
 	}
 }
 
 templ PlaylistPage(p *audio.Playlist) {
 	@layout(p.Name, PagePlaylists) {
-		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-			<img class="pixelated size-40 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-48" src={ p.ImgURL } alt=""/>
-			<div class="min-w-0">
-				<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Playlist</p>
-				<h1 class="text-2xl font-semibold tracking-tight">{ p.Name }</h1>
-				<p class="text-sm text-fg-muted">{ plural(p.Count, "track") } · { formatLongDuration(p.Duration) }</p>
-				<div class="mt-4 flex flex-wrap gap-2">
-					if p.Count > 0 {
-						<button type="button" class="btn" data-play-list="playlist-tracks">Play</button>
-						<button type="button" class="btn btn-ghost" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
-					}
-					<a class="btn btn-ghost" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
-				</div>
-			</div>
-		</div>
+		@mediaHeader(p.ImgURL, "Playlist", p.Name, nil, plural(p.Count, "track")+" · "+formatLongDuration(p.Duration)) {
+			if p.Count > 0 {
+				<button type="button" class="btn" data-play-list="playlist-tracks">Play</button>
+				<button type="button" class="btn btn-ghost" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
+			}
+			<a class="btn btn-ghost" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
+		}
 		if p.Count == 0 {
 			@emptyState() {
 				Empty. Add tracks from a track's ⋯ menu.
 			}
 		} else {
-			<ol id="playlist-tracks" class="flex flex-col" data-track-list>
-				for _, t := range p.Tracks {
-					<li>
-						@Track(t)
-					</li>
+			<div id="playlist-tracks" class="list" data-track-list data-filter-rows>
+				@listHead("row-track", "#", "", "Title", trackAlbumHead(ctx), ">Time", "")
+				for i, t := range p.Tracks {
+					@trackRow(t, nil, i+1)
 				}
-			</ol>
+			</div>
 		}
 	}
 }
@@ -79,54 +68,61 @@ templ PlaylistEditPage(p *audio.Playlist) {
 		@pageHead("Edit playlist", p.Name) {
 			<a class="btn btn-ghost" href={ playlistURL(p) }>Cancel</a>
 		}
-		<form
-			class="card mb-6 flex flex-wrap items-center gap-2"
-			hx-post={ "/ui/playlists/" + p.ID.String() + "/rename" }
-			hx-target="#playlist-rename-result"
-		>
-			<label for="playlist-name" class="text-xs font-medium text-fg-muted">Name</label>
-			<input id="playlist-name" class="input flex-1" type="text" name="name" value={ p.Name } required/>
-			<button class="btn" type="submit">Rename</button>
-			<span id="playlist-rename-result" class="text-sm"></span>
-		</form>
+		<div class="mb-6">
+			@formPanel() {
+				<form
+					class="flex flex-wrap items-end gap-2"
+					hx-post={ "/ui/playlists/" + p.ID.String() + "/rename" }
+					hx-target="#playlist-rename-result"
+				>
+					<div class="min-w-0 flex-1">
+						@field("Name", "") {
+							<input id="playlist-name" class="input" type="text" name="name" value={ p.Name } required/>
+						}
+					</div>
+					<button class="btn" type="submit">Rename</button>
+					<span id="playlist-rename-result" class="w-full text-sm"></span>
+				</form>
+			}
+		</div>
 		<form
 			id="playlist-edit"
-			class="card"
 			hx-post={ "/ui/playlists/" + p.ID.String() + "/tracks" }
 			hx-target="#playlist-edit-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('playlist-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
-			<ol id="playlist-edit-rows" class="divide-y divide-line">
+			@sectionLabel("Tracks")
+			<div id="playlist-edit-rows" class="list">
 				for _, t := range p.Tracks {
-					<li class="playlist-edit-row grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-2">
+					<div class="row row-edit playlist-edit-row">
 						<input type="hidden" name="track_id" value={ t.ID.String() }/>
-						<span class="text-right text-sm text-fg-muted tabular-nums" data-number></span>
-						<div class="min-w-0">
-							<strong class="block truncate">{ t.Title }</strong>
-							<span class="block truncate text-sm text-fg-muted">{ artistNames(t.Artists) }</span>
-						</div>
+						<span class="mono text-right text-fg-muted" data-number></span>
+						<span class="stack">
+							<b>{ t.Title }</b>
+							<span>{ artistNames(t.Artists) }</span>
+						</span>
 						<div class="flex gap-1">
-							<button type="button" class="btn px-2.5" data-action="up" aria-label="Move up">↑</button>
-							<button type="button" class="btn px-2.5" data-action="down" aria-label="Move down">↓</button>
-							<button type="button" class="btn px-2.5" data-action="remove" aria-label="Remove from playlist">✕</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="up" aria-label="Move up">↑</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="down" aria-label="Move down">↓</button>
+							<button type="button" class="btn btn-ghost px-2.5" data-action="remove" aria-label="Remove from playlist">✕</button>
 						</div>
-					</li>
+					</div>
 				}
-			</ol>
+			</div>
 			<p class="py-4 text-sm text-fg-muted" data-edit-empty hidden?={ len(p.Tracks) > 0 }>No tracks.</p>
-			<div class="mt-6 flex items-center gap-4">
+			<div class="mt-4 flex items-center gap-4">
 				<button type="submit" class="btn">Save order</button>
 				<span id="playlist-edit-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</form>
-		<section class="card mt-8">
+		<div class="mt-10">
 			<button
 				type="button"
-				class="btn"
+				class="btn btn-danger"
 				hx-post={ "/ui/playlists/" + p.ID.String() + "/delete" }
 				hx-confirm={ "Delete the playlist " + p.Name + "? Its tracks stay in your library." }
 			>Delete playlist</button>
-		</section>
+		</div>
 		<script src="/assets/js/playlist-edit.js" defer></script>
 	}
 }

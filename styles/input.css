@@ -255,6 +255,46 @@
 		grid-template-columns: 28px minmax(0, 1fr) auto;
 		padding-block: 4px;
 	}
+	/* an episode: play, title over date, progress, time left, action */
+	.row-ep {
+		grid-template-columns: 32px minmax(0, 1fr) minmax(0, 18rem) 4.5rem 7.5rem;
+		padding-block: 6px;
+	}
+	.row-ep > .ep-mark {
+		justify-self: end;
+	}
+	.row-ep.is-done {
+		opacity: 0.6;
+	}
+	@media (max-width: 719px) {
+		.row-ep {
+			grid-template-columns: 32px minmax(0, 1fr) auto;
+			min-height: 56px;
+			padding-block: 8px;
+		}
+		.row-ep > :first-child {
+			grid-area: 1 / 1;
+			align-self: center;
+		}
+		.row-ep > .stack {
+			grid-area: 1 / 2;
+		}
+		.row-ep > .mono {
+			grid-area: 1 / 3;
+		}
+		.row-ep > .ep-mark {
+			grid-area: 3 / 2 / 4 / -1;
+			justify-self: start;
+		}
+		.row-ep > .ep-bar {
+			grid-area: 2 / 2 / 3 / -1;
+		}
+	}
+	/* a playlist edit row: number, title over artists, buttons */
+	.row-edit {
+		grid-template-columns: 32px minmax(0, 1fr) auto;
+		padding-block: 6px;
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
 	}
