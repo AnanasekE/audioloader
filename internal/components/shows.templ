@@ -37,22 +37,22 @@ templ ShowsPage(shows []*audio.Show, continueListening []*audio.Track) {
 	}
 }
 
-// ContinueListening lists episodes that were started but not finished.
+// ContinueListening is a row of cards for episodes that were started but not finished.
 templ ContinueListening(tracks []*audio.Track) {
 	if len(tracks) > 0 {
-		<section class="mb-8">
-			<h2 class="mb-3 text-lg font-semibold">Continue listening</h2>
-			<ul class="card divide-y divide-line">
+		<section class="mb-6">
+			@sectionLabel("Continue listening")
+			<div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
 				for _, t := range tracks {
-					<li class="flex items-center gap-3 py-2" data-track-row>
-						@playButton(t, "size-8")
+					<div class="tile flex-row items-center" data-track-row>
+						@playButton(t, "size-9")
 						<div class="min-w-0 flex-1">
-							<a class="block truncate" href={ showURL(t.ShowID) }>{ t.Title }</a>
+							<a class="block truncate font-medium text-fg" href={ showURL(t.ShowID) }>{ t.Title }</a>
 							@episodeProgress(t)
 						</div>
-					</li>
+					</div>
 				}
-			</ul>
+			</div>
 		</section>
 	}
 }
@@ -106,9 +106,11 @@ templ episodeProgress(t *audio.Track) {
 	if t.Finished {
 		<span class="block text-xs text-fg-muted">Played</span>
 	} else if t.Position > 0 && t.Duration > 0 {
-		<div class="mt-1 flex items-center gap-2 text-xs text-fg-muted">
-			<progress class="h-1.5 w-32" max={ fmt.Sprint(int(t.Duration.Seconds())) } value={ fmt.Sprint(int(t.Position.Seconds())) }></progress>
-			{ formatDuration(t.Duration-t.Position) + " left" }
+		<div class="mt-1.5 flex items-center gap-2">
+			<div class="w-28 flex-none">
+				@progress(int(100 * t.Position / t.Duration))
+			</div>
+			<span class="mono text-xs text-fg-muted">{ formatDuration(t.Duration-t.Position) + " left" }</span>
 		</div>
 	}
 }

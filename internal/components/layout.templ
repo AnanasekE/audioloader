@@ -30,6 +30,7 @@ templ layout(title string, active string) {
 			<script src="/assets/js/player-state.js" defer></script>
 			<script src="/assets/js/player.js" defer></script>
 			<script src="/assets/js/nav.js" defer></script>
+			<script src="/assets/js/filter.js" defer></script>
 		</head>
 		// hx-boost turns links into htmx swaps of the body, so the page never
 		// reloads while browsing and the hx-preserve'd player keeps playing
@@ -40,7 +41,7 @@ templ layout(title string, active string) {
 				@sidebar(active)
 				<div class="min-w-0">
 					@topStrip()
-					<main class="mx-auto max-w-5xl px-4 pt-6 pb-40 min-[720px]:px-6 min-[720px]:pb-28">
+					<main class="max-w-[1072px] px-4 pt-4 pb-40 min-[720px]:pb-28">
 						{ children... }
 					</main>
 				</div>
@@ -172,7 +173,7 @@ templ navLabel(label string) {
 
 templ topStrip() {
 	<header class="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-line bg-bg/95 px-4 backdrop-blur min-[720px]:px-6">
-		<form action="/search" class="relative min-w-0 flex-1 max-w-md" role="search">
+		<form action="/search" class="relative min-w-0 max-w-[520px] flex-1" role="search">
 			<input
 				class="input peer min-[720px]:pr-16"
 				type="search"

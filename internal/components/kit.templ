@@ -71,7 +71,7 @@ templ rowBar(top bool) {
 
 // cover is a pixelated square image of size px.
 templ cover(src string, size int) {
-	<img class="cover" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) } loading="lazy"/>
+	<img class="cover" src={ src } alt="" width={ fmt.Sprint(size) } height={ fmt.Sprint(size) } style={ fmt.Sprintf("width:%dpx;height:%dpx", size, size) }/>
 }
 
 // avatar is the round variant, for artists.

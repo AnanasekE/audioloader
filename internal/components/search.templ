@@ -1,6 +1,7 @@
 package components
 
 import (
+	"context"
 	"net/url"
 
 	"audioloader/internal/audio"
@@ -13,7 +14,7 @@ templ SearchPage(q string, res *db.SearchResults) {
 		@pageHead("Search", searchSubtitle(q)) {
 		}
 		if q != "" && !secretMode(ctx) {
-			<p class="mb-6 text-sm text-fg-muted">
+			<p class="mb-4 text-sm text-fg-muted">
 				Not in your library? <a href={ templ.SafeURL("/add?q=" + url.QueryEscape(q)) }>Add “{ q }” as a song</a>
 			</p>
 		}
@@ -22,31 +23,73 @@ templ SearchPage(q string, res *db.SearchResults) {
 				Nothing matches.
 			}
 		}
-		if len(res.Artists) > 0 {
-			<h2 class="mb-3 text-lg font-semibold">Artists</h2>
-			<div class="mb-8">
-				@ArtistList(res.Artists)
-			</div>
-		}
-		if len(res.Shows) > 0 {
-			<h2 class="mb-3 text-lg font-semibold">Podcasts</h2>
-			<ul class="card mb-8 divide-y divide-line">
-				for _, s := range res.Shows {
-					<li class="py-2"><a href={ showURL(s.ID.String()) }>{ s.Title }</a></li>
-				}
-			</ul>
+		if len(res.Tracks) > 0 {
+			<section class="mb-6">
+				@sectionLabel("Tracks")
+				@TrackList(res.Tracks)
+			</section>
 		}
 		if len(res.Releases) > 0 {
-			<h2 class="mb-3 text-lg font-semibold">Releases</h2>
-			<div class="mb-8">
-				@releaseGrid(res.Releases)
-			</div>
+			<section class="mb-6">
+				@sectionLabel("Releases")
+				@list() {
+					for _, r := range res.Releases {
+						@searchRow(r.ImgURL, r.Title, artistNames(r.Artists), string(releaseURL(r)), r.Type.Label(), false)
+					}
+				}
+			</section>
 		}
-		if len(res.Tracks) > 0 {
-			<h2 class="mb-3 text-lg font-semibold">Tracks</h2>
-			@TrackList(res.Tracks)
+		if len(res.Artists) > 0 {
+			<section class="mb-6">
+				@sectionLabel(artistsWord(ctx))
+				@list() {
+					for _, a := range res.Artists {
+						@searchRow(a.ImgURL, a.Name, "", string(artistURL(a)), "", true)
+					}
+				}
+			</section>
+		}
+		if len(res.Shows) > 0 {
+			<section class="mb-6">
+				@sectionLabel("Podcasts")
+				@list() {
+					for _, s := range res.Shows {
+						@searchRow(s.ImgURL, s.Title, s.Author, string(showURL(s.ID.String())), "", false)
+					}
+				}
+			</section>
 		}
 	}
+}
+
+func artistsWord(ctx context.Context) string {
+	if secretMode(ctx) {
+		return "Creators"
+	}
+	return "Artists"
+}
+
+// searchRow is a result that links elsewhere: a small picture, a title with
+// a muted line under it, and a kind chip.
+templ searchRow(img, title, sub, href, kind string, round bool) {
+	<a class="row row-2 row-pad" href={ templ.SafeURL(href) }>
+		<span class="flex min-w-0 items-center gap-2.5">
+			if round {
+				@avatar(img, 28)
+			} else {
+				@cover(img, 28)
+			}
+			<span class="stack">
+				<b>{ title }</b>
+				if sub != "" {
+					<span>{ sub }</span>
+				}
+			</span>
+		</span>
+		if kind != "" {
+			@chipKind(kind)
+		}
+	</a>
 }
 
 func searchSubtitle(q string) string {
@@ -59,33 +102,53 @@ func searchSubtitle(q string) string {
 // SearchSuggest is the dropdown under the nav search box.
 templ SearchSuggest(q string, res *db.SearchResults) {
 	if q != "" {
-		<div class="absolute top-full left-0 z-30 mt-1 w-full min-w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
+		<div class="pop absolute top-full left-0 z-30 mt-1 max-h-[70vh] w-full min-w-80 overflow-y-auto">
 			if res.Empty() {
 				<p class="px-2 py-1 text-fg-muted">Nothing matches.</p>
 			}
-			for _, a := range res.Artists {
-				<a class="block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2" href={ searchURL(a.Name) }>
-					{ a.Name }<span class="text-fg-muted">{ " · Artist" }</span>
-				</a>
+			if len(res.Tracks) > 0 {
+				@sectionLabel("Tracks")
+				for _, t := range res.Tracks {
+					@suggestItem(t.ImgURL, t.Title, artistNames(t.Artists), string(trackURL(t)), false)
+				}
 			}
-			for _, s := range res.Shows {
-				<a class="block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2" href={ showURL(s.ID.String()) }>
-					{ s.Title }<span class="text-fg-muted">{ " · Podcast" }</span>
-				</a>
+			if len(res.Releases) > 0 {
+				@sectionLabel("Releases")
+				for _, r := range res.Releases {
+					@suggestItem(r.ImgURL, r.Title, r.Type.Label()+" · "+artistNames(r.Artists), string(releaseURL(r)), false)
+				}
 			}
-			for _, r := range res.Releases {
-				<a class="block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2" href={ releaseURL(r) }>
-					{ r.Title }<span class="text-fg-muted">{ " · " + r.Type.Label() + " · " + artistNames(r.Artists) }</span>
-				</a>
+			if len(res.Artists) > 0 {
+				@sectionLabel(artistsWord(ctx))
+				for _, a := range res.Artists {
+					@suggestItem(a.ImgURL, a.Name, "", string(searchURL(a.Name)), true)
+				}
 			}
-			for _, t := range res.Tracks {
-				<a class="block truncate rounded px-2 py-1 hover:bg-panel-2 hover:no-underline focus:bg-panel-2" href={ trackURL(t) }>
-					{ t.Title }<span class="text-fg-muted">{ " · " + artistNames(t.Artists) }</span>
-				</a>
+			if len(res.Shows) > 0 {
+				@sectionLabel("Podcasts")
+				for _, s := range res.Shows {
+					@suggestItem(s.ImgURL, s.Title, "", string(showURL(s.ID.String())), false)
+				}
 			}
-			<a class="mt-1 block rounded border-t border-line px-2 pt-2 focus:bg-panel-2" href={ searchURL(q) }>All results</a>
+			<a class="menu-item mt-1 border-t border-line text-accent" href={ searchURL(q) }>All results</a>
 		</div>
 	}
+}
+
+templ suggestItem(img, title, sub, href string, round bool) {
+	<a class="menu-item min-h-11 gap-2.5 py-1 focus:bg-panel-2" href={ templ.SafeURL(href) }>
+		if round {
+			@avatar(img, 28)
+		} else {
+			@cover(img, 28)
+		}
+		<span class="stack">
+			<b class="truncate font-medium">{ title }</b>
+			if sub != "" {
+				<span class="truncate text-xs text-fg-muted">{ sub }</span>
+			}
+		</span>
+	</a>
 }
 
 func searchURL(q string) templ.SafeURL {

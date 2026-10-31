@@ -443,13 +443,12 @@ templ tagResults(l TagLens) {
 					</p>
 				</div>
 			} else {
-				<ul class="flex flex-col" data-track-list>
-					for _, t := range l.Tracks {
-						<li>
-							@trackRow(t, tagHighlight(l.Query))
-						</li>
+				<div class="list" data-track-list>
+					@listHead("row-track", "#", "", "Title", "Tags", ">Time", "")
+					for i, t := range l.Tracks {
+						@trackRow(t, tagHighlight(l.Query), i+1)
 					}
-				</ul>
+				</div>
 			}
 		}
 	</section>
