@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS tracks (
 CREATE TABLE IF NOT EXISTS artists (
     uuid TEXT UNIQUE NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    img_url TEXT DEFAULT "/assets/img/default_pfp.png"
+    img_url TEXT
     );
 
 CREATE TABLE IF NOT EXISTS track_artist_map (

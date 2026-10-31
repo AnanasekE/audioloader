@@ -36,7 +36,7 @@ export type Page<T> = { items: T[]; total: number };
 export type Artist = {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl: string; // always /artist-images/{id}: own picture, newest release cover or an initials tile
 };
 
 // releases is [] in secret mode; tracks are those on none of the releases.

@@ -8,7 +8,7 @@
 
 - [x] 1. Initials tile generator
 - [x] 2. Serve the fallbacks
-- [ ] 3. Use them everywhere, docs
+- [x] 3. Use them everywhere, docs
 
 ## Rules
 

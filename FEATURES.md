@@ -20,11 +20,11 @@
 - Edit a track (title, artists; an episode can become a song) from its menu; search follows the new title
 - Delete a track from its menu, with a confirm dialog naming its releases; its file, playlist entries, positions, downloads and tagging rows go with it, the releases stay
 - Artist pages (`/artists/<id>`): picture, MusicBrainz link, follow status, releases by type, and tracks not on any of their releases; artist names in track rows and on release pages link there
-- Artist profile pictures (JPEG, PNG, WebP, checked by content), "Remove picture" returns to the default
+- Artist profile pictures (JPEG, PNG, WebP, checked by content), "Remove picture" drops it. An artist without one shows the cover of their newest release (normal mode only), else a pixel initials tile in a colour picked from the name
 - Rename an artist (still unique, case-insensitive) or merge it into another from the artist page; follow, MusicBrainz ID, Twitch channel and picture move over when the target has none
 - Artist links to MusicBrainz: the top 5 candidates show disambiguation, type, country and active years, and "Expand" lists a candidate's newest release groups (fetched only on request, under the 1 req/s limit); used on the Follow page and by "Link to MusicBrainz" on an artist page without an ID (pick, or paste an ID or `musicbrainz.org/artist/<id>` URL; an ID another artist has offers a merge instead)
 - Tagging page: "Link artists?" lists library artists without an ID that applied matches credit under a close but different name; the ID is only ever set from your pick, an exact embedded tag or an exact name match
-- Twitch channel per artist (login or `twitch.tv/<login>` URL, stored lowercase), shown as a link on the artist page; saving it fetches the channel's profile picture for an artist who still has the default one, "Update picture from Twitch" replaces it on request, never automatically. Needs `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`; without them the field still saves
+- Twitch channel per artist (login or `twitch.tv/<login>` URL, stored lowercase), shown as a link on the artist page; saving it fetches the channel's profile picture for an artist with no picture of their own, "Update picture from Twitch" replaces it on request, never automatically. Needs `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`; without them the field still saves
 
 ### Uploading
 
