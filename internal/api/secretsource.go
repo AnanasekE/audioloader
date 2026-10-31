@@ -10,6 +10,7 @@ import (
 	"time"
 	"uuid"
 
+	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
@@ -173,6 +174,21 @@ func checkSecretSource(w http.ResponseWriter, r *http.Request) {
 // maxCreatorName is the longest creator name suggested from an address.
 const maxCreatorName = 200
 
+// creatorForName is the artist v can see with that name, ignoring case, or a
+// new one.
+func creatorForName(v db.Viewer, name string) (*audio.Artist, error) {
+	a, err := db.CreatorForUploader(v, "", name)
+	if err == nil && a == nil {
+		if a, err = db.AddArtist(v, name); errors.Is(err, db.ErrArtistExists) {
+			a, err = db.CreatorForUploader(v, "", name)
+		}
+	}
+	if err != nil || a == nil {
+		return nil, errors.Join(err, errors.New("could not create the creator"))
+	}
+	return a, nil
+}
+
 // downloadFromSecretSource queues the download. It needs at least one
 // creator, each one the viewer can see, or a new_creator that is still
 // checked, which is created (or found by name) just before queueing.
@@ -240,14 +256,9 @@ func downloadFromSecretSource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if newName != "" {
-		a, err := db.CreatorForUploader(viewer(r), "", newName)
-		if err == nil && a == nil {
-			if a, err = db.AddArtist(viewer(r), newName); errors.Is(err, db.ErrArtistExists) {
-				a, err = db.CreatorForUploader(viewer(r), "", newName)
-			}
-		}
-		if err != nil || a == nil {
-			serverError(w, errors.Join(err, errors.New("could not create the creator")))
+		a, err := creatorForName(viewer(r), newName)
+		if err != nil {
+			serverError(w, err)
 			return
 		}
 		if id := a.ID.String(); !slices.Contains(artistIDs, id) {

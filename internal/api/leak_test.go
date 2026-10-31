@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"audioloader/internal/audio"
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
+	"audioloader/internal/sources/secret"
 	"audioloader/internal/vault"
 )
 
@@ -172,7 +174,7 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 	var urls []string
 	for _, route := range Routes {
 		method, path, _ := strings.Cut(route, " ")
-		if method != "GET" {
+		if method != "GET" || slices.Contains(TokenOnly, route) {
 			continue
 		}
 		path = strings.TrimSuffix(path, "{$}")
@@ -282,6 +284,9 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		t.Fatal("no normal-only routes registered")
 	}
 	for _, route := range NormalOnly {
+		if slices.Contains(TokenOnly, route) {
+			continue // the token opens these, not the cookie; checked below
+		}
 		method, path, _ := strings.Cut(route, " ")
 		path = strings.TrimSuffix(path, "{$}")
 		for name, values := range params {
@@ -289,6 +294,33 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		}
 		if rec := secretReq(method, path); rec.Code != http.StatusNotFound {
 			t.Errorf("%s in secret mode = %d, want 404", route, rec.Code)
+		}
+	}
+	// token routes answer 401 without the token, in both modes, cookie or not
+	if len(TokenOnly) == 0 {
+		t.Fatal("no token routes registered")
+	}
+	SetShareToken(strings.Repeat("t", 32))
+	secret.SetDefault(secret.New("pages.example.test"))
+	defer func() {
+		SetShareToken("")
+		secret.SetDefault(nil)
+	}()
+	defer func(d time.Duration) { shareFailDelay = d }(shareFailDelay)
+	shareFailDelay = 0
+	for _, route := range TokenOnly {
+		method, path, _ := strings.Cut(route, " ")
+		for _, withCookie := range []bool{false, true} {
+			req := httptest.NewRequest(method, path, strings.NewReader("url=x"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if withCookie {
+				req.AddCookie(v.Cookie(time.Now(), false))
+			}
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("%s without the token (cookie %v) = %d, want 401", route, withCookie, rec.Code)
+			}
 		}
 	}
 	for _, page := range []string{"/releases", "/inbox", "/tagging", "/downloads", "/upload/youtube"} {
