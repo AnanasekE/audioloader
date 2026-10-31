@@ -8,9 +8,9 @@ export default function ReleaseScreen() {
   return (
     <TrackListDetail
       title={q.data?.title}
-      subtitle={q.data?.artists.map((a) => a.name).join(", ")}
+      subtitle={q.data ? [q.data.artists.map((a) => a.name).join(", "), q.data.type, q.data.date.slice(0, 4)].filter(Boolean).join(" · ") : undefined}
       imageUrl={q.data?.imageUrl}
-      tracks={q.data?.tracks}
+      tracks={q.data?.tracks.map((rt) => rt.track)}
       loading={q.isLoading}
       error={q.error}
     />

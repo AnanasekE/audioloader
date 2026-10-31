@@ -9,6 +9,7 @@ export default function ArtistScreen() {
   const router = useRouter();
   const q = useArtist(id);
   const releases = q.data?.releases ?? [];
+  const hasTracks = (q.data?.tracks.length ?? 0) > 0;
   return (
     <TrackListDetail
       title={q.data?.name}
@@ -21,9 +22,9 @@ export default function ArtistScreen() {
           <View>
             <SectionTitle>Releases</SectionTitle>
             {releases.map((r) => (
-              <Row key={r.id} image={<Cover uri={r.imageUrl} />} title={r.title} onPress={() => router.push({ pathname: "/release/[id]", params: { id: r.id } })} />
+              <Row key={r.id} image={<Cover uri={r.imageUrl} />} title={r.title} subtitle={[r.type, r.date.slice(0, 4)].filter(Boolean).join(" · ")} onPress={() => router.push({ pathname: "/release/[id]", params: { id: r.id } })} />
             ))}
-            <SectionTitle>Tracks</SectionTitle>
+            {hasTracks ? <SectionTitle>Other tracks</SectionTitle> : null}
           </View>
         ) : null
       }

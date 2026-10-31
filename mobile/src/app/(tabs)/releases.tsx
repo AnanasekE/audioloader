@@ -14,7 +14,7 @@ export default function Releases() {
         <Row
           image={<Cover uri={r.imageUrl} />}
           title={r.title}
-          subtitle={r.artists.map((a) => a.name).join(", ")}
+          subtitle={[r.artists.map((a) => a.name).join(", "), r.type, r.date.slice(0, 4)].filter(Boolean).join(" · ")}
           onPress={() => router.push({ pathname: "/release/[id]", params: { id: r.id } })}
         />
       )}

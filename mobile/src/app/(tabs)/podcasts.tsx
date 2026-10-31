@@ -14,7 +14,8 @@ export default function Podcasts() {
         <Row
           image={<Cover uri={s.imageUrl} />}
           title={s.title}
-          right={s.episodeCount !== undefined ? String(s.episodeCount) : undefined}
+          subtitle={s.author || undefined}
+          right={s.unplayed > 0 ? `${s.unplayed} new` : String(s.count)}
           onPress={() => router.push({ pathname: "/show/[id]", params: { id: s.id } })}
         />
       )}

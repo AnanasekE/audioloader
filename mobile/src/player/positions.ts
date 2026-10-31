@@ -5,9 +5,8 @@ import type { PositionBody, Track } from "@/api/types";
 export const FINISH_WITHIN = 30; // seconds from the end
 export const SAVE_EVERY = 15_000; // ms between saves while playing
 
-// Only episodes carry a position (plan 21).
-export function isEpisode(t: Pick<Track, "position">): boolean {
-  return typeof t.position === "number";
+export function isEpisode(t: Pick<Track, "kind">): boolean {
+  return t.kind === "episode";
 }
 
 // bodyToSave is what POST /api/tracks/{id}/position gets.

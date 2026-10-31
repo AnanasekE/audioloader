@@ -23,18 +23,18 @@ describe("startPosition", () => {
   it("starts over when finished or never started", () => {
     expect(startPosition({ position: 120, finished: true })).toBe(0);
     expect(startPosition({ position: 0, finished: false })).toBe(0);
-    expect(startPosition({})).toBe(0);
+    expect(startPosition({ position: 0, finished: false })).toBe(0);
   });
   it("prefers a position saved this session", () => {
     expect(startPosition({ position: 120, finished: true }, 300)).toBe(300);
-    expect(startPosition({ position: 120 }, 0)).toBe(0);
+    expect(startPosition({ position: 120, finished: false }, 0)).toBe(0);
   });
 });
 
 describe("isEpisode", () => {
-  it("is true only with a position", () => {
-    expect(isEpisode({ position: 0 })).toBe(true);
-    expect(isEpisode({})).toBe(false);
+  it("is true only for kind episode", () => {
+    expect(isEpisode({ kind: "episode" })).toBe(true);
+    expect(isEpisode({ kind: "music" })).toBe(false);
   });
 });
 

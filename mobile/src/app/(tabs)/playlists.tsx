@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { usePlaylists } from "@/api/hooks";
-import { PagedList, Row } from "@/components/ui";
+import { Cover, PagedList, Row } from "@/components/ui";
 
 export default function Playlists() {
   const router = useRouter();
@@ -13,7 +13,8 @@ export default function Playlists() {
       render={(p) => (
         <Row
           title={p.name}
-          right={p.trackCount !== undefined ? String(p.trackCount) : undefined}
+          image={<Cover uri={p.imageUrl} />}
+          subtitle={`${p.count} tracks`}
           onPress={() => router.push({ pathname: "/playlist/[id]", params: { id: p.id } })}
         />
       )}

@@ -158,14 +158,20 @@ function load(q: Q.QueueState, autoplay: boolean) {
 // playFrom starts tracks[index] with the rest of the list queued after it,
 // as clicking a row does on the web.
 export function playFrom(tracks: Track[], index: number): void {
-  load(Q.setQueue(tracks, index), true);
+  // a placeholder track has no file (streamUrl "") and cannot play
+  const wanted = tracks[index];
+  if (!wanted?.streamUrl) return;
+  const playable = tracks.filter((t) => t.streamUrl);
+  load(Q.setQueue(playable, playable.indexOf(wanted)), true);
 }
 
 export function playNow(track: Track): void {
+  if (!track.streamUrl) return;
   load(Q.setQueue([track], 0), true);
 }
 
 export function playNext(track: Track): void {
+  if (!track.streamUrl) return;
   if (!state.queue.items.length) return playNow(track);
   const q = Q.playNext(state.queue, track);
   engine().insert(sourceOf(track), state.queue.index + 1);
@@ -173,6 +179,7 @@ export function playNext(track: Track): void {
 }
 
 export function addToEnd(track: Track): void {
+  if (!track.streamUrl) return;
   if (!state.queue.items.length) return playNow(track);
   engine().add(sourceOf(track));
   set({ queue: Q.addToEnd(state.queue, track) });

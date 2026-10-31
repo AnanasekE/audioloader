@@ -1,7 +1,7 @@
 import type { Track } from "@/api/types";
 import * as Q from "./queue";
 
-const t = (id: string): Track => ({ id, title: id, duration: 10, streamUrl: `/s/${id}`, imageUrl: "", artists: [] });
+const t = (id: string): Track => ({ id, title: id, kind: "music", duration: 10, streamUrl: `/s/${id}`, imageUrl: "", artists: [], showId: "", position: 0, finished: false });
 const ids = (q: Q.QueueState) => q.items.map((x) => x.id).join("");
 const abcd = () => Q.setQueue(["a", "b", "c", "d"].map(t), 1);
 
