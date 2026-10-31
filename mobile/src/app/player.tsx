@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Btn, Transport } from "@/components/player-ui";
+import { Btn, SleepTimer, Transport } from "@/components/player-ui";
 import { artistNames, Cover, Message } from "@/components/ui";
 import { jumpTo, move, removeAt, usePlayer } from "@/player";
 import { current } from "@/player/queue";
+import { isEpisode } from "@/player/positions";
 import { colors, font } from "@/theme";
 
 // Full-screen player: cover, title, seek bar, controls and the queue.
@@ -34,6 +35,7 @@ export default function PlayerScreen() {
           <Text style={styles.sub}>{artistNames(t)}</Text>
           <View style={{ height: 16 }} />
           <Transport />
+          <SleepTimer episode={isEpisode(t)} />
           <Text style={styles.section}>Queue</Text>
         </View>
       }

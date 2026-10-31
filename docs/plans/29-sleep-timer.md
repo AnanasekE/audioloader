@@ -8,7 +8,7 @@
 
 - [x] 1. Timer logic (web)
 - [x] 2. Timer UI (web)
-- [ ] 3. Mobile app
+- [x] 3. Mobile app
 
 ## Rules
 
