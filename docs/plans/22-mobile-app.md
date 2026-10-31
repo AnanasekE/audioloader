@@ -11,7 +11,7 @@
 - [x] 3. Library screens
 - [x] 4. Player, queue and background audio
 - [x] 5. Episode positions
-- [ ] 6. Secret mode in the app
+- [x] 6. Secret mode in the app
 - [ ] 7. Docs
 
 ## Rules
