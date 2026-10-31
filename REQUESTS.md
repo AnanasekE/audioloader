@@ -12,6 +12,10 @@ The Expo app in `mobile/` browses and plays the library (see `FEATURES.md`). Sti
 - **A standalone (EAS) build** instead of Expo Go.
 - **Lock-screen artwork in secret mode:** the lock screen cannot send the vault cookie, so cover images show in normal mode only.
 
+## Queue on phones
+
+The ☰ popover is small; decide whether it becomes a full-screen sheet or part of an expanded player.
+
 ## Share to the app from iOS (secret auto-download)
 
 Sharing a page from the secret source in Safari (or another app) through the iOS share sheet sends it to audioloader, which downloads it as a secret track without opening the web form.
