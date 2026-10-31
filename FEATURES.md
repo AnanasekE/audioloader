@@ -103,6 +103,7 @@
 - "Continue listening" on the Tracks and Podcasts pages
 - Player for episodes: −15 s / +30 s, speed 0.8–2× remembered per show, pitch kept
 - Chapters from ID3 CHAP frames and MP4 Nero chapters: list to jump to, current chapter under the title
+- Sleep timer (moon button, web player): one click starts 30 minutes; 15–120 minutes or the end of the track/episode; volume fades over the last 10 s, then it pauses; counts wall-clock time and survives a reload
 
 ### Secret mode
 
