@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Volume slider and mute
+- [x] 1. Volume slider and mute
 
 ## Rules
 

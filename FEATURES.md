@@ -93,6 +93,7 @@
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
 - Play next / Add to queue from a track's menu; "Up next" list with remove and clear; queue survives a reload
 - On wide screens the queue is always shown on the right: now playing, up next (click to play, ✕ to remove) and chapters
+- Volume slider and mute (desktop), remembered across reloads
 
 ### Podcasts and long audio
 

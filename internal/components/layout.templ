@@ -73,7 +73,15 @@ templ player() {
 				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">▶</button>
 				<button id="player-next" type="button" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9" aria-label="Next track">⏭</button>
 			</div>
-			<details id="player-queue" class="relative shrink-0 min-[720px]:order-3 min-[1200px]:hidden">
+			<div class="hidden shrink-0 items-center gap-1 min-[720px]:order-3 min-[720px]:flex">
+				<button id="player-mute" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg" aria-label="Mute">
+					<span data-vol-icon="x" hidden>@icon("volume-x")</span>
+					<span data-vol-icon="1" hidden>@icon("volume-1")</span>
+					<span data-vol-icon="2">@icon("volume-2")</span>
+				</button>
+				<input id="player-volume" type="range" min="0" max="1" step="0.01" value="1" class="h-6 w-24 accent-accent" aria-label="Volume"/>
+			</div>
+			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">☰</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
@@ -407,6 +415,15 @@ templ icon(name string) {
 				<path d="M12 4v12"></path>
 				<path d="M7 11l5 5 5-5"></path>
 				<path d="M4 20h16"></path>
+			case "volume-x":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M22 9l-6 6M16 9l6 6"></path>
+			case "volume-1":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+			case "volume-2":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path>
 			case "lock":
 				<rect x="4" y="11" width="16" height="10" rx="2"></rect>
 				<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>

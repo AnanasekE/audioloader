@@ -47,6 +47,22 @@ test("when the playing track goes, the next kept one takes over, paused", () => 
 	assert.equal(s.time, 0);
 });
 
+test("volume slider is squared and maps back", () => {
+	const { volumeFromSlider, sliderFromVolume } = window.playerState;
+	assert.equal(volumeFromSlider(0.5), 0.25);
+	assert.equal(volumeFromSlider(2), 1);
+	assert.equal(volumeFromSlider(-1), 0);
+	assert.ok(Math.abs(sliderFromVolume(volumeFromSlider(0.3)) - 0.3) < 1e-9);
+});
+
+test("saved volume and muted are restored, bad values are ignored", () => {
+	const a = window.playerState.audioSettings;
+	assert.deepEqual(a({ volume: 0.4, muted: true }), { volume: 0.4, muted: true });
+	assert.deepEqual(a({ volume: 3, muted: "yes" }), { volume: null, muted: null });
+	assert.deepEqual(a({}), { volume: null, muted: null });
+	assert.deepEqual(a(null), { volume: null, muted: null });
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);

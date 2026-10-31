@@ -49,7 +49,7 @@
 			}
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: audio.volume, paused: audio.paused, queue, order, pos, shuffle }),
+				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle }),
 			);
 		} catch {
 			// storage can be full or disabled (private mode); playback still works
@@ -417,6 +417,49 @@
 		return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 	}
 
+	// --- volume and mute ---------------------------------------------------
+
+	const volumeEl = document.getElementById("player-volume");
+	const muteBtn = document.getElementById("player-mute");
+	const { volumeFromSlider, sliderFromVolume } = window.playerState;
+
+	function syncVolume() {
+		const silent = audio.muted || audio.volume === 0;
+		volumeEl.value = String(audio.muted ? 0 : sliderFromVolume(audio.volume));
+		muteBtn.setAttribute("aria-label", silent ? "Unmute" : "Mute");
+		const level = silent ? "x" : audio.volume < 0.5 ? "1" : "2";
+		muteBtn.querySelectorAll("[data-vol-icon]").forEach((el) => (el.hidden = el.dataset.volIcon !== level));
+	}
+
+	function toggleMute() {
+		// at volume 0 "unmute" has to raise the volume too, or nothing would change
+		if (!audio.muted && audio.volume === 0) audio.volume = 0.25;
+		else audio.muted = !audio.muted;
+		syncVolume();
+	}
+
+	function setVolume(vol) {
+		audio.volume = Math.min(1, Math.max(0, vol));
+		if (audio.volume > 0) audio.muted = false;
+	}
+
+	volumeEl.addEventListener("input", () => setVolume(volumeFromSlider(volumeEl.value)));
+	muteBtn.addEventListener("click", toggleMute);
+	// m and arrow up/down; nothing else on the page uses them (nav.js has
+	// only Space, /, Ctrl+K and arrows inside the search suggestions)
+	document.addEventListener("keydown", (e) => {
+		if (!current || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+		const t = e.target;
+		if (t instanceof Element && t.closest("input, textarea, select, [contenteditable]")) return;
+		if (e.key === "m") {
+			e.preventDefault();
+			toggleMute();
+		} else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+			e.preventDefault();
+			setVolume(volumeFromSlider(sliderFromVolume(audio.volume) + (e.key === "ArrowUp" ? 0.05 : -0.05)));
+		}
+	});
+
 	let seeking = false;
 
 	function syncTime() {
@@ -466,7 +509,7 @@
 		savePosition({ ended: true });
 		if (!next()) (markRows(), save());
 	});
-	audio.addEventListener("volumechange", save);
+	audio.addEventListener("volumechange", () => (syncVolume(), save()));
 	audio.addEventListener("timeupdate", () => {
 		if (Date.now() - lastSave > 2000) save();
 		if (Date.now() - lastPositionSave > 10000 && !audio.paused) savePosition();
@@ -513,6 +556,8 @@
 
 	window.player = { playList, enqueue, playNext, playAt, next, prev, toggleShuffle, clear, reset };
 
+	syncVolume();
+
 	// a page of one mode must not resume what the other mode played: not
 	// playing, not queued, not in storage
 	const saved = restoreState();
@@ -528,7 +573,10 @@
 		} catch {}
 	}
 	if (state?.track) {
-		if (typeof state.volume === "number") audio.volume = state.volume;
+		const av = window.playerState.audioSettings(state);
+		if (av.volume !== null) audio.volume = av.volume;
+		if (av.muted !== null) audio.muted = av.muted;
+		syncVolume();
 		if (Array.isArray(state.queue) && Array.isArray(state.order) && state.order.every((i) => state.queue[i])) {
 			queue = state.queue;
 			order = state.order;

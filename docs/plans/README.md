@@ -32,6 +32,8 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 23 | [Add songs from a MusicBrainz link](23-add-from-musicbrainz-url.md) | Paste a MusicBrainz release or recording link on the Add page to list its tracks; add one or all |
 | 24 | [Queue panel](24-queue-panel.md) | On wide screens the queue is always shown on the right (now playing, up next, chapters) |
 | 25 | [Icons](25-icons.md) | Tab and header icons and an app icon on mobile; sidebar icons and a home-screen icon on the web |
+| 27 | [Volume control](27-volume.md) | Volume slider and mute in the web player |
+| 29 | [Sleep timer](29-sleep-timer.md) | Sleep timer in the web player and the mobile app |
 
 ## Rules for every plan
 
