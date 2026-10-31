@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,7 +113,8 @@ func addEpisode(w http.ResponseWriter, r *http.Request) {
 
 // savePosition takes {"seconds": n, "finished": bool} from the player. It
 // is also sent with navigator.sendBeacon, which can't set a JSON content
-// type, so the body is parsed whatever its type.
+// type, so the body is parsed as JSON whatever its type, unless it says it
+// is a form.
 func savePosition(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
 	if !ok || !visibleTrack(w, r, id.String()) {
@@ -122,7 +124,16 @@ func savePosition(w http.ResponseWriter, r *http.Request) {
 		Seconds  float64 `json:"seconds"`
 		Finished bool    `json:"finished"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10)).Decode(&req); err != nil || req.Seconds < 0 {
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
+		// the app may send a form: seconds=12.5&finished=true
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<10)
+		var err error
+		if req.Seconds, err = strconv.ParseFloat(r.FormValue("seconds"), 64); err != nil || req.Seconds < 0 {
+			http.Error(w, "invalid seconds", http.StatusBadRequest)
+			return
+		}
+		req.Finished = r.FormValue("finished") == "true"
+	} else if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10)).Decode(&req); err != nil || req.Seconds < 0 {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}

@@ -153,6 +153,7 @@
 - Favicon and default track/artist images
 - SQLite foreign keys enforced
 - Versioned migrations (`PRAGMA user_version`), DB tests (`go test ./...`)
+- JSON API for the mobile app (read-only, both modes) under `/api/v1/`, with the same visibility rules as the pages; see `docs/api.md`
 
 ## Not implemented yet
 
@@ -172,7 +173,6 @@
 
 ### Apps
 
-- JSON API (`/api/v1/...`) for mobile and desktop apps
 - Wrapped web app (Tauri, Wails, Capacitor) or native (React Native)
 - Playback positions synced through the server
 
