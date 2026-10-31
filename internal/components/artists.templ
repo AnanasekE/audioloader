@@ -171,7 +171,12 @@ templ artistPicker(artists []*audio.Artist, selected []string) {
 }
 
 templ Artist(a *audio.Artist) {
-	@avatarCard(a.ImgURL, a.Name, releaseCountLabel(a.ReleaseCount), string(artistURL(a)))
+	if secretMode(ctx) {
+		// creators have no releases to count
+		@avatarCard(a.ImgURL, a.Name, "", string(artistURL(a)))
+	} else {
+		@avatarCard(a.ImgURL, a.Name, releaseCountLabel(a.ReleaseCount), string(artistURL(a)))
+	}
 }
 
 func releaseCountLabel(n int) string {

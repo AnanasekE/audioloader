@@ -19,7 +19,7 @@ Each step ticks its own box in the same commit. The last ticked step is always a
 - [x] 9. Downloads and tagging
 - [x] 10. Forms and edit pages
 - [x] 11. Tags page, secret track list
-- [ ] 12. Final pass
+- [x] 12. Final pass
 
 ## Rules for this plan
 
@@ -134,7 +134,7 @@ Port these from the mockup's CSS and markup, as templ components plus a few `@la
 - **Done when:** it matches at both widths.
 
 ### 12. Final pass
-- Remove `/dev/kit`.
+- Remove `/dev/kit`. (Done: the route and its page are gone; the layout also honours `?theme=light|dark` for the screenshots.)
 - Run `tools/shots.sh` with no arguments.
 - Look at every page at both widths in both themes: add a `?theme=light` handling to the shots script, or a light run with `localStorage` preset via the trailing-script trick for the mockup and a cookie-less `data-theme` override flag for the app; keep whichever is simplest.
 - Fix any page that still shows the old structure.
