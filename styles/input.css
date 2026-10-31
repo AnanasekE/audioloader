@@ -237,8 +237,24 @@
 	.row-2 {
 		grid-template-columns: minmax(0, 1fr) auto;
 	}
+	/* a release's track: number or bars, title over artists, time, menu */
+	.row-rel {
+		grid-template-columns: 24px minmax(0, 1fr) auto 52px 32px;
+	}
+	@media (max-width: 719px) {
+		.row-rel {
+			grid-template-columns: 24px minmax(0, 1fr) auto 44px;
+			min-height: 52px;
+		}
+		.row-rel > .chip {
+			display: none;
+		}
+	}
 	.row-bar {
 		@apply flex items-center justify-between bg-bg py-2 text-xs;
+	}
+	.row-bar .label {
+		@apply font-semibold tracking-[0.06em] text-fg-subtle uppercase;
 	}
 	.row-bar.top {
 		border-bottom: 1px solid var(--line);
@@ -373,28 +389,30 @@
 	.eq > i:nth-child(3) {
 		animation-delay: -550ms;
 	}
-	.row-track .play {
+	.row-track .play,
+	.row-rel .play {
 		@apply relative flex h-7 w-6 cursor-pointer items-center justify-center font-mono text-xs text-fg-muted;
 	}
-	.row-track .play .go,
-	.row-track .play .eq {
+	:is(.row-track, .row-rel) .play .go,
+	:is(.row-track, .row-rel) .play .eq {
 		display: none;
 	}
-	.row-track .play:hover .n {
+	:is(.row-track, .row-rel) .play:hover .n {
 		display: none;
 	}
-	.row-track .play:hover .go {
+	:is(.row-track, .row-rel) .play:hover .go {
 		display: inline;
 		color: var(--accent);
 	}
-	.row-track .play[aria-pressed="true"] .n,
-	.row-track .play[aria-pressed="true"] .go {
+	:is(.row-track, .row-rel) .play[aria-pressed="true"] .n,
+	:is(.row-track, .row-rel) .play[aria-pressed="true"] .go {
 		display: none;
 	}
-	.row-track .play[aria-pressed="true"] .eq {
+	:is(.row-track, .row-rel) .play[aria-pressed="true"] .eq {
 		display: inline-flex;
 	}
-	.row-track.is-missing {
+	.row-track.is-missing,
+	.row-rel.is-missing {
 		opacity: 0.45;
 	}
 

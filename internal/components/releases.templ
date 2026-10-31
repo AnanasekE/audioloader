@@ -151,21 +151,19 @@ templ ReleasePage(r *audio.Release) {
 }
 
 templ releaseActions(r *audio.Release) {
-	<div class="mt-4 flex flex-wrap gap-2">
-		if missingCount(r) < len(r.Tracks) {
-			<button type="button" class="btn" data-play-list="release-tracks">Play</button>
-			<button type="button" class="btn btn-ghost" data-play-list="release-tracks" data-shuffle>Shuffle</button>
-		}
-		<a class="btn" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
-		<a class="btn btn-ghost" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
-		@removeReleaseButton(r)
-	</div>
+	if missingCount(r) < len(r.Tracks) {
+		<button type="button" class="btn" data-play-list="release-tracks">Play</button>
+		<button type="button" class="btn btn-ghost" data-play-list="release-tracks" data-shuffle>Shuffle</button>
+	}
+	<a class="btn btn-ghost" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
+	<a class="btn btn-ghost" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
+	@removeReleaseButton(r)
 }
 
 templ removeReleaseButton(r *audio.Release) {
 	<button
 		type="button"
-		class="btn"
+		class="btn btn-danger"
 		hx-post={ "/ui/releases/" + r.ID.String() + "/remove" }
 		hx-confirm={ removeReleaseConfirm(r) }
 	>Remove release</button>
@@ -207,105 +205,109 @@ func removeReleaseConfirm(r *audio.Release) string {
 }
 
 templ albumView(r *audio.Release) {
-	<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-		<img class="pixelated size-40 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-48" src={ r.ImgURL } alt=""/>
-		<div class="min-w-0">
-			<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">{ r.Type.Label() }</p>
-			<h1 class="text-2xl font-semibold tracking-tight">{ r.Title }</h1>
-			<p class="mt-1">
-				@artistLinks(r.Artists)
-			</p>
-			<p class="font-mono text-xs text-fg-muted">{ releaseFacts(r) }</p>
-			@releaseActions(r)
-		</div>
-	</div>
+	@mediaHeader(r.ImgURL, r.Type.Label(), r.Title, artistLinks(r.Artists), releaseFacts(r)) {
+		@releaseActions(r)
+	}
 	if len(r.Tracks) == 0 {
 		@emptyState() {
 			No tracks yet. Upload tracks, or add existing ones with Edit tracklist.
 		}
 	}
-	<div id="release-tracks" data-track-list>
-	for _, disc := range r.Discs() {
-		<section class="mb-8">
-			if len(r.Discs()) > 1 {
-				<h2 class="mb-1 px-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Disc { fmt.Sprint(disc[0].Disc) }</h2>
-			}
-			<ol class="flex flex-col">
-				for _, rt := range disc {
-					<li>
+	if len(r.Tracks) > 0 {
+		<div id="release-tracks" data-track-list>
+			@list() {
+				for _, disc := range r.Discs() {
+					if len(r.Discs()) > 1 {
+						@rowBar(true) {
+							<span class="label">{ "Disc " + fmt.Sprint(disc[0].Disc) }</span>
+							<span class="mono">{ formatDuration(discLength(disc)) }</span>
+						}
+					} else {
+						@listHead("row-rel", "#", "Title", ">Time")
+					}
+					for _, rt := range disc {
 						@releaseTrackRow(rt, r)
-					</li>
+					}
 				}
-			</ol>
-		</section>
+				@rowBar(false) {
+					<span class="label">Total length</span>
+					<span class="mono">{ formatDuration(r.Duration()) }</span>
+				}
+			}
+		</div>
 	}
-	</div>
 }
 
 // singleView centres a single on its song: the first track is the A-side,
 // any others are B-sides.
 templ singleView(r *audio.Release) {
-	<div class="mb-10 flex flex-col gap-8 sm:flex-row sm:items-center">
-		<img class="pixelated size-48 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-56" src={ r.ImgURL } alt=""/>
-		<div class="min-w-0">
-			<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Single</p>
-			<h1 class="text-2xl font-semibold tracking-tight">{ r.Title }</h1>
-			<p class="mt-1">
-				@artistLinks(r.Artists)
-			</p>
-			if r.Date != "" {
-				<p class="text-sm text-fg-muted">{ r.Date }</p>
-			}
-			if len(r.Tracks) > 0 {
-				<p class="mt-1 text-sm">
-					@coverOfLine(r.Tracks[0].Track)
-				</p>
-				<div class="mt-6 flex items-center gap-4" id="release-tracks" data-track-list data-track-row>
-					@playButton(r.Tracks[0].Track, "size-14 text-xl")
-					<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
-				</div>
-				for _, other := range r.Tracks[0].Track.Releases {
-					if other.ID != r.ID && !other.IsSingle() {
-						<p class="mt-3 text-sm">Also on <a href={ releaseURL(other) }>{ other.Title }</a></p>
-					}
-				}
-			}
-			@releaseActions(r)
-		</div>
-	</div>
+	@mediaHeader(r.ImgURL, "Single", r.Title, artistLinks(r.Artists), singleFacts(r)) {
+		@releaseActions(r)
+	}
 	if len(r.Tracks) == 0 {
 		@emptyState() {
 			No track yet. Upload it, or add an existing one with Edit tracklist.
 		}
-	} else if len(r.Tracks) > 1 {
-		<section>
-			<h2 class="mb-1 px-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Also on this single</h2>
-			<ol class="flex flex-col">
-				for _, rt := range r.Tracks[1:] {
-					<li>
-						@releaseTrackRow(rt, r)
-					</li>
+	} else {
+		<div id="release-tracks" data-track-list class="mb-6">
+			@list() {
+				@releaseTrackRow(r.Tracks[0], r)
+			}
+		</div>
+		if also := alsoOn(r); len(also) > 0 {
+			<section class="mb-6">
+				@sectionLabel("Also on")
+				@list() {
+					for _, other := range also {
+						@row("row-2 row-pad") {
+							<a class="truncate" href={ releaseURL(other) }>{ other.Title }</a>
+							<span class="mono text-fg-muted">{ other.Year() }</span>
+						}
+					}
 				}
-			</ol>
-		</section>
+			</section>
+		}
+		if len(r.Tracks) > 1 {
+			<section class="mb-6">
+				@sectionLabel("Also on this single")
+				@list() {
+					for _, rt := range r.Tracks[1:] {
+						@releaseTrackRow(rt, r)
+					}
+				}
+			</section>
+		}
 	}
 }
 
+// releaseTrackRow is a row of a release's tracklist: the release's number
+// (a play button), title over artists when they differ from the release's,
+// time, menu.
 templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
-	<div class={ "grid min-h-11 grid-cols-[1.5rem_auto_1fr_auto_auto] items-center gap-x-3 rounded-md px-2 py-1 hover:bg-panel-2 min-[720px]:min-h-9", templ.KV("text-fg-subtle", !rt.Track.HasFile) } data-track-row>
-		<span class="text-right font-mono text-xs text-fg-muted tabular-nums">{ fmt.Sprint(rt.Position) }</span>
-		@playButton(rt.Track, "size-7")
-		<div class="min-w-0">
-			<span class="block truncate text-sm font-medium">{ rt.Track.Title }</span>
+	<article class={ "row row-rel group/row", templ.KV("is-missing", !rt.Track.HasFile) } data-track-row>
+		if rt.Track.HasFile {
+			<button type="button" class="play" aria-label={ "Play " + rt.Track.Title } aria-pressed="false" data-bare { playAttrs(rt.Track)... }>
+				<span class="n">{ fmt.Sprint(rt.Position) }</span>
+				<span class="go">▶</span>
+				@eqBars()
+			</button>
+		} else {
+			<span class="play" title="Not in the library yet"><span class="n">{ fmt.Sprint(rt.Position) }</span></span>
+		}
+		<div class="stack">
+			<b class="group-has-[[aria-pressed=true]]/row:text-accent">{ rt.Track.Title }</b>
 			// only shown when they differ from the release's, e.g. features or compilations
 			if artistNames(rt.Track.Artists) != artistNames(r.Artists) {
-				<span class="block truncate text-xs text-fg-muted">{ artistNames(rt.Track.Artists) }</span>
+				<span>{ artistNames(rt.Track.Artists) }</span>
 			}
 			@coverOfLine(rt.Track)
 		</div>
-		<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(rt.Track.Duration) }</span>
+		if !rt.Track.HasFile {
+			@chip("missing")
+		}
+		<span class="mono text-right text-fg-muted">{ formatDuration(rt.Track.Duration) }</span>
 		@trackMenu(rt.Track)
-	</div>
+	</article>
 }
 
 templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio.Artist) {
@@ -548,4 +550,40 @@ func trackOptionLabel(t *audio.Track) string {
 		return t.Title + " — " + names
 	}
 	return t.Title
+}
+
+// singleFacts is the meta line of a single: its date and length.
+func singleFacts(r *audio.Release) string {
+	var parts []string
+	if r.Date != "" {
+		parts = append(parts, r.Date)
+	}
+	if len(r.Tracks) > 0 {
+		if d := r.Tracks[0].Track.Duration; d > 0 {
+			parts = append(parts, formatDuration(d))
+		}
+	}
+	return joinDot(parts)
+}
+
+// alsoOn are the other, non-single releases the single's A-side is on.
+func alsoOn(r *audio.Release) []*audio.Release {
+	if len(r.Tracks) == 0 {
+		return nil
+	}
+	var out []*audio.Release
+	for _, other := range r.Tracks[0].Track.Releases {
+		if other.ID != r.ID && !other.IsSingle() {
+			out = append(out, other)
+		}
+	}
+	return out
+}
+
+func discLength(disc []*audio.ReleaseTrack) time.Duration {
+	var d time.Duration
+	for _, rt := range disc {
+		d += rt.Track.Duration
+	}
+	return d
 }
