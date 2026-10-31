@@ -152,12 +152,24 @@ templ AddArtistForm() {
 // artistPicker is a dropdown of artist checkboxes, submitted as repeated
 // artist_id values. The summary text is kept up to date by artist-picker.js.
 templ artistPicker(artists []*audio.Artist, selected []string) {
+	@artistPickerNew(artists, selected, "")
+}
+
+// artistPickerNew is artistPicker with, when newCreator is not empty, a
+// pre-checked "New: <name>" option on top. It is submitted as new_creator.
+templ artistPickerNew(artists []*audio.Artist, selected []string, newCreator string) {
 	<details class="relative" data-artist-picker>
 		<summary class="input cursor-pointer list-none truncate" data-artist-summary>Select artists</summary>
 		<div class="absolute z-10 mt-1 w-full rounded-md border border-line bg-panel p-2 shadow-(--shadow-pop)">
 			// no name attribute: the search box is never submitted with the form
 			<input type="search" class="input mb-2" placeholder="Search artists…" aria-label="Search artists" autocomplete="off" data-artist-search/>
 			<div class="max-h-60 overflow-auto" data-artist-options>
+				if newCreator != "" {
+					<label class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2">
+						<input type="checkbox" name="new_creator" value={ newCreator } data-name={ newCreator } checked/>
+						New: { newCreator }
+					</label>
+				}
 				for _, a := range artists {
 					<label class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2">
 						<input type="checkbox" name="artist_id" value={ a.ID.String() } data-name={ a.Name } checked?={ slices.Contains(selected, a.ID.String()) }/>

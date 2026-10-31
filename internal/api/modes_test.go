@@ -9,10 +9,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"audioloader/internal/audio"
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
 	"audioloader/internal/downloads"
@@ -513,8 +515,8 @@ func TestSecretSourceDownload(t *testing.T) {
 		!strings.Contains(body, `name="url" value="`+pageURL+`"`) || strings.Contains(body, "one.m4a") {
 		t.Fatalf("check = %d %s", rec.Code, body)
 	}
-	if strings.Contains(body, " checked") {
-		t.Error("a creator is picked for you")
+	if strings.Count(body, " checked") != 1 || !strings.Contains(body, `name="new_creator" value="someone"`) {
+		t.Error("the uploader isn't suggested as the one new creator")
 	}
 	if got := len(fake.Requests()); got != 2 { // the missing page, and this one
 		t.Errorf("requests = %v", fake.Requests())
@@ -616,7 +618,7 @@ func TestSecretSourceDownload(t *testing.T) {
 	}
 
 	// another page with the same file: the usual duplicate check refuses it
-	copyURL :="https://" + secrettest.PageHost + "/items/someone/copy"
+	copyURL := "https://" + secrettest.PageHost + "/items/someone/copy"
 	if rec := a.do(true, "POST", "/ui/secret-source/check", url.Values{"url": {copyURL}}); rec.Code != http.StatusOK {
 		t.Fatalf("check copy = %d", rec.Code)
 	}
@@ -708,5 +710,119 @@ func TestTagsPage(t *testing.T) {
 	}
 	if strings.Contains(a.do(false, "GET", "/tracks", nil).Body.String(), `href="/tags"`) {
 		t.Error("normal nav links to Tags")
+	}
+}
+
+func TestSecretSourceCreatorFromURL(t *testing.T) {
+	a := newModeApp(t)
+	fake, src := secrettest.New(t)
+	secret.SetDefault(src)
+	t.Cleanup(func() { secret.SetDefault(nil) })
+	m4a, err := os.ReadFile("../audio/testdata/chapters.m4a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake.Files[secrettest.MediaHost+"/sounds/one.m4a"] = m4a
+	const media = `<script>x("https://media.example.test/sounds/one.m4a")</script>`
+	// pages are served by their decoded path; the addresses keep it escaped
+	page := func(escaped string) string {
+		p, _ := url.PathUnescape(escaped)
+		fake.Page(p, "<title>t</title>"+media)
+		return "https://" + secrettest.PageHost + escaped
+	}
+	linkedURL := page("/items/linkedup/new")
+	namedURL := page("/items/zzsecret%20ARTIST/new")
+	freshURL := page("/items/Fresh%20Face/new")
+	rootURL := page("/solo")
+
+	// an earlier track of the secret artist came from the same uploader
+	res, err := db.AddTrack(db.Secret, []string{a.ID["secret artist"]}, &audio.Track{Title: "Earlier"}, bytes.NewReader([]byte("earlier")), ".mp3", nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetSourceURL(res.TrackID, "https://"+secrettest.PageHost+"/items/linkedup/old"); err != nil {
+		t.Fatal(err)
+	}
+
+	check := func(u string) string {
+		t.Helper()
+		rec := a.do(true, "POST", "/ui/secret-source/check", url.Values{"url": {u}})
+		if rec.Code != http.StatusOK {
+			t.Fatalf("check %s = %d %s", u, rec.Code, rec.Body)
+		}
+		return rec.Body.String()
+	}
+	checked := func(body, id string) bool {
+		return regexp.MustCompile(`value="` + id + `"[^>]*checked`).MatchString(body)
+	}
+
+	// linked by an earlier track's URL
+	if body := check(linkedURL); !checked(body, a.ID["secret artist"]) || strings.Contains(body, "new_creator") {
+		t.Errorf("linked creator not pre-checked: %s", body)
+	}
+	// matched by name, ignoring case
+	if body := check(namedURL); !checked(body, a.ID["secret artist"]) || strings.Contains(body, "new_creator") {
+		t.Errorf("name match not pre-checked: %s", body)
+	}
+	// no parent: no suggestion
+	if body := check(rootURL); strings.Contains(body, " checked") || strings.Contains(body, "new_creator") {
+		t.Errorf("suggestion without an uploader: %s", body)
+	}
+	// an unknown uploader is offered as a new creator, unescaped
+	body := check(freshURL)
+	if !strings.Contains(body, `name="new_creator" value="Fresh Face"`) || !strings.Contains(body, "New: Fresh Face") {
+		t.Fatalf("new creator not offered: %s", body)
+	}
+	if _, err := db.CreatorForUploader(db.Secret, "", "Fresh Face"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := db.CreatorForUploader(db.Secret, "", "Fresh Face"); got != nil {
+		t.Fatal("checking created the creator")
+	}
+
+	post := func(u string, extra url.Values) *httptest.ResponseRecorder {
+		f := url.Values{"url": {u}, "title": {"T"}}
+		for k, v := range extra {
+			f[k] = v
+		}
+		return a.do(true, "POST", "/ui/secret-source/download", f)
+	}
+	// nothing picked, nothing checked
+	if rec := post(freshURL, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("no creator = %d", rec.Code)
+	}
+	if got, _ := db.CreatorForUploader(db.Secret, "", "Fresh Face"); got != nil {
+		t.Fatal("a refused download created the creator")
+	}
+	// submitting the new creator creates it, once
+	if rec := post(freshURL, url.Values{"new_creator": {"Fresh Face"}}); rec.Code != http.StatusOK {
+		t.Fatalf("download with a new creator = %d %s", rec.Code, rec.Body)
+	}
+	fresh, err := db.CreatorForUploader(db.Secret, "", "fresh face")
+	if err != nil || fresh == nil {
+		t.Fatalf("new creator = %v, %v", fresh, err)
+	}
+	other := page("/items/Fresh%20Face/second")
+	if rec := post(other, url.Values{"new_creator": {"FRESH FACE"}}); rec.Code != http.StatusOK {
+		t.Fatalf("second download = %d %s", rec.Code, rec.Body)
+	}
+	all, _ := db.ListArtists(db.Secret)
+	n := 0
+	for _, x := range all {
+		if strings.EqualFold(x.Name, "Fresh Face") {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d creators named Fresh Face", n)
+	}
+	// once it exists, it is suggested as an existing creator
+	if body := check(page("/items/Fresh%20Face/third")); !checked(body, fresh.ID.String()) || strings.Contains(body, "new_creator") {
+		t.Errorf("existing creator not suggested: %s", body)
+	}
+
+	// unchecking the new one and picking another creator works
+	if rec := post(rootURL, url.Values{"artist_id": {a.ID["shared artist"]}}); rec.Code != http.StatusOK {
+		t.Errorf("another creator = %d %s", rec.Code, rec.Body)
 	}
 }

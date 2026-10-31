@@ -7,7 +7,7 @@
 	window.artistPickerReady = true;
 
 	function refresh(picker) {
-		const names = [...picker.querySelectorAll("input[name=artist_id]:checked")].map((c) => c.dataset.name);
+		const names = [...picker.querySelectorAll("input[name=artist_id]:checked, input[name=new_creator]:checked")].map((c) => c.dataset.name);
 		picker.querySelector("[data-artist-summary]").textContent = names.length ? names.join(", ") : "Select artists";
 	}
 
@@ -57,7 +57,7 @@
 
 	document.addEventListener("change", (e) => {
 		const picker = e.target.closest("[data-artist-picker]");
-		if (picker && e.target.name === "artist_id") refresh(picker);
+		if (picker && (e.target.name === "artist_id" || e.target.name === "new_creator")) refresh(picker);
 	});
 
 	document.addEventListener("input", (e) => {

@@ -33,7 +33,7 @@ func secretSourceOn(ctx context.Context) bool {
 
 // SecretSourcePage downloads a secret track from a page of the secret
 // source. Check loads the page's title and description into a form, where
-// the creators are picked by hand before the download starts; a listing page,
+// the creator suggested by the address can be changed before the download starts; a listing page,
 // such as an uploader's, lists its pages to pick from instead. A prefilled
 // address is checked as soon as the page loads.
 func SecretSourcePage(prefill string) templ.Component {
@@ -87,7 +87,7 @@ func SecretSourcePage(prefill string) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = pageHead("Download from URL", "Paste the address of a page; you pick the creators yourself").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = pageHead("Download from URL", "Paste the address of a page; the creator is filled in from the address, change it if it's wrong").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -139,7 +139,7 @@ func SecretSourcePage(prefill string) templ.Component {
 // SecretSourceDetails is the form after Check: what the page says, as
 // editable defaults, and the creator picker. The page URL travels in a
 // hidden field; the server looks the audio file up again from its own copy.
-func SecretSourceDetails(page *secret.Page, artists []*audio.Artist, uploader string) templ.Component {
+func SecretSourceDetails(page *secret.Page, artists []*audio.Artist, uploader string, selected []string, newCreator string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -208,11 +208,11 @@ func SecretSourceDetails(page *secret.Page, artists []*audio.Artist, uploader st
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = artistPicker(artists, nil).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = artistPickerNew(artists, selected, newCreator).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<small class=\"mt-1 block text-fg-muted\">Pick at least one. Add a new creator above if they aren't listed.</small></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<small class=\"mt-1 block text-fg-muted\">Filled in from the address; pick at least one. Add a new creator above if they aren't listed.</small></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

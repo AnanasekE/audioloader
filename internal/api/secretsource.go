@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -152,11 +153,29 @@ func checkSecretSource(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.SecretSourceDetails(page, artists, src.Parent(page.URL)))
+	var selected []string
+	var newCreator string
+	if name := src.Uploader(page.URL); name != "" {
+		a, err := db.CreatorForUploader(viewer(r), src.Parent(page.URL), name)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		if a != nil {
+			selected = []string{a.ID.String()}
+		} else if len([]rune(name)) <= maxCreatorName {
+			newCreator = name
+		}
+	}
+	render(w, r, components.SecretSourceDetails(page, artists, src.Parent(page.URL), selected, newCreator))
 }
 
-// downloadFromSecretSource queues the download. The creators are always
-// picked by hand: at least one, and each must be a creator the viewer can see.
+// maxCreatorName is the longest creator name suggested from an address.
+const maxCreatorName = 200
+
+// downloadFromSecretSource queues the download. It needs at least one
+// creator, each one the viewer can see, or a new_creator that is still
+// checked, which is created (or found by name) just before queueing.
 func downloadFromSecretSource(w http.ResponseWriter, r *http.Request) {
 	src := secret.Default()
 	pageURL, err := src.Normalize(r.FormValue("url"))
@@ -194,7 +213,14 @@ func downloadFromSecretSource(w http.ResponseWriter, r *http.Request) {
 		}
 		artistIDs = append(artistIDs, id)
 	}
-	if len(artistIDs) == 0 {
+	newName := ""
+	if names := r.Form["new_creator"]; len(names) > 0 {
+		if newName = strings.TrimSpace(names[0]); newName == "" || len([]rune(newName)) > maxCreatorName {
+			http.Error(w, "Invalid creator.", http.StatusBadRequest)
+			return
+		}
+	}
+	if len(artistIDs) == 0 && newName == "" {
 		http.Error(w, "Pick at least one creator.", http.StatusBadRequest)
 		return
 	}
@@ -211,6 +237,21 @@ func downloadFromSecretSource(w http.ResponseWriter, r *http.Request) {
 		if page, err = src.Inspect(r.Context(), pageURL); err != nil {
 			secretSourceError(w, err)
 			return
+		}
+	}
+	if newName != "" {
+		a, err := db.CreatorForUploader(viewer(r), "", newName)
+		if err == nil && a == nil {
+			if a, err = db.AddArtist(viewer(r), newName); errors.Is(err, db.ErrArtistExists) {
+				a, err = db.CreatorForUploader(viewer(r), "", newName)
+			}
+		}
+		if err != nil || a == nil {
+			serverError(w, errors.Join(err, errors.New("could not create the creator")))
+			return
+		}
+		if id := a.ID.String(); !slices.Contains(artistIDs, id) {
+			artistIDs = append(artistIDs, id)
 		}
 	}
 	err = downloads.EnqueueSecret(downloads.SecretImport{
