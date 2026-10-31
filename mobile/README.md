@@ -36,6 +36,12 @@ Long-press a track for "Play next" and "Add to end of queue". The full-screen pl
 
 Episodes resume at their saved position and save it every 15 s, on pause, on switching track and at the end (`POST /api/tracks/{id}/position`), with the web player's rule: within 30 s of the end counts as finished.
 
+## Sleep timer
+
+The full-screen player has a "Sleep timer" button. With no timer running, the first tap starts 30 minutes at once and opens the menu; the menu offers 15 to 120 minutes in steps of 15, "End of this track/episode", "+15 min" and "Off". The countdown is wall-clock time (pausing does not stop it). A once-a-second JS check fades `AudioPlaylist.volume` over the last 10 s, pauses, and puts the volume back. "End of this track" pauses when the queue moves on by itself, or when the last track ends. A running timer shows as a badge ("23m") on the mini player. The timer is not saved: it is gone after the app restarts. Logic and tests are in `src/player/sleepTimer.ts`.
+
+**Unverified:** that the timer still fires with the screen locked or the app in the background. The plan relies on JS timers (`setInterval`) continuing to run while audio plays in the background on iOS, with `UIBackgroundModes: ["audio"]`. This needs a real device; it was not tried. If it does not hold, the timer will fire late (when the app is next active) and no native workaround exists yet.
+
 ## Icons
 
 Tab and header icons are Ionicons from `@expo/vector-icons`. The app, splash, favicon and Android adaptive icons in `assets/images` are generated from `assets/img/favicon.png` by `tools/make-icons.sh` (needs ImageMagick); rerun it after changing the favicon.

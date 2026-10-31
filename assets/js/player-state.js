@@ -2,6 +2,28 @@
 // belongs to the mode it was saved in, normal or secret, and the tracks in it
 // carry a `secret` flag: a page never resumes a track of the other mode.
 window.playerState = {
+	// The slider is 0-1 and the audio volume is its square, so the quiet end
+	// of the slider isn't all crammed together.
+	volumeFromSlider: (v) => Math.min(1, Math.max(0, Number(v) || 0)) ** 2,
+	sliderFromVolume: (vol) => Math.sqrt(Math.min(1, Math.max(0, Number(vol) || 0))),
+
+	// sleepFrom returns the sleep timer to restore from a saved state: {endsAt}
+	// or {endOfTrack: true}, or null. A timer that ended while the page was
+	// closed, or a malformed one, is dropped.
+	sleepFrom(state, now) {
+		const s = state?.sleep;
+		if (!s || typeof s !== "object") return null;
+		if (typeof s.endsAt === "number" && Number.isFinite(s.endsAt)) return s.endsAt > now ? { endsAt: s.endsAt } : null;
+		return s.endOfTrack === true ? { endOfTrack: true } : null;
+	},
+
+	// audioSettings returns the volume and mute to restore from a saved state;
+	// a missing or bad field gives null, meaning "leave as it is".
+	audioSettings(state) {
+		const ok = typeof state?.volume === "number" && state.volume >= 0 && state.volume <= 1;
+		return { volume: ok ? state.volume : null, muted: typeof state?.muted === "boolean" ? state.muted : null };
+	},
+
 	// forMode returns the state to resume on a page of mode ("normal" or "secret"),
 	// or null if nothing of it may be kept. The state is changed in place.
 	forMode(state, mode) {

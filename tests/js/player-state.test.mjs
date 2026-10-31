@@ -47,6 +47,34 @@ test("when the playing track goes, the next kept one takes over, paused", () => 
 	assert.equal(s.time, 0);
 });
 
+test("volume slider is squared and maps back", () => {
+	const { volumeFromSlider, sliderFromVolume } = window.playerState;
+	assert.equal(volumeFromSlider(0.5), 0.25);
+	assert.equal(volumeFromSlider(2), 1);
+	assert.equal(volumeFromSlider(-1), 0);
+	assert.ok(Math.abs(sliderFromVolume(volumeFromSlider(0.3)) - 0.3) < 1e-9);
+});
+
+test("saved volume and muted are restored, bad values are ignored", () => {
+	const a = window.playerState.audioSettings;
+	assert.deepEqual(a({ volume: 0.4, muted: true }), { volume: 0.4, muted: true });
+	assert.deepEqual(a({ volume: 3, muted: "yes" }), { volume: null, muted: null });
+	assert.deepEqual(a({}), { volume: null, muted: null });
+	assert.deepEqual(a(null), { volume: null, muted: null });
+});
+
+test("a saved sleep timer is restored, an expired or bad one dropped", () => {
+	const f = window.playerState.sleepFrom;
+	assert.deepEqual(f({ sleep: { endsAt: 2000 } }, 1000), { endsAt: 2000 });
+	assert.equal(f({ sleep: { endsAt: 1000 } }, 1000), null);
+	assert.equal(f({ sleep: { endsAt: 500 } }, 1000), null);
+	assert.deepEqual(f({ sleep: { endOfTrack: true } }, 1000), { endOfTrack: true });
+	assert.equal(f({ sleep: { endsAt: "soon" } }, 1000), null);
+	assert.equal(f({ sleep: "x" }, 1000), null);
+	assert.equal(f({}, 1000), null);
+	assert.equal(f(null, 1000), null);
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);

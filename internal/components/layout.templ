@@ -32,6 +32,7 @@ templ layout(title string, active string) {
 			<link rel="stylesheet" href="/assets/css/app.css"/>
 			<script src="/assets/js/htmx.min.js" defer></script>
 			<script src="/assets/js/player-state.js" defer></script>
+			<script src="/assets/js/sleep-timer.js" defer></script>
 			<script src="/assets/js/player.js" defer></script>
 			<script src="/assets/js/nav.js" defer></script>
 			<script src="/assets/js/filter.js" defer></script>
@@ -73,7 +74,15 @@ templ player() {
 				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">▶</button>
 				<button id="player-next" type="button" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9" aria-label="Next track">⏭</button>
 			</div>
-			<details id="player-queue" class="relative shrink-0 min-[720px]:order-3 min-[1200px]:hidden">
+			<div class="hidden shrink-0 items-center gap-1 min-[720px]:order-3 min-[720px]:flex">
+				<button id="player-mute" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg" aria-label="Mute">
+					<span data-vol-icon="x" hidden>@icon("volume-x")</span>
+					<span data-vol-icon="1" hidden>@icon("volume-1")</span>
+					<span data-vol-icon="2">@icon("volume-2")</span>
+				</button>
+				<input id="player-volume" type="range" min="0" max="1" step="0.01" value="1" class="h-6 w-24 accent-accent" aria-label="Volume"/>
+			</div>
+			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">☰</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
@@ -89,6 +98,27 @@ templ player() {
 				</div>
 			</details>
 			<div class="flex w-full min-w-0 items-center gap-2 min-[720px]:order-2 min-[720px]:w-auto min-[720px]:flex-1">
+				// sleep timer: always shown on episodes, from 720px up on music (player.js toggles the class)
+				<details id="player-sleep" class="relative hidden shrink-0 min-[720px]:block">
+					<summary class="flex h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-fg-muted hover:text-fg" aria-label="Sleep timer">
+						@icon("moon")
+						<span id="player-sleep-label" class="font-mono text-xs tabular-nums" hidden></span>
+					</summary>
+					<div class="absolute bottom-full left-0 mb-2 w-56 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
+						<strong class="block">Sleep timer</strong>
+						<p id="player-sleep-status" class="mb-1 text-xs text-fg-muted">Off</p>
+						<div id="player-sleep-extra" class="mb-1 flex gap-1" hidden>
+							<button data-sleep="extend" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">+15 min</button>
+							<button data-sleep="off" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">Off</button>
+						</div>
+						<ul class="max-h-60 overflow-auto">
+							for _, m := range []string{"15", "30", "45", "60", "75", "90", "105", "120"} {
+								<li><button data-sleep={ m } type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">{ m } minutes</button></li>
+							}
+							<li><button data-sleep="track" id="player-sleep-track" type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">End of this track</button></li>
+						</ul>
+					</div>
+				</details>
 				<span id="player-episode-controls" class="flex shrink-0 items-center gap-1" hidden>
 					<button id="player-back" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Back 15 seconds">−15</button>
 					<button id="player-forward" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Forward 30 seconds">+30</button>
@@ -409,6 +439,17 @@ templ icon(name string) {
 				<path d="M12 4v12"></path>
 				<path d="M7 11l5 5 5-5"></path>
 				<path d="M4 20h16"></path>
+			case "moon":
+				<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+			case "volume-x":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M22 9l-6 6M16 9l6 6"></path>
+			case "volume-1":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+			case "volume-2":
+				<path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+				<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path>
 			case "lock":
 				<rect x="4" y="11" width="16" height="10" rx="2"></rect>
 				<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>

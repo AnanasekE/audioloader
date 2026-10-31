@@ -6,6 +6,7 @@ import type { Track } from "@/api/types";
 import { onModeReset } from "@/mode";
 import { bodyToSave, dueForSave, isEpisode, startPosition } from "./positions";
 import * as Q from "./queue";
+import * as S from "./sleepTimer";
 
 // The player. One expo-audio AudioPlaylist plays the queue: it is the only
 // expo-audio object with next/previous, which the lock screen and Control
@@ -18,9 +19,10 @@ export type PlayerState = {
   position: number; // seconds into the current track
   duration: number;
   buffering: boolean;
+  sleep: S.SleepTimer;
 };
 
-let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false };
+let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off };
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<PlayerState>) {
@@ -60,6 +62,11 @@ function engine(): AudioPlaylist {
     if (mutating) return;
     const q = state.queue;
     if (currentIndex >= 0 && currentIndex < q.items.length && currentIndex !== q.index) {
+      // "end of this track": the queue moved on by itself, so stop here
+      if (state.sleep.kind === "track") {
+        pl.pause();
+        endSleep();
+      }
       set({ queue: Q.jumpTo(q, currentIndex), position: 0 });
       updateLockScreen();
     }
@@ -78,12 +85,69 @@ function onStatus(s: AudioPlaylistStatus) {
     pendingSeek = null;
     void playlist?.seekTo(to);
   }
+  // the last track of the queue ended
+  if (s.didJustFinish && state.sleep.kind === "track") endSleep();
   if (mine) set({ playing: s.playing, position: s.currentTime, duration: s.duration, buffering: s.isBuffering });
   else set({ playing: s.playing });
   if (!mine || !t || !isEpisode(t)) return;
   if (s.didJustFinish) saveEpisode(t, s.currentTime, s.duration, true);
   else if ((wasPlaying && !s.playing) || (s.playing && dueForSave(lastSave, Date.now()))) saveEpisode(t, s.currentTime, s.duration);
 }
+
+// ---- sleep timer ----
+// The logic is in sleepTimer.ts. This part runs a once-a-second check while a
+// timer is on: it fades the volume over the last 10 s, pauses, and puts the
+// volume back. The countdown is wall-clock time (pausing does not stop it).
+
+let sleepTicker: ReturnType<typeof setInterval> | undefined;
+let fadeBase: number | null = null; // the volume to return to while fading
+let lastBadge = "";
+
+function endFade() {
+  if (fadeBase === null) return;
+  if (playlist) playlist.volume = fadeBase;
+  fadeBase = null;
+}
+
+function endSleep() {
+  clearInterval(sleepTicker);
+  sleepTicker = undefined;
+  endFade();
+  lastBadge = "";
+  set({ sleep: S.off });
+}
+
+function sleepTick() {
+  const now = Date.now();
+  const t = state.sleep;
+  if (S.shouldStop(t, now)) {
+    playlist?.pause();
+    return endSleep();
+  }
+  if (S.shouldFade(t, now) && state.playing && playlist) {
+    fadeBase ??= playlist.volume;
+    playlist.volume = fadeBase * S.fadeFactor(t, now);
+  }
+  // re-render the badge when its text changes
+  const b = S.badge(t, now);
+  if (b !== lastBadge) {
+    lastBadge = b;
+    set({});
+  }
+}
+
+function setSleep(t: S.SleepTimer) {
+  if (!S.isActive(t)) return endSleep();
+  if (!S.shouldFade(t, Date.now())) endFade();
+  lastBadge = S.badge(t, Date.now());
+  set({ sleep: t });
+  sleepTicker ??= setInterval(sleepTick, 1000);
+}
+
+export const startSleep = (minutes: number) => setSleep(S.start(minutes, Date.now()));
+export const sleepAtEndOfTrack = () => setSleep(S.endOfTrack());
+export const extendSleep = (minutes: number) => setSleep(S.extend(state.sleep, minutes, Date.now()));
+export const cancelSleep = () => endSleep();
 
 // ---- episode positions ----
 
@@ -260,6 +324,7 @@ export function move(from: number, to: number): void {
 // reset stops playback and empties the queue, also on disk. It runs on every
 // mode change so nothing of the other mode keeps playing or shows up.
 export function reset(): void {
+  endSleep();
   if (playlist) {
     mutating++;
     try {
@@ -271,7 +336,7 @@ export function reset(): void {
       mutating--;
     }
   }
-  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false };
+  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off };
   pendingSeek = null;
   saved.clear();
   listeners.forEach((l) => l());

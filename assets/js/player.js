@@ -25,6 +25,12 @@
 	const episodeControls = document.getElementById("player-episode-controls");
 	const speed = document.getElementById("player-speed");
 	const chapterLabel = document.getElementById("player-chapter");
+	const sleepEl = document.getElementById("player-sleep");
+	const sleepSummary = sleepEl.querySelector("summary");
+	const sleepLabel = document.getElementById("player-sleep-label");
+	const sleepStatus = document.getElementById("player-sleep-status");
+	const sleepExtra = document.getElementById("player-sleep-extra");
+	const sleepTrackBtn = document.getElementById("player-sleep-track");
 	// the queue shows in the popover and in the side panel (layout.templ); both
 	// are filled from the same state, found by these attributes
 	const all = (attr) => document.querySelectorAll(`[${attr}]`);
@@ -38,6 +44,10 @@
 	let order = [];
 	let pos = 0;
 	let shuffle = false;
+	// sleep timer (sleep-timer.js); fadeBase is the volume to go back to while a fade runs
+	let timer = window.sleepTimer.create(null);
+	let fadeBase = null;
+	let fadeInterval = null;
 	let lastSave = 0;
 
 	function save() {
@@ -49,7 +59,7 @@
 			}
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: audio.volume, paused: audio.paused, queue, order, pos, shuffle }),
+				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: fadeBase ?? audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle, sleep: timer.save() }),
 			);
 		} catch {
 			// storage can be full or disabled (private mode); playback still works
@@ -274,6 +284,10 @@
 	function setupEpisode(track) {
 		const episode = isEpisode(track);
 		episodeControls.hidden = !episode;
+		// the sleep button is always there on episodes, and from 720px up on music
+		sleepEl.classList.toggle("hidden", !episode);
+		sleepTrackBtn.textContent = episode ? "End of this episode" : "End of this track";
+		syncSleep();
 		chapters = [];
 		renderChapters();
 		let rate = 1;
@@ -417,6 +431,126 @@
 		return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 	}
 
+	// --- sleep timer -------------------------------------------------------
+
+	function syncSleep() {
+		const now = Date.now();
+		const on = timer.active();
+		const mins = timer.minutesLeft(now);
+		const text = timer.endOfTrack() ? "End" : mins === null ? "" : `${mins}m`;
+		sleepLabel.hidden = !on;
+		sleepLabel.textContent = text;
+		sleepSummary.classList.toggle("text-accent", on);
+		sleepSummary.classList.toggle("text-fg-muted", !on);
+		sleepSummary.setAttribute("aria-label", on ? `Sleep timer: ${timer.endOfTrack() ? "stops at the end of the track" : `${mins} minutes left`}` : "Sleep timer");
+		sleepStatus.textContent = !on ? "Off" : timer.endOfTrack() ? `Pauses when this ${isEpisode(current) ? "episode" : "track"} ends` : `Pauses in ${mins} min`;
+		sleepExtra.hidden = !on;
+		sleepExtra.querySelector('[data-sleep="extend"]').hidden = timer.endOfTrack();
+	}
+
+	// endFade puts the volume back to where it was
+	function endFade() {
+		clearInterval(fadeInterval);
+		fadeInterval = null;
+		if (fadeBase === null) return;
+		const base = fadeBase;
+		fadeBase = null;
+		audio.volume = base;
+	}
+
+	function sleepTick() {
+		const now = Date.now();
+		if (timer.shouldStop(now)) {
+			// pause as any pause does (position saved), then the volume comes back
+			audio.pause();
+			endFade();
+			timer.cancel();
+			save();
+		} else if (timer.shouldFade(now) && !audio.paused && fadeBase === null) {
+			fadeBase = audio.volume;
+			fadeInterval = setInterval(() => {
+				if (fadeBase !== null) audio.volume = fadeBase * timer.fadeFactor(Date.now());
+			}, 100);
+		}
+		syncSleep();
+	}
+
+	// sleepChanged runs after the user changed the timer
+	function sleepChanged() {
+		if (!timer.shouldFade(Date.now())) endFade();
+		save();
+		syncSleep();
+	}
+
+	sleepSummary.addEventListener("click", () => {
+		// the first click with no timer starts the default one; the menu opens as usual
+		if (!timer.active() && !sleepEl.open) {
+			timer.start(window.sleepTimer.DEFAULT_MINUTES, Date.now());
+			sleepChanged();
+		}
+	});
+	sleepEl.addEventListener("click", (e) => {
+		const b = e.target.closest("[data-sleep]");
+		if (!b) return;
+		const what = b.dataset.sleep;
+		if (what === "off") {
+			timer.cancel();
+			sleepEl.open = false;
+		} else if (what === "extend") timer.extend(15, Date.now());
+		else if (what === "track") timer.startEndOfTrack();
+		else timer.start(Number(what), Date.now());
+		sleepChanged();
+	});
+	setInterval(sleepTick, 1000);
+
+	// --- volume and mute ---------------------------------------------------
+
+	const volumeEl = document.getElementById("player-volume");
+	const muteBtn = document.getElementById("player-mute");
+	const { volumeFromSlider, sliderFromVolume } = window.playerState;
+
+	function syncVolume() {
+		const silent = audio.muted || audio.volume === 0;
+		volumeEl.value = String(audio.muted ? 0 : sliderFromVolume(audio.volume));
+		muteBtn.setAttribute("aria-label", silent ? "Unmute" : "Mute");
+		const level = silent ? "x" : audio.volume < 0.5 ? "1" : "2";
+		muteBtn.querySelectorAll("[data-vol-icon]").forEach((el) => (el.hidden = el.dataset.volIcon !== level));
+	}
+
+	function toggleMute() {
+		// at volume 0 "unmute" has to raise the volume too, or nothing would change
+		if (!audio.muted && audio.volume === 0) audio.volume = 0.25;
+		else audio.muted = !audio.muted;
+		syncVolume();
+	}
+
+	function setVolume(vol) {
+		// during a sleep fade the new level is what the volume returns to
+		if (fadeBase !== null) {
+			fadeBase = Math.min(1, Math.max(0, vol));
+			return;
+		}
+		audio.volume = Math.min(1, Math.max(0, vol));
+		if (audio.volume > 0) audio.muted = false;
+	}
+
+	volumeEl.addEventListener("input", () => setVolume(volumeFromSlider(volumeEl.value)));
+	muteBtn.addEventListener("click", toggleMute);
+	// m and arrow up/down; nothing else on the page uses them (nav.js has
+	// only Space, /, Ctrl+K and arrows inside the search suggestions)
+	document.addEventListener("keydown", (e) => {
+		if (!current || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+		const t = e.target;
+		if (t instanceof Element && t.closest("input, textarea, select, [contenteditable]")) return;
+		if (e.key === "m") {
+			e.preventDefault();
+			toggleMute();
+		} else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+			e.preventDefault();
+			setVolume(volumeFromSlider(sliderFromVolume(audio.volume) + (e.key === "ArrowUp" ? 0.05 : -0.05)));
+		}
+	});
+
 	let seeking = false;
 
 	function syncTime() {
@@ -464,9 +598,15 @@
 	audio.addEventListener("pause", () => (markRows(), save(), audio.ended || savePosition()));
 	audio.addEventListener("ended", () => {
 		savePosition({ ended: true });
+		// "end of this track": stop here instead of moving on
+		if (timer.endOfTrack()) {
+			timer.cancel();
+			syncSleep();
+			return (markRows(), save());
+		}
 		if (!next()) (markRows(), save());
 	});
-	audio.addEventListener("volumechange", save);
+	audio.addEventListener("volumechange", () => fadeBase === null && (syncVolume(), save()));
 	audio.addEventListener("timeupdate", () => {
 		if (Date.now() - lastSave > 2000) save();
 		if (Date.now() - lastPositionSave > 10000 && !audio.paused) savePosition();
@@ -503,6 +643,9 @@
 	// lock screen metadata. Locking and unlocking call it as the form is sent,
 	// so nothing of one mode is left for the other.
 	function reset() {
+		timer.cancel();
+		endFade();
+		syncSleep();
 		audio.pause();
 		clear();
 		try {
@@ -512,6 +655,9 @@
 	}
 
 	window.player = { playList, enqueue, playNext, playAt, next, prev, toggleShuffle, clear, reset };
+
+	syncVolume();
+	syncSleep();
 
 	// a page of one mode must not resume what the other mode played: not
 	// playing, not queued, not in storage
@@ -528,7 +674,12 @@
 		} catch {}
 	}
 	if (state?.track) {
-		if (typeof state.volume === "number") audio.volume = state.volume;
+		// a timer that ended while the page was closed is dropped
+		timer = window.sleepTimer.create(window.playerState.sleepFrom(state, Date.now()));
+		const av = window.playerState.audioSettings(state);
+		if (av.volume !== null) audio.volume = av.volume;
+		if (av.muted !== null) audio.muted = av.muted;
+		syncVolume();
 		if (Array.isArray(state.queue) && Array.isArray(state.order) && state.order.every((i) => state.queue[i])) {
 			queue = state.queue;
 			order = state.order;

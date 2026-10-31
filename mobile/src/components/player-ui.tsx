@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { next, previous, seekTo, skipBy, toggle, usePlayer } from "@/player";
+import { cancelSleep, extendSleep, next, previous, seekTo, skipBy, sleepAtEndOfTrack, startSleep, toggle, usePlayer } from "@/player";
 import { current } from "@/player/queue";
+import * as S from "@/player/sleepTimer";
 import { colors, font, radius } from "@/theme";
 import { artistNames, Cover, formatDuration } from "./ui";
 
@@ -51,10 +52,65 @@ export function MiniPlayer() {
             {artistNames(t)}
           </Text>
         </View>
+        {S.isActive(p.sleep) ? <Text style={styles.miniSleep}>{S.badge(p.sleep, Date.now())}</Text> : null}
         <Btn label={p.playing ? "Pause" : "Play"} onPress={toggle} />
         <Btn label="Next" onPress={next} disabled={p.queue.index + 1 >= p.queue.items.length} />
       </Pressable>
     </View>
+  );
+}
+
+// SleepTimer: the first tap with no timer running starts the default 30
+// minutes and opens the menu; with one running a tap only opens the menu.
+export function SleepTimer({ episode }: { episode: boolean }) {
+  const p = usePlayer();
+  const [open, setOpen] = useState(false);
+  const active = S.isActive(p.sleep);
+  const now = Date.now();
+  const status = !active ? "Off" : p.sleep.kind === "track" ? `Pauses when this ${episode ? "episode" : "track"} ends` : `Pauses in ${S.minutesLeft(p.sleep, now)} min`;
+  return (
+    <View style={{ marginTop: 20 }}>
+      <Pressable
+        style={styles.sleepBtn}
+        onPress={() => {
+          if (!open && !active) startSleep(S.DEFAULT_MINUTES);
+          setOpen(!open);
+        }}
+      >
+        <Text style={[styles.btnText, active && { color: colors.accent }]}>{active ? `Sleep timer ${S.badge(p.sleep, now)}` : "Sleep timer"}</Text>
+      </Pressable>
+      {open ? (
+        <View style={styles.sleepMenu}>
+          <Text style={styles.time}>{status}</Text>
+          {active ? (
+            <View style={styles.chips}>
+              {p.sleep.kind === "at" ? <Chip label="+15 min" onPress={() => extendSleep(15)} /> : null}
+              <Chip
+                label="Off"
+                onPress={() => {
+                  cancelSleep();
+                  setOpen(false);
+                }}
+              />
+            </View>
+          ) : null}
+          <View style={styles.chips}>
+            {S.MINUTES.map((m) => (
+              <Chip key={m} label={`${m} min`} onPress={() => startSleep(m)} />
+            ))}
+            <Chip label={episode ? "End of this episode" : "End of this track"} onPress={sleepAtEndOfTrack} />
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Chip({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.chip}>
+      <Text style={styles.btnText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -89,6 +145,11 @@ const styles = StyleSheet.create({
   mini: { backgroundColor: colors.panel2, borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth },
   miniRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
   miniTitle: { color: colors.fg, fontSize: font.base, fontWeight: "600" },
+  miniSleep: { color: colors.accent, fontSize: font.sm, fontWeight: "600" },
+  sleepBtn: { alignSelf: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.panel2 },
+  sleepMenu: { marginTop: 10, gap: 10, padding: 12, borderRadius: radius.lg, backgroundColor: colors.panel, borderColor: colors.line, borderWidth: StyleSheet.hairlineWidth },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.panel2 },
   miniSub: { color: colors.fgMuted, fontSize: font.sm },
   times: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   time: { color: colors.fgMuted, fontSize: font.sm },

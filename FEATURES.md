@@ -105,6 +105,7 @@
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
 - Play next / Add to queue from a track's menu; "Up next" list with remove and clear; queue survives a reload
 - On wide screens the queue is always shown on the right: now playing, up next (click to play, ✕ to remove) and chapters
+- Volume slider and mute (desktop), remembered across reloads
 
 ### Podcasts and long audio
 
@@ -114,6 +115,7 @@
 - "Continue listening" on the Tracks and Podcasts pages
 - Player for episodes: −15 s / +30 s, speed 0.8–2× remembered per show, pitch kept
 - Chapters from ID3 CHAP frames and MP4 Nero chapters: list to jump to, current chapter under the title
+- Sleep timer (moon button, web player): one click starts 30 minutes; 15–120 minutes or the end of the track/episode; volume fades over the last 10 s, then it pauses; counts wall-clock time and survives a reload
 
 ### Secret mode
 
@@ -178,6 +180,7 @@
 - Expo app in `mobile/` (iOS and Android, runs in Expo Go over Tailscale): server address on first launch, tabs for tracks, artists, releases, playlists, podcasts and search, detail screens, paged lists
 - Queue (play now, play next, add to end, remove, reorder) with a mini player and a full-screen player, background audio and lock-screen / Control Center controls
 - Episodes resume at their saved position and save it every 15 s, on pause and at the end
+- Sleep timer in the full-screen player (first tap starts 30 minutes; 15–120 minutes or the end of the track/episode; fades over the last 10 s, then pauses), with a "23m" badge on the mini player. Background behaviour not verified on a device yet
 - Normal and secret mode: unlock and lock the vault in Settings; switching mode clears the cache, stops playback and empties the queue
 
 ## Not implemented yet
