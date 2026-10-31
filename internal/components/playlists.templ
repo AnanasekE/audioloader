@@ -11,7 +11,7 @@ const PagePlaylists = "playlists"
 templ PlaylistsPage(playlists []*audio.Playlist) {
 	@layout("Playlists", PagePlaylists) {
 		@pageHead("Playlists", plural(len(playlists), "playlist")) {
-			@popover("New playlist", len(playlists) == 0) {
+			@popover("New playlist") {
 				<form
 					class="flex flex-wrap items-center gap-2"
 					hx-post="/ui/playlists"

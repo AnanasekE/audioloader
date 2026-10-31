@@ -261,9 +261,9 @@ templ eqBars() {
 }
 
 // popover is a button that opens a panel (children) under it: a small form
-// that doesn't deserve its own page. open starts it open.
-templ popover(label string, open bool) {
-	<details class="pop-wrap" open?={ open }>
+// that doesn't deserve its own page.
+templ popover(label string) {
+	<details class="pop-wrap">
 		<summary class="btn btn-ghost">{ label }</summary>
 		<div class="pop pop-panel">
 			{ children... }

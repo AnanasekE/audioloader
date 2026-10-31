@@ -13,11 +13,11 @@ import (
 templ ArtistsPage(artists []*audio.Artist) {
 	@layout("Artists", PageArtists) {
 		@pageHead("Artists", fmt.Sprintf("%d in library", len(artists))) {
-			@popover("Add artist", len(artists) == 0) {
+			@popover("Add artist") {
 				@AddArtistForm()
 			}
 			if !secretMode(ctx) {
-				@popover("Add from MusicBrainz", false) {
+				@popover("Add from MusicBrainz") {
 					@AddArtistFromMusicBrainz()
 				}
 			}

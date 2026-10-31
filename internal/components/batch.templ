@@ -40,7 +40,7 @@ templ BatchUploadPage(artists []*audio.Artist, defaultArtist string, releases []
 				<a class="btn btn-ghost" href="/upload">Single upload</a>
 			}
 		}
-		<details class="mb-4" open?={ len(artists) == 0 }>
+		<details class="mb-4">
 			<summary class="mb-2 cursor-pointer text-sm font-medium">New artist</summary>
 			@AddArtistForm()
 		</details>

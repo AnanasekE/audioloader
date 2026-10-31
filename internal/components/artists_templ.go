@@ -81,7 +81,7 @@ func ArtistsPage(artists []*audio.Artist) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = popover("Add artist", len(artists) == 0).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = popover("Add artist").Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -104,7 +104,7 @@ func ArtistsPage(artists []*audio.Artist) templ.Component {
 						}
 						return nil
 					})
-					templ_7745c5c3_Err = popover("Add from MusicBrainz", false).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = popover("Add from MusicBrainz").Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

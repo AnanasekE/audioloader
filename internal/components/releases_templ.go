@@ -84,7 +84,7 @@ func ReleasesPage(releases []*audio.Release, artists []*audio.Artist, filter str
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = popover("New release", len(releases) == 0).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = popover("New release").Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

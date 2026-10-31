@@ -13,7 +13,7 @@ templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist, filter st
 	@layout("Releases", PageReleases) {
 		@pageHead("Releases", fmt.Sprintf("%d in library", len(releases))) {
 			@segmented("Release type", releaseFilters(filter))
-			@popover("New release", len(releases) == 0) {
+			@popover("New release") {
 				@NewReleaseForm(artists, false)
 			}
 		}
