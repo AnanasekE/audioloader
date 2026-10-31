@@ -6,13 +6,13 @@
 
 ## Status
 
-- [ ] 1. Project skeleton and server setup screen
-- [ ] 2. API client and mode
-- [ ] 3. Library screens
-- [ ] 4. Player, queue and background audio
-- [ ] 5. Episode positions
-- [ ] 6. Secret mode in the app
-- [ ] 7. Docs
+- [x] 1. Project skeleton and server setup screen
+- [x] 2. API client and mode
+- [x] 3. Library screens
+- [x] 4. Player, queue and background audio
+- [x] 5. Episode positions
+- [x] 6. Secret mode in the app
+- [x] 7. Docs
 
 ## Rules
 
