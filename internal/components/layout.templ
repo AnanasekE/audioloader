@@ -31,11 +31,14 @@ templ layout(title string, active string) {
 		// data-mode switches the accent color (styles/input.css) and tells
 		// player.js which mode its saved state belongs to
 		<body hx-boost="true" data-mode={ modeName(ctx) }>
-			<div class="mx-auto max-w-4xl px-4 pb-28">
-				@nav(active)
-				<main>
-					{ children... }
-				</main>
+			<div class="min-[720px]:grid min-[720px]:grid-cols-[232px_minmax(0,1fr)]">
+				@sidebar(active)
+				<div class="min-w-0">
+					@topStrip()
+					<main class="mx-auto max-w-5xl px-4 pt-6 pb-28 min-[720px]:px-6">
+						{ children... }
+					</main>
+				</div>
 			</div>
 			@player()
 		</body>
@@ -43,7 +46,7 @@ templ layout(title string, active string) {
 }
 
 templ player() {
-	<div id="player" hx-preserve class="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95" hidden>
+	<div id="player" hx-preserve class="fixed inset-x-0 bottom-0 z-20 min-[720px]:left-[232px] border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95" hidden>
 		<div class="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2">
 			<img id="player-cover" class="pixelated size-10 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" alt=""/>
 			<div class="w-32 min-w-0 shrink-0 sm:w-56">
@@ -85,52 +88,82 @@ templ player() {
 	</div>
 }
 
-templ nav(active string) {
-	<header class="mb-8 border-b border-zinc-200 dark:border-zinc-800">
-		<nav class="flex flex-wrap items-center justify-between gap-4 py-4">
-			<a class="flex items-center gap-2 font-bold text-zinc-900 hover:no-underline dark:text-zinc-100" href="/">
-				<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
-				audioloader
-			</a>
-			<form action="/search" class="relative order-last w-full sm:order-none sm:w-56" role="search">
-				<input
-					class="input"
-					type="search"
-					name="q"
-					placeholder="Search"
-					aria-label="Search the library"
-					autocomplete="off"
-					hx-get="/ui/search"
-					hx-trigger="input changed delay:200ms, focus"
-					hx-target="#search-suggest"
-					hx-sync="this:replace"
-				/>
-				<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
-			</form>
-			<ul class="flex flex-wrap gap-x-5 gap-y-1">
+templ sidebar(active string) {
+	<aside class="flex flex-col gap-4 border-b border-line bg-panel p-3 min-[720px]:sticky min-[720px]:top-0 min-[720px]:h-dvh min-[720px]:overflow-y-auto min-[720px]:border-r min-[720px]:border-b-0">
+		<a class="flex items-center gap-2 px-2 py-1 font-semibold text-fg hover:no-underline" href="/">
+			<img class="pixelated size-6" src="/assets/img/favicon.png" alt=""/>
+			audioloader
+		</a>
+		<a class="btn w-full justify-center" href="/upload"
+			if active == PageUpload {
+				aria-current="page"
+			}
+		>Upload</a>
+		<nav aria-label="Library">
+			@navLabel("Library")
+			<ul class="flex flex-col gap-0.5">
 				@navLink("/tracks", "Tracks", active == PageTracks)
 				if !secretMode(ctx) {
 					@navLink("/releases", "Releases", active == PageReleases)
 				}
-				@navLink("/playlists", "Playlists", active == PagePlaylists)
-				@navLink("/shows", "Podcasts", active == PageShows)
-				@navLink("/upload", "Upload", active == PageUpload)
-				@navLink("/artists", "Artists", active == PageArtists)
-				if !secretMode(ctx) {
-					@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
-					@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
-					@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
-				}
 				if secretMode(ctx) {
-					<li class="flex items-center gap-3">
-						<span class="rounded bg-violet-100 px-2 py-0.5 text-xs font-semibold tracking-wide text-violet-800 uppercase dark:bg-violet-900/60 dark:text-violet-200">Secret</span>
-						<form method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
-							<button type="submit" class="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">Lock</button>
-						</form>
-					</li>
+					@navLink("/artists", "Creators", active == PageArtists)
+				} else {
+					@navLink("/artists", "Artists", active == PageArtists)
+					@navLink("/playlists", "Playlists", active == PagePlaylists)
+					@navLink("/shows", "Podcasts", active == PageShows)
 				}
 			</ul>
 		</nav>
+		if !secretMode(ctx) {
+			<nav aria-label="Queue">
+				@navLabel("Queue")
+				<ul class="flex flex-col gap-0.5">
+					@navLinkBadge("/inbox", "Inbox", active == PageInbox, "/ui/badges/inbox")
+					@navLinkBadge("/tagging", "Tagging", active == PageTagging, "/ui/badges/tagging")
+					@navLinkBadge("/downloads", "Downloads", active == PageDownloads, "/ui/badges/downloads")
+				</ul>
+			</nav>
+		}
+		<div class="mt-auto flex flex-col gap-2 px-2 text-xs text-fg-subtle">
+			<div class="flex items-center gap-2" role="group" aria-label="Theme">
+				<button type="button" class="rounded px-2 py-1 hover:text-fg" onclick="setTheme('dark')">Dark</button>
+				<button type="button" class="rounded px-2 py-1 hover:text-fg" onclick="setTheme('light')">Light</button>
+			</div>
+		</div>
+		<script>function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.theme=t}catch(e){}}</script>
+	</aside>
+}
+
+templ navLabel(label string) {
+	<p class="mb-1 px-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">{ label }</p>
+}
+
+templ topStrip() {
+	<header class="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-line bg-bg/95 px-4 backdrop-blur min-[720px]:px-6">
+		<form action="/search" class="relative min-w-0 flex-1 max-w-md" role="search">
+			<input
+				class="input"
+				type="search"
+				name="q"
+				placeholder="Search"
+				aria-label="Search the library"
+				autocomplete="off"
+				hx-get="/ui/search"
+				hx-trigger="input changed delay:200ms, focus"
+				hx-target="#search-suggest"
+				hx-sync="this:replace"
+			/>
+			<div id="search-suggest" onfocusout="setTimeout(() => { if (!this.parentElement.contains(document.activeElement)) this.replaceChildren() }, 150)"></div>
+		</form>
+		if secretMode(ctx) {
+			<div class="ml-auto flex items-center gap-3">
+				<span class="rounded bg-accent-dim px-2 py-0.5 text-xs font-semibold tracking-wide text-accent uppercase">Secret</span>
+				<form method="post" action="/vault/lock" hx-boost="false" onsubmit="window.player?.reset()">
+					<button type="submit" class="text-fg-muted hover:text-fg">Lock</button>
+				</form>
+			</div>
+		}
 	</header>
 }
 
@@ -142,16 +175,16 @@ templ navLink(href string, label string, current bool) {
 
 templ navAnchor(href string, label string, current bool) {
 	if current {
-		<a href={ templ.SafeURL(href) } aria-current="page" class="font-semibold text-zinc-900 underline underline-offset-4 dark:text-zinc-100">{ label }</a>
+		<a href={ templ.SafeURL(href) } aria-current="page" class="flex flex-1 items-center rounded-md bg-accent-dim px-2 py-1.5 font-medium text-accent hover:no-underline">{ label }</a>
 	} else {
-		<a href={ templ.SafeURL(href) } class="text-zinc-500 hover:text-zinc-900 hover:no-underline dark:text-zinc-400 dark:hover:text-zinc-100">{ label }</a>
+		<a href={ templ.SafeURL(href) } class="flex flex-1 items-center rounded-md px-2 py-1.5 text-fg-muted hover:bg-panel-2 hover:text-fg hover:no-underline">{ label }</a>
 	}
 }
 
 // navLinkBadge is a nav link with a count loaded from badgeURL after the
 // page, so pages don't each have to look the count up.
 templ navLinkBadge(href string, label string, current bool, badgeURL string) {
-	<li class="flex items-center">
+	<li class="relative flex items-center">
 		@navAnchor(href, label, current)
 		<span hx-get={ badgeURL } hx-trigger="load" hx-swap="outerHTML"></span>
 	</li>

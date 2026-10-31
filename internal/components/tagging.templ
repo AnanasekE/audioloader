@@ -173,7 +173,7 @@ templ taggingReview(rv TaggingReview) {
 // Badge is a small count next to a nav link; it renders nothing for 0.
 templ Badge(n int) {
 	if n > 0 {
-		<span class="ml-1 rounded-full bg-zinc-900 px-1.5 text-xs text-white tabular-nums dark:bg-zinc-100 dark:text-zinc-900">{ fmt.Sprint(n) }</span>
+		<span class="pointer-events-none absolute right-2 font-mono text-xs text-fg-muted tabular-nums">{ fmt.Sprint(n) }</span>
 	}
 }
 

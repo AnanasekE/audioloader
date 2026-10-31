@@ -11,7 +11,7 @@
 Each step ticks its own box in the same commit, so `git log` and this list always agree. If work stops, the last ticked step is a working app: run `make build && ./audioloader` (or `make dev`). The next unticked step is where to resume; `git status` must be clean before starting it (discard a half-done step with `git checkout . && git clean -fd internal assets styles`).
 
 - [x] 1. Tokens and theme
-- [ ] 2. App shell: sidebar and top strip
+- [x] 2. App shell: sidebar and top strip
 - [ ] 3. Phone layout: tab bar and More sheet
 - [ ] 4. Vault button
 - [ ] 5. Player

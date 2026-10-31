@@ -141,7 +141,7 @@ func TestNavHidesNormalOnlyPages(t *testing.T) {
 		link   string
 		want   bool
 	}{{false, `href="/releases"`, true}, {false, `href="/inbox"`, true}, {true, `href="/releases"`, false}, {true, `href="/inbox"`, false},
-		{true, `href="/tagging"`, false}, {true, `href="/downloads"`, false}, {true, `href="/tracks"`, true}, {true, `href="/shows"`, true}} {
+		{true, `href="/tagging"`, false}, {true, `href="/downloads"`, false}, {true, `href="/tracks"`, true}, {true, `href="/shows"`, false}, {true, `href="/artists"`, true}} {
 		body := a.do(c.secret, "GET", "/tracks", nil).Body.String()
 		if strings.Contains(body, c.link) != c.want {
 			t.Errorf("secret=%v: %s present = %v, want %v", c.secret, c.link, !c.want, c.want)

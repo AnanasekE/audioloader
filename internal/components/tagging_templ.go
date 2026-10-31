@@ -813,14 +813,14 @@ func Badge(n int) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if n > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<span class=\"ml-1 rounded-full bg-zinc-900 px-1.5 text-xs text-white tabular-nums dark:bg-zinc-100 dark:text-zinc-900\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<span class=\"pointer-events-none absolute right-2 font-mono text-xs text-fg-muted tabular-nums\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(n))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 176, Col: 136}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/tagging.templ`, Line: 176, Col: 113}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
