@@ -65,32 +65,6 @@ func lockVault(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/tracks", http.StatusSeeOther)
 }
 
-// setTrackSecret moves a track to the other mode, see db.SetSecret. A viewer
-// moves only tracks of the mode they are in, so a missing vault, or a track
-// that is already there, is a 404.
-func setTrackSecret(w http.ResponseWriter, r *http.Request) {
-	id, ok := trackID(w, r)
-	if !ok {
-		return
-	}
-	if theVault == nil || !visibleTrack(w, r, id.String()) {
-		if theVault == nil {
-			http.NotFound(w, r)
-		}
-		return
-	}
-	err := db.SetSecret(id.String(), !viewer(r).IsSecret())
-	if errors.Is(err, db.ErrNotFound) {
-		http.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	hxLocation(w, backTo(r, "/tracks"))
-}
-
 // visibleTrack writes a 404 and returns false if the viewer can't see the
 // track, so actions on secret tracks look like actions on missing ones.
 func visibleTrack(w http.ResponseWriter, r *http.Request, id string) bool {

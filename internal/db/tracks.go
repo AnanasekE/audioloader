@@ -379,8 +379,6 @@ type TrackEdit struct {
 	Title     string
 	Kind      string // KindMusic or KindEpisode; an episode can become a song
 	ArtistIDs []string
-	// Secret moves the track to the other mode (see SetSecret); nil leaves it
-	Secret *bool
 	// Cover sets or removes the original song; nil leaves it as it is
 	Cover *CoverEdit
 	// Description and Tags are for secret tracks; nil leaves them as they are
@@ -416,11 +414,6 @@ func UpdateTrack(v Viewer, id string, e TrackEdit) error {
 	if e.Kind != kind {
 		// a song belongs to no show
 		if _, err := tx.Exec(`UPDATE tracks SET show_id = NULL, published = NULL WHERE uuid = ?;`, id); err != nil {
-			return err
-		}
-	}
-	if e.Secret != nil && !v.SeesAll() {
-		if err := setSecret(tx, id, *e.Secret); err != nil {
 			return err
 		}
 	}

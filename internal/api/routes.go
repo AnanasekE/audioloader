@@ -81,7 +81,6 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 
 	handle(mux, "GET /ui/search", getSearchSuggest)
 	handle(mux, "POST /ui/episodes", addEpisode)
-	handle(mux, "POST /ui/tracks/{track_id}/secret", setTrackSecret)
 	handle(mux, "POST /ui/tracks/{track_id}/played", markPlayed)
 	handle(mux, "POST /ui/tracks/{track_id}/unplayed", markPlayed)
 	handle(mux, "GET /ui/playlists/picker", getPlaylistPicker)

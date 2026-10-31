@@ -129,7 +129,8 @@ func ViewerFrom(ctx context.Context) Viewer {
 	return v
 }
 
-// SetSecret moves a track to secret mode or back to normal mode. A track in
+// SetSecret moves a track to secret mode or back to normal mode. Nothing in
+// the UI reaches it; tests use it to set up fixtures. A track in
 // secret mode is on no release, so it leaves its releases (and a release it
 // leaves empty is deleted), and its playlist entries in playlists of the
 // other mode go. It stays without a release when made normal again.

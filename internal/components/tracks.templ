@@ -367,20 +367,6 @@ templ trackMenu(t *audio.Track) {
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
-				if vaultEnabled(ctx) {
-					<button
-						type="button"
-						class="menu-item"
-						hx-post={ "/ui/tracks/" + t.ID.String() + "/secret" }
-						hx-confirm={ secretConfirm(t) }
-					>
-						if t.Secret {
-							Make public
-						} else {
-							Make secret
-						}
-					</button>
-				}
 			</div>
 		</details>
 	} else {
@@ -546,22 +532,6 @@ templ TrimPreview(t *audio.Track, p trim.Plan, errMsg string) {
 
 func trimConfirm(t *audio.Track, p trim.Plan) string {
 	return fmt.Sprintf("Cut %s of silence from the end of “%s”? This can't be undone.", formatDuration(p.Saved()), t.Title)
-}
-
-// secretConfirm is the question before a track moves to the other mode.
-// Moving it to secret mode takes it off its releases, which it names.
-func secretConfirm(t *audio.Track) string {
-	if t.Secret {
-		return "Make " + t.Title + " public? It will be on no release."
-	}
-	if len(t.Releases) == 0 {
-		return "Make " + t.Title + " secret?"
-	}
-	titles := make([]string, len(t.Releases))
-	for i, r := range t.Releases {
-		titles[i] = r.Title
-	}
-	return "Make " + t.Title + " secret? It will leave " + strings.Join(titles, ", ") + ", and a release left with no tracks is deleted."
 }
 
 // TrackEditPage edits a track's title, artists and secret flag. Only an

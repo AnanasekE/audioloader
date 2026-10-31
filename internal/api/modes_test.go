@@ -151,33 +151,6 @@ func TestNavHidesNormalOnlyPages(t *testing.T) {
 	}
 }
 
-func TestMovingTracksBetweenModes(t *testing.T) {
-	a := newModeApp(t)
-	// the question names the releases the track would leave
-	b := a.do(false, "GET", "/tracks", nil).Body.String()
-	if !strings.Contains(b, "It will leave ZZPUBLIC Album") {
-		t.Error("the confirm text doesn't name the release")
-	}
-	id := a.ID["public track"]
-	if rec := a.do(false, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNoContent {
-		t.Fatalf("make secret = %d", rec.Code)
-	}
-	tr, err := db.GetTrack(db.Secret, id)
-	if err != nil || len(tr.Releases) != 0 {
-		t.Fatalf("moved track = %+v, %v", tr, err)
-	}
-	// the same request from normal mode no longer finds it
-	if rec := a.do(false, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNotFound {
-		t.Errorf("second move = %d", rec.Code)
-	}
-	if rec := a.do(true, "POST", "/ui/tracks/"+id+"/secret", url.Values{}); rec.Code != http.StatusNoContent {
-		t.Fatalf("make public = %d", rec.Code)
-	}
-	if _, err := db.GetTrack(db.Normal, id); err != nil {
-		t.Fatalf("back in normal mode: %v", err)
-	}
-}
-
 func TestSecretTrackEditForm(t *testing.T) {
 	a := newModeApp(t)
 	id := a.ID["secret track"]

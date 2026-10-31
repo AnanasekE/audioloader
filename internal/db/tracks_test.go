@@ -107,12 +107,8 @@ func TestUpdateTrack(t *testing.T) {
 	if err := UpdateTrack(Normal, id, TrackEdit{Title: "x", Kind: audio.KindMusic}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("normal mode edit = %v", err)
 	}
-	off := false
-	if err := UpdateTrack(Secret, id, TrackEdit{Title: "Brand New Title", Kind: audio.KindMusic, ArtistIDs: []string{b.ID.String()}, Secret: &off}); err != nil {
+	if err := UpdateTrack(Secret, id, TrackEdit{Title: "Brand New Title", Kind: audio.KindMusic, ArtistIDs: []string{b.ID.String()}}); err != nil {
 		t.Fatal(err)
-	}
-	if tr, _ := GetTrack(Normal, id); tr == nil {
-		t.Fatal("still secret")
 	}
 }
 
