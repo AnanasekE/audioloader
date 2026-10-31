@@ -31,7 +31,7 @@ templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy
 		@ContinueListening(continueListening)
 		if secretMode(ctx) {
 			<nav class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" aria-label="Sort tracks">
-				<span class="text-zinc-500 dark:text-zinc-400">Sort by</span>
+				<span class="text-fg-muted">Sort by</span>
 				for _, s := range []struct{ Key, Label string }{{SortAdded, "Date added"}, {SortCreator, "Creator"}, {SortTag, "Tag"}} {
 					@navAnchor("/tracks?sort="+s.Key, s.Label, s.Key == sortBy)
 				}
@@ -132,21 +132,21 @@ templ UploadPage(artists []*audio.Artist, shows []*audio.Show) {
 				<div class="flex flex-wrap gap-2">
 					if secretMode(ctx) {
 						// secret tracks have no releases
-						<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+						<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
 							<input id="kind-single" class="sr-only" type="radio" name="type" value="single" form="episode-form" checked/>
 							Track
 						</label>
 					}
 					for _, typ := range audio.ReleaseTypes {
 						if !secretMode(ctx) {
-							<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+							<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
 								// form= ties the choice to the release form, which needs the type
 								<input id={ "kind-" + string(typ) } class="sr-only" type="radio" name="type" value={ string(typ) } form="new-release-form" checked?={ typ == audio.ReleaseSingle }/>
 								{ typ.Label() }
 							</label>
 						}
 					}
-					<label class="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-sm has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900">
+					<label class="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-dim has-[:checked]:text-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent">
 						// not part of the release form: an episode isn't a release
 						<input id="kind-episode" class="sr-only" type="radio" name="type" value="episode" form="episode-form"/>
 						Podcast episode
@@ -195,14 +195,14 @@ templ AddTrackForm(artists []*audio.Artist) {
 				</span>
 				@artistPicker(artists, nil)
 				if len(artists) == 0 {
-					<small class="mt-1 block text-zinc-500">No artists yet. <a href="/artists">Add one first</a>.</small>
+					<small class="mt-1 block text-fg-muted">No artists yet. <a href="/artists">Add one first</a>.</small>
 				}
 			</div>
 			if secretMode(ctx) {
 				@secretTrackFields("", nil)
 			} else {
 				<div>
-					<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-zinc-500">(optional)</span></label>
+					<label for="track-date" class="mb-1 block text-sm font-medium">Release date <span class="font-normal text-fg-muted">(optional)</span></label>
 					<input
 						id="track-date"
 						class="input"
@@ -218,13 +218,13 @@ templ AddTrackForm(artists []*audio.Artist) {
 				<label for="track-file" class="mb-1 block text-sm font-medium">Audio file</label>
 				<input
 					id="track-file"
-					class="input file:mr-3 file:rounded file:border-0 file:bg-zinc-200 file:px-2 file:py-1 file:text-sm dark:file:bg-zinc-700"
+					class="input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm"
 					type="file"
 					name="track"
 					required
 					accept="audio/*,.mp3,.opus,.flac,.ogg,.wav,.m4a,.aac"
 				/>
-				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-amber-600 data-[state=pending]:text-zinc-500 dark:data-[state=exists]:text-amber-400" aria-live="polite"></small>
+				<small id="track-file-status" class="mt-1 block empty:hidden data-[state=exists]:text-st-review data-[state=pending]:text-fg-muted" aria-live="polite"></small>
 			</div>
 			<div>
 				<button class="btn disabled:cursor-not-allowed disabled:opacity-50" type="submit">Upload</button>
@@ -238,17 +238,17 @@ templ AddTrackForm(artists []*audio.Artist) {
 }
 
 templ Track(t *audio.Track) {
-	<article class="grid grid-cols-[auto_3.5rem_1fr_auto_auto] items-center gap-x-4 py-3" data-track-row>
-		@playButton(t, "size-10")
-		<img class="pixelated size-14 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
+	<article class="group/row grid min-h-11 grid-cols-[auto_1.75rem_1fr_auto_auto] items-center gap-x-3 rounded-md px-2 py-1 hover:bg-panel-2 min-[720px]:min-h-9" data-track-row>
+		@playButton(t, "size-7")
+		<img class="pixelated size-7 rounded-sm bg-panel-2 object-cover" src={ t.ImgURL } alt=""/>
 		<div class="flex min-w-0 flex-col">
-			<strong class="truncate">
+			<strong class="truncate text-sm font-medium group-has-[[aria-pressed=true]]/row:text-accent">
 				{ t.Title }
 				if t.Secret {
-					<span class="ml-1 rounded bg-zinc-200 px-1 text-xs font-normal dark:bg-zinc-700">secret</span>
+					<span class="ml-1 rounded-sm bg-panel-2 px-1 text-xs font-normal text-fg-muted">secret</span>
 				}
 			</strong>
-			<span class="truncate text-sm text-zinc-500 dark:text-zinc-400">
+			<span class="truncate text-xs text-fg-muted">
 				@artistLinks(t.Artists)
 				@trackReleaseLabel(t)
 			</span>
@@ -257,7 +257,7 @@ templ Track(t *audio.Track) {
 				@secretTrackDetails(t)
 			}
 		</div>
-		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(t.Duration) }</span>
+		<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(t.Duration) }</span>
 		@trackMenu(t)
 	</article>
 }
@@ -267,36 +267,36 @@ templ Track(t *audio.Track) {
 templ trackMenu(t *audio.Track) {
 	if t.HasFile {
 		<details class="relative" data-track-menu>
-			<summary class="btn cursor-pointer list-none px-2" aria-label={ "More for " + t.Title }>⋯</summary>
-			<div class="absolute right-0 z-10 mt-1 grid w-44 rounded-md border border-zinc-300 bg-white p-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="next">Play next</button>
-				<button type="button" class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700" data-queue="add">Add to queue</button>
+			<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8" aria-label={ "More for " + t.Title }>⋯</summary>
+			<div class="absolute right-0 z-10 mt-1 grid w-44 rounded-md border border-line bg-panel p-1 text-sm shadow-(--shadow-pop)">
+				<button type="button" class="rounded px-2 py-1 text-left hover:bg-panel-2" data-queue="next">Play next</button>
+				<button type="button" class="rounded px-2 py-1 text-left hover:bg-panel-2" data-queue="add">Add to queue</button>
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					class="rounded px-2 py-1 text-left hover:bg-panel-2"
 					hx-get={ "/ui/playlists/picker?track_id=" + t.ID.String() }
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
-				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
+				<a class="rounded px-2 py-1 text-left text-inherit hover:bg-panel-2 hover:no-underline" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
 				if !t.IsEpisode() && !t.Secret {
-					<a class="rounded px-2 py-1 text-left text-inherit hover:bg-zinc-100 hover:no-underline dark:text-inherit dark:hover:bg-zinc-700" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
+					<a class="rounded px-2 py-1 text-left text-inherit hover:bg-panel-2 hover:no-underline" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
 				}
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					class="rounded px-2 py-1 text-left hover:bg-panel-2"
 					hx-get={ "/ui/tracks/" + t.ID.String() + "/trim" }
 					hx-swap="outerHTML"
 				>Trim silence…</button>
 				<button
 					type="button"
-					class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+					class="rounded px-2 py-1 text-left hover:bg-panel-2"
 					hx-post={ "/ui/tracks/" + t.ID.String() + "/delete" }
 					hx-confirm={ deleteConfirm(t) }
 				>Delete</button>
 				if vaultEnabled(ctx) {
 					<button
 						type="button"
-						class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+						class="rounded px-2 py-1 text-left hover:bg-panel-2"
 						hx-post={ "/ui/tracks/" + t.ID.String() + "/secret" }
 						hx-confirm={ secretConfirm(t) }
 					>
@@ -318,7 +318,7 @@ templ trackMenu(t *audio.Track) {
 templ playButton(t *audio.Track, size string) {
 	if !t.HasFile {
 		<span
-			class={ "btn shrink-0 justify-center rounded-full p-0 opacity-40", size }
+			class={ "btn btn-ghost shrink-0 justify-center rounded-full p-0 text-xs opacity-40", size }
 			title="Not in the library yet"
 			aria-label={ t.Title + " is not in the library yet" }
 		>–</span>
@@ -330,7 +330,7 @@ templ playButton(t *audio.Track, size string) {
 templ playableButton(t *audio.Track, size string) {
 	<button
 		type="button"
-		class={ "btn shrink-0 justify-center rounded-full p-0", size }
+		class={ "btn shrink-0 justify-center rounded-full p-0 text-xs", size }
 		aria-label={ "Play " + t.Title }
 		aria-pressed="false"
 		data-play-track
@@ -359,7 +359,7 @@ templ playableButton(t *audio.Track, size string) {
 // library or on MusicBrainz.
 templ coverOfLine(t *audio.Track) {
 	if c := t.CoverOf; c != nil {
-		<span class="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+		<span class="block truncate text-xs text-fg-muted">
 			{ "Cover of " }
 			if u := coverOfURL(c); u != "" {
 				<a href={ u }>{ c.Title }</a>
@@ -440,7 +440,7 @@ templ TrackList(tracks []*audio.Track) {
 		}
 	} else {
 		// data-track-list: playing a track queues the rest of the list after it
-		<ul class="divide-y divide-zinc-200 dark:divide-zinc-800" data-track-list>
+		<ul class="flex flex-col" data-track-list>
 			for _, track := range tracks {
 				<li>
 					@Track(track)
@@ -462,21 +462,21 @@ func formatDuration(d time.Duration) string {
 // TrimPreview is swapped into the track menu: what a trim would do, with a
 // button to do it, or why it can't.
 templ TrimPreview(t *audio.Track, p trim.Plan, errMsg string) {
-	<div class="mt-1 grid gap-1 border-t border-zinc-200 px-2 pt-1 dark:border-zinc-700">
+	<div class="mt-1 grid gap-1 border-t border-line px-2 pt-1">
 		if errMsg != "" {
-			<p class="text-red-600 dark:text-red-400">{ errMsg }</p>
+			<p class="text-st-failed">{ errMsg }</p>
 		} else if p.None() {
 			<p>No silence at the end</p>
 		} else {
 			<p>{ formatDuration(p.Total) + " → " + formatDuration(p.CutAt) }</p>
 			<button
 				type="button"
-				class="rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+				class="rounded px-2 py-1 text-left hover:bg-panel-2"
 				hx-post={ "/ui/tracks/" + t.ID.String() + "/trim" }
 				hx-confirm={ trimConfirm(t, p) }
 				hx-indicator="next .htmx-indicator"
 			>Trim</button>
-			<span class="htmx-indicator text-zinc-500">Trimming…</span>
+			<span class="htmx-indicator text-fg-muted">Trimming…</span>
 		}
 	</div>
 }
@@ -505,12 +505,12 @@ func secretConfirm(t *audio.Track) string {
 // description, cut to a line, and its tags.
 templ secretTrackDetails(t *audio.Track) {
 	if t.Description != "" {
-		<span class="block truncate text-xs text-zinc-500 dark:text-zinc-400">{ t.Description }</span>
+		<span class="block truncate text-xs text-fg-muted">{ t.Description }</span>
 	}
 	if len(t.Tags) > 0 {
 		<span class="flex flex-wrap gap-1 pt-0.5">
 			for _, tag := range t.Tags {
-				<span class="rounded bg-violet-100 px-1.5 text-xs text-violet-800 dark:bg-violet-900/50 dark:text-violet-200">{ tag }</span>
+				<span class="rounded-sm bg-accent-dim px-1.5 text-xs text-accent">{ tag }</span>
 			}
 		</span>
 	}
@@ -565,7 +565,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 			}
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Save</button>
-				<span id="track-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+				<span id="track-edit-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</form>
 		if t.Secret {
@@ -579,11 +579,11 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 // and a cover: a description and comma separated tags.
 templ secretTrackFields(description string, tags []string) {
 	<div>
-		<label for="track-description" class="mb-1 block text-sm font-medium">Description <span class="font-normal text-zinc-500">(optional)</span></label>
+		<label for="track-description" class="mb-1 block text-sm font-medium">Description <span class="font-normal text-fg-muted">(optional)</span></label>
 		<textarea id="track-description" class="input" name="description" rows="4">{ description }</textarea>
 	</div>
 	<div>
-		<label for="track-tags" class="mb-1 block text-sm font-medium">Tags <span class="font-normal text-zinc-500">(optional, separated by commas)</span></label>
+		<label for="track-tags" class="mb-1 block text-sm font-medium">Tags <span class="font-normal text-fg-muted">(optional, separated by commas)</span></label>
 		<input id="track-tags" class="input" type="text" name="tags" value={ strings.Join(tags, ", ") } maxlength="800"/>
 	</div>
 }
@@ -597,7 +597,7 @@ templ trackImageForm(t *audio.Track) {
 		hx-target="#track-image-result"
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('track-image-result').textContent = event.detail.xhr.responseText || 'Could not upload the picture.'"
 	>
-		<img class="pixelated size-24 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ t.ImgURL } alt=""/>
+		<img class="pixelated size-24 rounded bg-panel-2 object-cover" src={ t.ImgURL } alt=""/>
 		<label for="track-image" class="text-sm font-medium">Picture (JPEG, PNG or WebP, up to 10 MiB)</label>
 		<input id="track-image" type="file" name="image" accept="image/jpeg,image/png,image/webp" required/>
 		<div class="flex flex-wrap items-center gap-4">
@@ -608,7 +608,7 @@ templ trackImageForm(t *audio.Track) {
 				hx-post={ "/ui/tracks/" + t.ID.String() + "/image/remove" }
 				hx-confirm="Go back to the placeholder picture?"
 			>Remove picture</button>
-			<span id="track-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			<span id="track-image-result" class="text-sm text-st-failed" aria-live="polite"></span>
 		</div>
 	</form>
 }
@@ -617,10 +617,10 @@ templ trackImageForm(t *audio.Track) {
 // what the fields below it mean; "keep" leaves the cover as it is, which is
 // also right for a hidden original (the form can't show it).
 templ coverOfFields(t *audio.Track) {
-	<fieldset id="cover-of" class="group grid gap-3 rounded-md border border-zinc-300 p-3 dark:border-zinc-700">
+	<fieldset id="cover-of" class="group grid gap-3 rounded-md border border-line p-3">
 		<legend class="px-1 text-sm font-medium">Cover of</legend>
 		if t.CoverOf != nil {
-			<p class="text-sm text-zinc-500 dark:text-zinc-400">Now: { t.CoverOf.String() }</p>
+			<p class="text-sm text-fg-muted">Now: { t.CoverOf.String() }</p>
 		}
 		<select id="cover-mode" class="input" name="cover_mode" aria-label="Set the original song by">
 			<option value="keep" selected>Leave as it is</option>
@@ -644,7 +644,7 @@ templ coverOfFields(t *audio.Track) {
 				hx-vals={ `{"exclude": "` + t.ID.String() + `"}` }
 				hx-on:keydown="if (event.key === 'Enter') event.preventDefault()"
 			/>
-			<p id="cover-track-label" class="mt-1 text-sm text-zinc-500 empty:hidden dark:text-zinc-400"></p>
+			<p id="cover-track-label" class="mt-1 text-sm text-fg-muted empty:hidden"></p>
 			<div id="cover-pick-results"></div>
 		</div>
 		<div class="hidden gap-2 group-has-[#cover-opt-text:checked]:grid">
@@ -653,7 +653,7 @@ templ coverOfFields(t *audio.Track) {
 		</div>
 		<div class="hidden group-has-[#cover-opt-mbid:checked]:block">
 			<input class="input" type="url" name="cover_mb_url" placeholder="https://musicbrainz.org/recording/…" aria-label="MusicBrainz recording URL"/>
-			<small class="mt-1 block text-zinc-500">Title and artists are looked up when you save.</small>
+			<small class="mt-1 block text-fg-muted">Title and artists are looked up when you save.</small>
 		</div>
 	</fieldset>
 }
@@ -662,19 +662,19 @@ templ coverOfFields(t *audio.Track) {
 // choosing one fills the form's cover_track_id.
 templ CoverPickResults(tracks []*audio.Track) {
 	if len(tracks) == 0 {
-		<p class="mt-1 text-sm text-zinc-500">Nothing matches.</p>
+		<p class="mt-1 text-sm text-fg-muted">Nothing matches.</p>
 	} else {
-		<ul class="mt-1 rounded-md border border-zinc-300 bg-white p-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+		<ul class="mt-1 rounded-md border border-line bg-panel p-1 text-sm">
 			for _, t := range tracks {
 				<li>
 					<button
 						type="button"
-						class="block w-full truncate rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+						class="block w-full truncate rounded px-2 py-1 text-left hover:bg-panel-2"
 						data-id={ t.ID.String() }
 						data-label={ coverPickLabel(t) }
 						hx-on:click="document.getElementById('cover-track-id').value = this.dataset.id; document.getElementById('cover-track-label').textContent = 'Picked: ' + this.dataset.label; document.getElementById('cover-mode').value = 'library'; this.closest('ul').remove()"
 					>
-						{ t.Title }<span class="text-zinc-500">{ " · " + artistNames(t.Artists) }</span>
+						{ t.Title }<span class="text-fg-muted">{ " · " + artistNames(t.Artists) }</span>
 					</button>
 				</li>
 			}

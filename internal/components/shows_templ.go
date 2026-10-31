@@ -117,33 +117,33 @@ func ShowsPage(shows []*audio.Show, continueListening []*audio.Track) templ.Comp
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><img class=\"pixelated mb-2 aspect-square w-full rounded bg-zinc-100 object-cover dark:bg-zinc-800\" src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><img class=\"pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover\" src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(s.ImgURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 25, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 25, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" alt=\"\"> <strong class=\"block truncate text-zinc-900 dark:text-zinc-100\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" alt=\"\"> <strong class=\"block truncate text-fg\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(s.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 26, Col: 79}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 26, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong> <span class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong> <span class=\"text-sm text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -214,7 +214,7 @@ func ContinueListening(tracks []*audio.Track) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(tracks) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<section class=\"mb-8\"><h2 class=\"mb-3 text-lg font-semibold\">Continue listening</h2><ul class=\"card divide-y divide-zinc-200 dark:divide-zinc-700\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<section class=\"mb-8\"><h2 class=\"mb-3 text-lg font-semibold\">Continue listening</h2><ul class=\"card divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -223,7 +223,7 @@ func ContinueListening(tracks []*audio.Track) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = playButton(t, "size-10").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = playButton(t, "size-8").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -308,27 +308,27 @@ func ShowPage(s *audio.Show) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-48 shrink-0 rounded-lg bg-panel-2 object-cover shadow\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue(s.ImgURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 63, Col: 117}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 63, Col: 99}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400\">Podcast</p><h1 class=\"text-4xl font-bold tracking-tight\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase\">Podcast</p><h1 class=\"text-2xl font-semibold tracking-tight\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(s.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 66, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 66, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -357,14 +357,14 @@ func ShowPage(s *audio.Show) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<p class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<p class=\"text-sm text-fg-muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(plural(s.Count, "episode"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 70, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 70, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -373,7 +373,7 @@ func ShowPage(s *audio.Show) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(", %d unplayed", s.Unplayed))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 70, Col: 128}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 70, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -407,7 +407,7 @@ func ShowPage(s *audio.Show) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " <ol class=\"divide-y divide-zinc-200 dark:divide-zinc-800\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " <ol class=\"divide-y divide-line\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -434,7 +434,7 @@ func ShowPage(s *audio.Show) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = playButton(t, "size-10").Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = playButton(t, "size-8").Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -451,7 +451,7 @@ func ShowPage(s *audio.Show) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</strong> <span class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</strong> <span class=\"text-sm text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -492,14 +492,14 @@ func ShowPage(s *audio.Show) templ.Component {
 						return templ_7745c5c3_Err
 					}
 					if t.Finished || t.Position > 0 {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<button class=\"btn text-sm\" hx-post=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<button class=\"btn btn-ghost text-sm\" hx-post=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var26 string
 						templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/tracks/" + t.ID.String() + "/unplayed")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 94, Col: 88}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 94, Col: 98}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 						if templ_7745c5c3_Err != nil {
@@ -510,14 +510,14 @@ func ShowPage(s *audio.Show) templ.Component {
 							return templ_7745c5c3_Err
 						}
 					} else {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<button class=\"btn text-sm\" hx-post=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<button class=\"btn btn-ghost text-sm\" hx-post=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var27 string
 						templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/tracks/" + t.ID.String() + "/played")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 96, Col: 86}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/shows.templ`, Line: 96, Col: 96}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 						if templ_7745c5c3_Err != nil {
@@ -570,12 +570,12 @@ func episodeProgress(t *audio.Track) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if t.Finished {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<span class=\"block text-xs text-zinc-500\">Played</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<span class=\"block text-xs text-fg-muted\">Played</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if t.Position > 0 && t.Duration > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"mt-1 flex items-center gap-2 text-xs text-zinc-500\"><progress class=\"h-1.5 w-32\" max=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"mt-1 flex items-center gap-2 text-xs text-fg-muted\"><progress class=\"h-1.5 w-32\" max=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -695,7 +695,7 @@ func EpisodeForm(shows []*audio.Show) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</select></div><div><label for=\"episode-show-name\" class=\"mb-1 block text-sm font-medium\">New show name</label> <input id=\"episode-show-name\" class=\"input\" type=\"text\" name=\"show_name\" placeholder=\"Only for a new show\"></div></div><div><label for=\"episode-date\" class=\"mb-1 block text-sm font-medium\">Published <span class=\"font-normal text-zinc-500\">(optional)</span></label> <input id=\"episode-date\" class=\"input\" type=\"text\" name=\"published\" placeholder=\"YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div><div><label for=\"episode-file\" class=\"mb-1 block text-sm font-medium\">Audio file</label> <input id=\"episode-file\" class=\"input file:mr-3 file:rounded file:border-0 file:bg-zinc-200 file:px-2 file:py-1 file:text-sm dark:file:bg-zinc-700\" type=\"file\" name=\"track\" required accept=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</select></div><div><label for=\"episode-show-name\" class=\"mb-1 block text-sm font-medium\">New show name</label> <input id=\"episode-show-name\" class=\"input\" type=\"text\" name=\"show_name\" placeholder=\"Only for a new show\"></div></div><div><label for=\"episode-date\" class=\"mb-1 block text-sm font-medium\">Published <span class=\"font-normal text-fg-muted\">(optional)</span></label> <input id=\"episode-date\" class=\"input\" type=\"text\" name=\"published\" placeholder=\"YYYY-MM-DD\" pattern=\"\\d{4}(-\\d{2}(-\\d{2})?)?\" title=\"YYYY, YYYY-MM or YYYY-MM-DD\"></div><div><label for=\"episode-file\" class=\"mb-1 block text-sm font-medium\">Audio file</label> <input id=\"episode-file\" class=\"input file:mr-3 file:rounded file:border-0 file:bg-panel file:px-2 file:py-1 file:text-sm\" type=\"file\" name=\"track\" required accept=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

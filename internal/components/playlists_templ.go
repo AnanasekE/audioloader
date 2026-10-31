@@ -67,7 +67,7 @@ func PlaylistsPage(playlists []*audio.Playlist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form class=\"card mb-6 flex flex-wrap items-center gap-2\" hx-post=\"/ui/playlists\" hx-target=\"#playlist-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('playlist-result').textContent = event.detail.xhr.responseText\"><label for=\"playlist-name\" class=\"sr-only\">Name</label> <input id=\"playlist-name\" class=\"input flex-1\" type=\"text\" name=\"name\" placeholder=\"New playlist name\" required> <button class=\"btn\" type=\"submit\">Create playlist</button> <span id=\"playlist-result\" class=\"text-sm text-red-600 dark:text-red-400\" aria-live=\"polite\"></span></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form class=\"card mb-6 flex flex-wrap items-center gap-2\" hx-post=\"/ui/playlists\" hx-target=\"#playlist-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('playlist-result').textContent = event.detail.xhr.responseText\"><label for=\"playlist-name\" class=\"sr-only\">Name</label> <input id=\"playlist-name\" class=\"input flex-1\" type=\"text\" name=\"name\" placeholder=\"New playlist name\" required> <button class=\"btn\" type=\"submit\">Create playlist</button> <span id=\"playlist-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -113,40 +113,40 @@ func PlaylistsPage(playlists []*audio.Playlist) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><img class=\"pixelated mb-2 aspect-square w-full rounded bg-zinc-100 object-cover dark:bg-zinc-800\" src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><img class=\"pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover\" src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(p.ImgURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 34, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 34, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" alt=\"\"> <strong class=\"block truncate text-zinc-900 dark:text-zinc-100\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" alt=\"\"> <strong class=\"block truncate text-fg\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 35, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 35, Col: 53}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong> <span class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong> <span class=\"font-mono text-xs text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var8 string
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(plural(p.Count, "track"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 36, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 36, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -205,40 +205,40 @@ func PlaylistPage(p *audio.Playlist) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-40 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-48\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(p.ImgURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 47, Col: 117}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 47, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400\">Playlist</p><h1 class=\"text-4xl font-bold tracking-tight\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase\">Playlist</p><h1 class=\"text-2xl font-semibold tracking-tight\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 50, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 50, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</h1><p class=\"text-sm text-zinc-500 dark:text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</h1><p class=\"text-sm text-fg-muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(plural(p.Count, "track"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 51, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 51, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -251,7 +251,7 @@ func PlaylistPage(p *audio.Playlist) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(formatLongDuration(p.Duration))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 51, Col: 120}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 51, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -262,19 +262,19 @@ func PlaylistPage(p *audio.Playlist) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if p.Count > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<button type=\"button\" class=\"btn\" data-play-list=\"playlist-tracks\">Play</button> <button type=\"button\" class=\"btn\" data-play-list=\"playlist-tracks\" data-shuffle>Shuffle</button> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<button type=\"button\" class=\"btn\" data-play-list=\"playlist-tracks\">Play</button> <button type=\"button\" class=\"btn btn-ghost\" data-play-list=\"playlist-tracks\" data-shuffle>Shuffle</button> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a class=\"btn\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a class=\"btn btn-ghost\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 templ.SafeURL
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(string(playlistURL(p)) + "/edit"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 57, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 57, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -308,7 +308,7 @@ func PlaylistPage(p *audio.Playlist) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<ol id=\"playlist-tracks\" class=\"divide-y divide-zinc-200 dark:divide-zinc-800\" data-track-list>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<ol id=\"playlist-tracks\" class=\"flex flex-col\" data-track-list>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -448,7 +448,7 @@ func PlaylistEditPage(p *audio.Playlist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#playlist-edit-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('playlist-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><ol id=\"playlist-edit-rows\" class=\"divide-y divide-zinc-200 dark:divide-zinc-700\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#playlist-edit-result\" hx-on::after-request=\"if (!event.detail.successful) document.getElementById('playlist-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'\"><ol id=\"playlist-edit-rows\" class=\"divide-y divide-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -466,7 +466,7 @@ func PlaylistEditPage(p *audio.Playlist) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"> <span class=\"text-right text-sm text-zinc-500 tabular-nums\" data-number></span><div class=\"min-w-0\"><strong class=\"block truncate\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"> <span class=\"text-right text-sm text-fg-muted tabular-nums\" data-number></span><div class=\"min-w-0\"><strong class=\"block truncate\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -479,14 +479,14 @@ func PlaylistEditPage(p *audio.Playlist) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</strong> <span class=\"block truncate text-sm text-zinc-500 dark:text-zinc-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</strong> <span class=\"block truncate text-sm text-fg-muted\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(artistNames(t.Artists))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 106, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/playlists.templ`, Line: 106, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -497,7 +497,7 @@ func PlaylistEditPage(p *audio.Playlist) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</ol><p class=\"py-4 text-sm text-zinc-500\" data-edit-empty")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</ol><p class=\"py-4 text-sm text-fg-muted\" data-edit-empty")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -507,7 +507,7 @@ func PlaylistEditPage(p *audio.Playlist) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, ">No tracks.</p><div class=\"mt-6 flex items-center gap-4\"><button type=\"submit\" class=\"btn\">Save order</button> <span id=\"playlist-edit-result\" class=\"text-sm text-red-600 dark:text-red-400\" aria-live=\"polite\"></span></div></form><section class=\"card mt-8\"><button type=\"button\" class=\"btn\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, ">No tracks.</p><div class=\"mt-6 flex items-center gap-4\"><button type=\"submit\" class=\"btn\">Save order</button> <span id=\"playlist-edit-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></div></form><section class=\"card mt-8\"><button type=\"button\" class=\"btn\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -569,7 +569,7 @@ func PlaylistPicker(trackID string, playlists []*audio.Playlist) templ.Component
 			templ_7745c5c3_Var29 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"mt-1 grid border-t border-zinc-200 pt-1 dark:border-zinc-700\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"mt-1 grid border-t border-line pt-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -580,7 +580,7 @@ func PlaylistPicker(trackID string, playlists []*audio.Playlist) templ.Component
 			}
 		}
 		for _, p := range playlists {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<button type=\"button\" class=\"truncate rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<button type=\"button\" class=\"truncate rounded px-2 py-1 text-left hover:bg-panel-2\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

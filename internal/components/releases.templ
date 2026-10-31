@@ -43,7 +43,7 @@ templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist) {
 templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 	<section class="card">
 		if upload {
-			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create the release first, then upload all of its tracks together.</p>
+			<p class="mb-4 text-sm text-fg-muted">Create the release first, then upload all of its tracks together.</p>
 		}
 		<form
 			id="new-release-form"
@@ -97,19 +97,19 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 				</button>
 			</div>
 		</form>
-		<div id="release-result" class="mt-4 text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></div>
+		<div id="release-result" class="mt-4 text-sm text-st-failed empty:hidden" aria-live="polite"></div>
 	</section>
 }
 
 templ releaseGrid(releases []*audio.Release) {
 	<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
 		for _, r := range releases {
-			<a class="card block p-3 text-inherit hover:no-underline dark:text-inherit" href={ releaseURL(r) }>
-				<img class="pixelated mb-2 aspect-square w-full rounded bg-white object-cover dark:bg-zinc-900" src={ r.ImgURL } alt=""/>
+			<a class="card block p-3 text-inherit hover:no-underline" href={ releaseURL(r) }>
+				<img class="pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
 				<strong class="block truncate">{ r.Title }</strong>
-				<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(r.Artists) }</span>
+				<span class="block truncate text-sm text-fg-muted">{ artistNames(r.Artists) }</span>
 				if r.Year() != "" {
-					<span class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Year() }</span>
+					<span class="text-sm text-fg-muted">{ r.Year() }</span>
 				}
 			</a>
 		}
@@ -118,16 +118,16 @@ templ releaseGrid(releases []*audio.Release) {
 
 // singleList shows singles as song rows rather than album covers.
 templ singleList(releases []*audio.Release) {
-	<ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
+	<ul class="divide-y divide-line">
 		for _, r := range releases {
 			<li>
-				<a class="flex items-center gap-4 py-2 text-inherit hover:no-underline dark:text-inherit" href={ releaseURL(r) }>
-					<img class="pixelated size-12 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+				<a class="flex items-center gap-4 py-2 text-inherit hover:no-underline" href={ releaseURL(r) }>
+					<img class="pixelated size-12 rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
 					<span class="min-w-0 flex-1">
 						<strong class="block truncate">{ r.Title }</strong>
-						<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(r.Artists) }</span>
+						<span class="block truncate text-sm text-fg-muted">{ artistNames(r.Artists) }</span>
 					</span>
-					<span class="text-sm text-zinc-500 dark:text-zinc-400">
+					<span class="text-sm text-fg-muted">
 						Single
 						if r.Year() != "" {
 							· { r.Year() }
@@ -208,14 +208,14 @@ func removeReleaseConfirm(r *audio.Release) string {
 
 templ albumView(r *audio.Release) {
 	<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-		<img class="pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<img class="pixelated size-40 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-48" src={ r.ImgURL } alt=""/>
 		<div class="min-w-0">
-			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{ r.Type.Label() }</p>
-			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
+			<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">{ r.Type.Label() }</p>
+			<h1 class="text-2xl font-semibold tracking-tight">{ r.Title }</h1>
 			<p class="mt-1">
 				@artistLinks(r.Artists)
 			</p>
-			<p class="text-sm text-zinc-500 dark:text-zinc-400">{ releaseFacts(r) }</p>
+			<p class="font-mono text-xs text-fg-muted">{ releaseFacts(r) }</p>
 			@releaseActions(r)
 		</div>
 	</div>
@@ -228,9 +228,9 @@ templ albumView(r *audio.Release) {
 	for _, disc := range r.Discs() {
 		<section class="mb-8">
 			if len(r.Discs()) > 1 {
-				<h2 class="mb-2 text-lg font-semibold">Disc { fmt.Sprint(disc[0].Disc) }</h2>
+				<h2 class="mb-1 px-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Disc { fmt.Sprint(disc[0].Disc) }</h2>
 			}
-			<ol class="divide-y divide-zinc-200 dark:divide-zinc-800">
+			<ol class="flex flex-col">
 				for _, rt := range disc {
 					<li>
 						@releaseTrackRow(rt, r)
@@ -246,15 +246,15 @@ templ albumView(r *audio.Release) {
 // any others are B-sides.
 templ singleView(r *audio.Release) {
 	<div class="mb-10 flex flex-col gap-8 sm:flex-row sm:items-center">
-		<img class="pixelated size-64 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<img class="pixelated size-48 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-56" src={ r.ImgURL } alt=""/>
 		<div class="min-w-0">
-			<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Single</p>
-			<h1 class="text-4xl font-bold tracking-tight">{ r.Title }</h1>
+			<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Single</p>
+			<h1 class="text-2xl font-semibold tracking-tight">{ r.Title }</h1>
 			<p class="mt-1">
 				@artistLinks(r.Artists)
 			</p>
 			if r.Date != "" {
-				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ r.Date }</p>
+				<p class="text-sm text-fg-muted">{ r.Date }</p>
 			}
 			if len(r.Tracks) > 0 {
 				<p class="mt-1 text-sm">
@@ -262,7 +262,7 @@ templ singleView(r *audio.Release) {
 				</p>
 				<div class="mt-6 flex items-center gap-4" id="release-tracks" data-track-list data-track-row>
 					@playButton(r.Tracks[0].Track, "size-14 text-xl")
-					<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
+					<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(r.Tracks[0].Track.Duration) }</span>
 				</div>
 				for _, other := range r.Tracks[0].Track.Releases {
 					if other.ID != r.ID && !other.IsSingle() {
@@ -279,8 +279,8 @@ templ singleView(r *audio.Release) {
 		}
 	} else if len(r.Tracks) > 1 {
 		<section>
-			<h2 class="mb-2 text-lg font-semibold">Also on this single</h2>
-			<ol class="divide-y divide-zinc-200 dark:divide-zinc-800">
+			<h2 class="mb-1 px-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Also on this single</h2>
+			<ol class="flex flex-col">
 				for _, rt := range r.Tracks[1:] {
 					<li>
 						@releaseTrackRow(rt, r)
@@ -292,18 +292,18 @@ templ singleView(r *audio.Release) {
 }
 
 templ releaseTrackRow(rt *audio.ReleaseTrack, r *audio.Release) {
-	<div class={ "grid grid-cols-[2rem_auto_1fr_auto_auto] items-center gap-x-3 py-2", templ.KV("text-zinc-400 dark:text-zinc-500", !rt.Track.HasFile) } data-track-row>
-		<span class="text-right text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ fmt.Sprint(rt.Position) }</span>
-		@playButton(rt.Track, "size-9 text-sm")
+	<div class={ "grid min-h-11 grid-cols-[1.5rem_auto_1fr_auto_auto] items-center gap-x-3 rounded-md px-2 py-1 hover:bg-panel-2 min-[720px]:min-h-9", templ.KV("text-fg-subtle", !rt.Track.HasFile) } data-track-row>
+		<span class="text-right font-mono text-xs text-fg-muted tabular-nums">{ fmt.Sprint(rt.Position) }</span>
+		@playButton(rt.Track, "size-7")
 		<div class="min-w-0">
-			<span class="block truncate">{ rt.Track.Title }</span>
+			<span class="block truncate text-sm font-medium">{ rt.Track.Title }</span>
 			// only shown when they differ from the release's, e.g. features or compilations
 			if artistNames(rt.Track.Artists) != artistNames(r.Artists) {
-				<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(rt.Track.Artists) }</span>
+				<span class="block truncate text-xs text-fg-muted">{ artistNames(rt.Track.Artists) }</span>
 			}
 			@coverOfLine(rt.Track)
 		</div>
-		<span class="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{ formatDuration(rt.Track.Duration) }</span>
+		<span class="font-mono text-xs text-fg-muted tabular-nums">{ formatDuration(rt.Track.Duration) }</span>
 		@trackMenu(rt.Track)
 	</div>
 }
@@ -323,13 +323,13 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 			hx-target="#release-edit-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('release-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
-			<ol id="release-edit-rows" class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ol id="release-edit-rows" class="divide-y divide-line">
 				for _, rt := range r.Tracks {
 					@editRow(rt.Track.ID.String(), rt.Track.Title, artistNames(rt.Track.Artists), rt.Disc)
 				}
 			</ol>
-			<p class="py-4 text-sm text-zinc-500" data-edit-empty hidden?={ len(r.Tracks) > 0 }>No tracks on this release.</p>
-			<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+			<p class="py-4 text-sm text-fg-muted" data-edit-empty hidden?={ len(r.Tracks) > 0 }>No tracks on this release.</p>
+			<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
 				<label for="release-add-track" class="text-sm font-medium">Add from library</label>
 				<select id="release-add-track" class="input w-auto min-w-64 flex-1">
 					<option value="">Choose a track…</option>
@@ -343,7 +343,7 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 			</div>
 			<div class="mt-6 flex items-center gap-4">
 				<button type="submit" class="btn">Save tracklist</button>
-				<span id="release-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+				<span id="release-edit-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</form>
 		<template id="release-edit-row">
@@ -351,7 +351,7 @@ templ ReleaseEditPage(r *audio.Release, library []*audio.Track, artists []*audio
 		</template>
 		<section class="card mt-8">
 			<h2 class="mb-2 text-lg font-semibold">Remove release</h2>
-			<p class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Deletes the release and its tracks that aren't on another release, with their files. It moves to Ignored in the inbox.</p>
+			<p class="mb-4 text-sm text-fg-muted">Deletes the release and its tracks that aren't on another release, with their files. It moves to Ignored in the inbox.</p>
 			@removeReleaseButton(r)
 			<button
 				type="button"
@@ -405,7 +405,7 @@ templ releaseDetailsForm(r *audio.Release, artists []*audio.Artist) {
 		</div>
 		<div class="flex items-center gap-4">
 			<button class="btn" type="submit">Save details</button>
-			<span id="release-details-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			<span id="release-details-result" class="text-sm text-st-failed" aria-live="polite"></span>
 		</div>
 	</form>
 }
@@ -418,13 +418,13 @@ templ releaseCoverForm(r *audio.Release) {
 		hx-target="#release-cover-result"
 		hx-on::after-request="if (!event.detail.successful) document.getElementById('release-cover-result').textContent = event.detail.xhr.responseText || 'Could not upload the cover.'"
 	>
-		<img class="pixelated size-24 shrink-0 rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ r.ImgURL } alt=""/>
+		<img class="pixelated size-24 shrink-0 rounded bg-panel-2 object-cover" src={ r.ImgURL } alt=""/>
 		<div class="grid gap-2">
 			<label for="release-cover" class="text-sm font-medium">Cover (JPEG, PNG or WebP, up to 10 MiB)</label>
 			<input id="release-cover" type="file" name="cover" accept="image/jpeg,image/png,image/webp" required/>
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Upload cover</button>
-				<span id="release-cover-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+				<span id="release-cover-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</div>
 	</form>
@@ -443,14 +443,14 @@ func artistIDs(artists []*audio.Artist) []string {
 templ editRow(trackID, title, artists string, disc int) {
 	<li class="release-edit-row grid grid-cols-[2rem_5.5rem_1fr_auto] items-center gap-3 py-2">
 		<input type="hidden" name="track_id" value={ trackID }/>
-		<span class="text-right text-sm text-zinc-500 tabular-nums" data-number></span>
+		<span class="text-right text-sm text-fg-muted tabular-nums" data-number></span>
 		<label class="flex items-center gap-1 text-sm">
 			Disc
 			<input class="input w-14 px-2" type="number" name="disc" min="1" value={ fmt.Sprint(disc) } required/>
 		</label>
 		<div class="min-w-0">
 			<strong class="block truncate" data-title>{ title }</strong>
-			<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400" data-artists>{ artists }</span>
+			<span class="block truncate text-sm text-fg-muted" data-artists>{ artists }</span>
 		</div>
 		<div class="flex gap-1">
 			<button type="button" class="btn px-2.5" data-action="up" aria-label="Move up">↑</button>

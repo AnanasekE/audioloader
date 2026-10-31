@@ -73,7 +73,7 @@ templ MBArtistCandidates(found []MBArtistCandidate, searchErr string) {
 						if c.AddName != "" {
 							@addMBArtistButton(c, "Add as "+c.AddName)
 						} else {
-							<span class="shrink-0 text-zinc-500 dark:text-zinc-400">
+							<span class="shrink-0 text-fg-muted">
 								Name taken by <a class="underline" href={ artistURL(c.Library) }>{ c.Library.Name }</a>
 							</span>
 						}
@@ -85,9 +85,9 @@ templ MBArtistCandidates(found []MBArtistCandidate, searchErr string) {
 			}
 		}
 		if searchErr != "" {
-			<p class="text-sm text-red-600 dark:text-red-400">{ searchErr }</p>
+			<p class="text-sm text-st-failed">{ searchErr }</p>
 		} else if len(found) == 0 {
-			<p class="text-sm text-zinc-500">MusicBrainz found no artist with that name. Add it by name above.</p>
+			<p class="text-sm text-fg-muted">MusicBrainz found no artist with that name. Add it by name above.</p>
 		}
 		<div class="flex flex-wrap items-center gap-4">
 			<button
@@ -95,7 +95,7 @@ templ MBArtistCandidates(found []MBArtistCandidate, searchErr string) {
 				class="btn"
 				onclick="document.getElementById('mb-artist-results').innerHTML = ''"
 			>None of these</button>
-			<span data-link-result class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+			<span data-link-result class="text-sm text-st-failed empty:hidden" aria-live="polite"></span>
 		</div>
 	</div>
 }
@@ -122,7 +122,7 @@ templ MBArtistAdded(a *audio.Artist, m db.MBArtistMatch) {
 		}
 		<a class="btn" href={ artistURL(a) }>Open</a>
 		if a.Followed {
-			<span class="text-zinc-500 dark:text-zinc-400">Following</span>
+			<span class="text-fg-muted">Following</span>
 		} else {
 			<a class="btn" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>Follow</a>
 		}
@@ -151,25 +151,25 @@ templ AddArtistForm() {
 templ artistPicker(artists []*audio.Artist, selected []string) {
 	<details class="relative" data-artist-picker>
 		<summary class="input cursor-pointer list-none truncate" data-artist-summary>Select artists</summary>
-		<div class="absolute z-10 mt-1 w-full rounded-md border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+		<div class="absolute z-10 mt-1 w-full rounded-md border border-line bg-panel p-2 shadow-(--shadow-pop)">
 			// no name attribute: the search box is never submitted with the form
 			<input type="search" class="input mb-2" placeholder="Search artists…" aria-label="Search artists" autocomplete="off" data-artist-search/>
 			<div class="max-h-60 overflow-auto" data-artist-options>
 				for _, a := range artists {
-					<label class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
+					<label class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2">
 						<input type="checkbox" name="artist_id" value={ a.ID.String() } data-name={ a.Name } checked?={ slices.Contains(selected, a.ID.String()) }/>
 						{ a.Name }
 					</label>
 				}
 			</div>
-			<p class="px-1 py-1 text-sm text-zinc-500" hidden data-artist-empty>No matching artists.</p>
+			<p class="px-1 py-1 text-sm text-fg-muted" hidden data-artist-empty>No matching artists.</p>
 		</div>
 	</details>
 }
 
 templ Artist(a *audio.Artist) {
 	<article class="card flex flex-col items-center gap-2 px-2 py-4 text-center">
-		<img class="pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900" src={ a.ImgURL } alt=""/>
+		<img class="pixelated size-20 rounded-full bg-panel-2 object-cover" src={ a.ImgURL } alt=""/>
 		<a class="block max-w-full truncate" href={ artistURL(a) }>{ a.Name }</a>
 		<a class="text-sm" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
 		if !secretMode(ctx) {
@@ -217,10 +217,10 @@ templ artistLinks(artists []*audio.Artist) {
 templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Track, covers []*audio.Track, others []*audio.Artist, twitchOn bool, uploaders []string) {
 	@layout(a.Name, PageArtists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-			<img class="pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ a.ImgURL } alt=""/>
+			<img class="pixelated size-40 shrink-0 rounded-full bg-panel-2 object-cover" src={ a.ImgURL } alt=""/>
 			<div class="min-w-0">
-				<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Artist</p>
-				<h1 class="text-4xl font-bold tracking-tight">{ a.Name }</h1>
+				<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Artist</p>
+				<h1 class="text-2xl font-semibold tracking-tight">{ a.Name }</h1>
 				<p class="mt-1 text-sm">
 					if a.MBID != "" && !secretMode(ctx) {
 						<a href={ templ.SafeURL("https://musicbrainz.org/artist/" + a.MBID) } rel="noopener noreferrer">MusicBrainz</a>
@@ -305,7 +305,7 @@ templ artistImageForm(a *audio.Artist) {
 					hx-post={ "/ui/artists/" + a.ID.String() + "/image/remove" }
 					hx-confirm="Go back to the default picture?"
 				>Remove picture</button>
-				<span id="artist-image-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+				<span id="artist-image-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</form>
 	</details>
@@ -326,7 +326,7 @@ templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
 			<label for="artist-twitch" class="text-sm font-medium">Login or twitch.tv link (empty removes it)</label>
 			<input id="artist-twitch" class="input" type="text" name="twitch" value={ a.TwitchLogin } placeholder="e.g. cottontailva" maxlength="200"/>
 			if !twitchOn {
-				<p class="text-sm text-zinc-500 dark:text-zinc-400">
+				<p class="text-sm text-fg-muted">
 					Pictures can't be fetched: set <code>TWITCH_CLIENT_ID</code> and <code>TWITCH_CLIENT_SECRET</code>.
 				</p>
 			}
@@ -341,7 +341,7 @@ templ artistTwitchForm(a *audio.Artist, twitchOn bool) {
 						hx-confirm="Replace the picture with the channel's current one?"
 					>Update picture from Twitch</button>
 				}
-				<span id="artist-twitch-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+				<span id="artist-twitch-result" class="text-sm text-st-failed empty:hidden" aria-live="polite"></span>
 			</div>
 		</form>
 	</details>
@@ -382,7 +382,7 @@ templ artistManageForm(a *audio.Artist, others []*audio.Artist) {
 					<button class="btn shrink-0" type="submit">Merge</button>
 				</form>
 			}
-			<span id="artist-manage-result" class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+			<span id="artist-manage-result" class="text-sm text-st-failed empty:hidden" aria-live="polite"></span>
 		</div>
 	</details>
 }
@@ -396,7 +396,7 @@ templ artistCandidate(c mb.Artist) {
 		<div class="min-w-0 flex-1">
 			<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
 			if d := candidateDetails(c); d != "" {
-				<span class="text-zinc-500 dark:text-zinc-400">{ " " + d }</span>
+				<span class="text-fg-muted">{ " " + d }</span>
 			}
 			<button
 				type="button"
@@ -406,7 +406,7 @@ templ artistCandidate(c mb.Artist) {
 				hx-swap="innerHTML"
 				hx-disabled-elt="this"
 			>Expand</button>
-			<div class="candidate-releases text-zinc-600 dark:text-zinc-300" aria-live="polite"></div>
+			<div class="candidate-releases text-fg-muted" aria-live="polite"></div>
 		</div>
 	</div>
 }
@@ -414,16 +414,16 @@ templ artistCandidate(c mb.Artist) {
 // CandidateReleases is the answer to Expand: an artist's newest release groups.
 templ CandidateReleases(groups []mb.ReleaseGroup, failed bool) {
 	if failed {
-		<p class="text-red-600 dark:text-red-400">Couldn't load releases from MusicBrainz.</p>
+		<p class="text-st-failed">Couldn't load releases from MusicBrainz.</p>
 	} else if len(groups) == 0 {
-		<p class="text-zinc-500">No releases listed.</p>
+		<p class="text-fg-muted">No releases listed.</p>
 	} else {
 		<ul class="mt-1 list-disc pl-5">
 			for _, g := range groups {
 				<li>
 					{ g.Title }
 					if g.PrimaryType != "" || g.FirstReleaseDate != "" {
-						<span class="text-zinc-500 dark:text-zinc-400">{ " (" + joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) + ")" }</span>
+						<span class="text-fg-muted">{ " (" + joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) + ")" }</span>
 					}
 				</li>
 			}
@@ -521,9 +521,9 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 			}
 		}
 		if searchErr != "" {
-			<p class="text-sm text-red-600 dark:text-red-400">{ searchErr }</p>
+			<p class="text-sm text-st-failed">{ searchErr }</p>
 		} else if len(candidates) == 0 {
-			<p class="text-sm text-zinc-500">MusicBrainz found no artist with that name.</p>
+			<p class="text-sm text-fg-muted">MusicBrainz found no artist with that name.</p>
 		}
 		<form class="flex gap-2" hx-post={ "/ui/artists/" + a.ID.String() + "/link" }>
 			<input type="hidden" name="back" value={ back }/>
@@ -539,7 +539,7 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 				class="btn"
 				onclick="this.closest('[data-link-panel]').innerHTML = ''; this.closest('details')?.removeAttribute('open')"
 			>None of these</button>
-			<span data-link-result class="text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+			<span data-link-result class="text-sm text-st-failed empty:hidden" aria-live="polite"></span>
 		</div>
 	</div>
 }
@@ -563,7 +563,7 @@ templ ArtistLinkTaken(a *audio.Artist, other *audio.Artist) {
 			>
 				<input type="hidden" name="into" value={ other.ID.String() }/>
 				<button class="btn" type="submit">Merge into { other.Name }</button>
-				<span data-link-result class="ml-2 text-sm text-red-600 empty:hidden dark:text-red-400" aria-live="polite"></span>
+				<span data-link-result class="ml-2 text-sm text-st-failed empty:hidden" aria-live="polite"></span>
 			</form>
 		}
 	</div>

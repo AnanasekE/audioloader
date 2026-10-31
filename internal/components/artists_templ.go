@@ -205,7 +205,7 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 							return templ_7745c5c3_Err
 						}
 					} else {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"shrink-0 text-zinc-500 dark:text-zinc-400\">Name taken by <a class=\"underline\" href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"shrink-0 text-fg-muted\">Name taken by <a class=\"underline\" href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -255,14 +255,14 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 			}
 		}
 		if searchErr != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"text-sm text-red-600 dark:text-red-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"text-sm text-st-failed\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(searchErr)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 88, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 88, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -273,12 +273,12 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 				return templ_7745c5c3_Err
 			}
 		} else if len(found) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p class=\"text-sm text-zinc-500\">MusicBrainz found no artist with that name. Add it by name above.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p class=\"text-sm text-fg-muted\">MusicBrainz found no artist with that name. Add it by name above.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" onclick=\"document.getElementById('mb-artist-results').innerHTML = ''\">None of these</button> <span data-link-result class=\"text-sm text-red-600 empty:hidden dark:text-red-400\" aria-live=\"polite\"></span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" onclick=\"document.getElementById('mb-artist-results').innerHTML = ''\">None of these</button> <span data-link-result class=\"text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></span></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -441,7 +441,7 @@ func MBArtistAdded(a *audio.Artist, m db.MBArtistMatch) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if a.Followed {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<span class=\"text-zinc-500 dark:text-zinc-400\">Following</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<span class=\"text-fg-muted\">Following</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -524,12 +524,12 @@ func artistPicker(artists []*audio.Artist, selected []string) templ.Component {
 			templ_7745c5c3_Var21 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<details class=\"relative\" data-artist-picker><summary class=\"input cursor-pointer list-none truncate\" data-artist-summary>Select artists</summary><div class=\"absolute z-10 mt-1 w-full rounded-md border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800\"><input type=\"search\" class=\"input mb-2\" placeholder=\"Search artists…\" aria-label=\"Search artists\" autocomplete=\"off\" data-artist-search><div class=\"max-h-60 overflow-auto\" data-artist-options>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<details class=\"relative\" data-artist-picker><summary class=\"input cursor-pointer list-none truncate\" data-artist-summary>Select artists</summary><div class=\"absolute z-10 mt-1 w-full rounded-md border border-line bg-panel p-2 shadow-(--shadow-pop)\"><input type=\"search\" class=\"input mb-2\" placeholder=\"Search artists…\" aria-label=\"Search artists\" autocomplete=\"off\" data-artist-search><div class=\"max-h-60 overflow-auto\" data-artist-options>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, a := range artists {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<label class=\"flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700\"><input type=\"checkbox\" name=\"artist_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<label class=\"flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-panel-2\"><input type=\"checkbox\" name=\"artist_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -583,7 +583,7 @@ func artistPicker(artists []*audio.Artist, selected []string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><p class=\"px-1 py-1 text-sm text-zinc-500\" hidden data-artist-empty>No matching artists.</p></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><p class=\"px-1 py-1 text-sm text-fg-muted\" hidden data-artist-empty>No matching artists.</p></div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -612,14 +612,14 @@ func Artist(a *audio.Artist) templ.Component {
 			templ_7745c5c3_Var25 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<article class=\"card flex flex-col items-center gap-2 px-2 py-4 text-center\"><img class=\"pixelated size-20 rounded-full bg-white object-cover dark:bg-zinc-900\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<article class=\"card flex flex-col items-center gap-2 px-2 py-4 text-center\"><img class=\"pixelated size-20 rounded-full bg-panel-2 object-cover\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(a.ImgURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 172, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 172, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 		if templ_7745c5c3_Err != nil {
@@ -882,27 +882,27 @@ func ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Trac
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-40 shrink-0 rounded-full bg-zinc-100 object-cover shadow dark:bg-zinc-800\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"mb-8 flex flex-col gap-6 sm:flex-row sm:items-end\"><img class=\"pixelated size-40 shrink-0 rounded-full bg-panel-2 object-cover\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(a.ImgURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 220, Col: 119}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 220, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400\">Artist</p><h1 class=\"text-4xl font-bold tracking-tight\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\" alt=\"\"><div class=\"min-w-0\"><p class=\"text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase\">Artist</p><h1 class=\"text-2xl font-semibold tracking-tight\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(a.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 223, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 223, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {
@@ -1233,7 +1233,7 @@ func artistImageForm(a *audio.Artist) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\" hx-confirm=\"Go back to the default picture?\">Remove picture</button> <span id=\"artist-image-result\" class=\"text-sm text-red-600 dark:text-red-400\" aria-live=\"polite\"></span></div></form></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\" hx-confirm=\"Go back to the default picture?\">Remove picture</button> <span id=\"artist-image-result\" class=\"text-sm text-st-failed\" aria-live=\"polite\"></span></div></form></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1296,7 +1296,7 @@ func artistTwitchForm(a *audio.Artist, twitchOn bool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if !twitchOn {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<p class=\"text-sm text-zinc-500 dark:text-zinc-400\">Pictures can't be fetched: set <code>TWITCH_CLIENT_ID</code> and <code>TWITCH_CLIENT_SECRET</code>.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<p class=\"text-sm text-fg-muted\">Pictures can't be fetched: set <code>TWITCH_CLIENT_ID</code> and <code>TWITCH_CLIENT_SECRET</code>.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1324,7 +1324,7 @@ func artistTwitchForm(a *audio.Artist, twitchOn bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<span id=\"artist-twitch-result\" class=\"text-sm text-red-600 empty:hidden dark:text-red-400\" aria-live=\"polite\"></span></div></form></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<span id=\"artist-twitch-result\" class=\"text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></span></div></form></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1454,7 +1454,7 @@ func artistManageForm(a *audio.Artist, others []*audio.Artist) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<span id=\"artist-manage-result\" class=\"text-sm text-red-600 empty:hidden dark:text-red-400\" aria-live=\"polite\"></span></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<span id=\"artist-manage-result\" class=\"text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></span></div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1525,14 +1525,14 @@ func artistCandidate(c mb.Artist) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if d := candidateDetails(c); d != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span class=\"text-zinc-500 dark:text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span class=\"text-fg-muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var67 string
 			templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(" " + d)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 399, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 399, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 			if templ_7745c5c3_Err != nil {
@@ -1556,7 +1556,7 @@ func artistCandidate(c mb.Artist) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" hx-target=\"next .candidate-releases\" hx-swap=\"innerHTML\" hx-disabled-elt=\"this\">Expand</button><div class=\"candidate-releases text-zinc-600 dark:text-zinc-300\" aria-live=\"polite\"></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" hx-target=\"next .candidate-releases\" hx-swap=\"innerHTML\" hx-disabled-elt=\"this\">Expand</button><div class=\"candidate-releases text-fg-muted\" aria-live=\"polite\"></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1587,12 +1587,12 @@ func CandidateReleases(groups []mb.ReleaseGroup, failed bool) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if failed {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<p class=\"text-red-600 dark:text-red-400\">Couldn't load releases from MusicBrainz.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<p class=\"text-st-failed\">Couldn't load releases from MusicBrainz.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if len(groups) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<p class=\"text-zinc-500\">No releases listed.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<p class=\"text-fg-muted\">No releases listed.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1620,14 +1620,14 @@ func CandidateReleases(groups []mb.ReleaseGroup, failed bool) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if g.PrimaryType != "" || g.FirstReleaseDate != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<span class=\"text-zinc-500 dark:text-zinc-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<span class=\"text-fg-muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var71 string
 					templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(" (" + joinNonEmpty(", ", g.PrimaryType, g.FirstReleaseDate) + ")")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 426, Col: 121}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 426, Col: 102}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 					if templ_7745c5c3_Err != nil {
@@ -1860,14 +1860,14 @@ func ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr str
 			}
 		}
 		if searchErr != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<p class=\"text-sm text-red-600 dark:text-red-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<p class=\"text-sm text-st-failed\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var79 string
 			templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(searchErr)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 524, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 524, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 			if templ_7745c5c3_Err != nil {
@@ -1878,7 +1878,7 @@ func ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr str
 				return templ_7745c5c3_Err
 			}
 		} else if len(candidates) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<p class=\"text-sm text-zinc-500\">MusicBrainz found no artist with that name.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<p class=\"text-sm text-fg-muted\">MusicBrainz found no artist with that name.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1909,7 +1909,7 @@ func ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\"> <label class=\"sr-only\">MusicBrainz artist ID or URL <input class=\"input flex-1\" type=\"text\" name=\"mbid_manual\" placeholder=\"Or paste https://musicbrainz.org/artist/…\" required></label> <button class=\"btn shrink-0\" type=\"submit\">Use</button></form><div class=\"flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" onclick=\"this.closest('[data-link-panel]').innerHTML = ''; this.closest('details')?.removeAttribute('open')\">None of these</button> <span data-link-result class=\"text-sm text-red-600 empty:hidden dark:text-red-400\" aria-live=\"polite\"></span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\"> <label class=\"sr-only\">MusicBrainz artist ID or URL <input class=\"input flex-1\" type=\"text\" name=\"mbid_manual\" placeholder=\"Or paste https://musicbrainz.org/artist/…\" required></label> <button class=\"btn shrink-0\" type=\"submit\">Use</button></form><div class=\"flex flex-wrap items-center gap-4\"><button type=\"button\" class=\"btn\" onclick=\"this.closest('[data-link-panel]').innerHTML = ''; this.closest('details')?.removeAttribute('open')\">None of these</button> <span data-link-result class=\"text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></span></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2041,7 +2041,7 @@ func ArtistLinkTaken(a *audio.Artist, other *audio.Artist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</button> <span data-link-result class=\"ml-2 text-sm text-red-600 empty:hidden dark:text-red-400\" aria-live=\"polite\"></span></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</button> <span data-link-result class=\"ml-2 text-sm text-st-failed empty:hidden\" aria-live=\"polite\"></span></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

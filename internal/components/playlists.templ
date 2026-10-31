@@ -21,7 +21,7 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 			<label for="playlist-name" class="sr-only">Name</label>
 			<input id="playlist-name" class="input flex-1" type="text" name="name" placeholder="New playlist name" required/>
 			<button class="btn" type="submit">Create playlist</button>
-			<span id="playlist-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+			<span id="playlist-result" class="text-sm text-st-failed" aria-live="polite"></span>
 		</form>
 		if len(playlists) == 0 {
 			@emptyState() {
@@ -31,9 +31,9 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 			<div class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
 				for _, p := range playlists {
 					<a class="card block hover:no-underline" href={ playlistURL(p) }>
-						<img class="pixelated mb-2 aspect-square w-full rounded bg-zinc-100 object-cover dark:bg-zinc-800" src={ p.ImgURL } alt=""/>
-						<strong class="block truncate text-zinc-900 dark:text-zinc-100">{ p.Name }</strong>
-						<span class="text-sm text-zinc-500 dark:text-zinc-400">{ plural(p.Count, "track") }</span>
+						<img class="pixelated mb-2 aspect-square w-full rounded bg-panel-2 object-cover" src={ p.ImgURL } alt=""/>
+						<strong class="block truncate text-fg">{ p.Name }</strong>
+						<span class="font-mono text-xs text-fg-muted">{ plural(p.Count, "track") }</span>
 					</a>
 				}
 			</div>
@@ -44,17 +44,17 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 templ PlaylistPage(p *audio.Playlist) {
 	@layout(p.Name, PagePlaylists) {
 		<div class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
-			<img class="pixelated size-48 shrink-0 rounded-lg bg-zinc-100 object-cover shadow dark:bg-zinc-800" src={ p.ImgURL } alt=""/>
+			<img class="pixelated size-40 shrink-0 rounded-lg bg-panel-2 object-cover min-[720px]:size-48" src={ p.ImgURL } alt=""/>
 			<div class="min-w-0">
-				<p class="text-sm font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Playlist</p>
-				<h1 class="text-4xl font-bold tracking-tight">{ p.Name }</h1>
-				<p class="text-sm text-zinc-500 dark:text-zinc-400">{ plural(p.Count, "track") } · { formatLongDuration(p.Duration) }</p>
+				<p class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Playlist</p>
+				<h1 class="text-2xl font-semibold tracking-tight">{ p.Name }</h1>
+				<p class="text-sm text-fg-muted">{ plural(p.Count, "track") } · { formatLongDuration(p.Duration) }</p>
 				<div class="mt-4 flex flex-wrap gap-2">
 					if p.Count > 0 {
 						<button type="button" class="btn" data-play-list="playlist-tracks">Play</button>
-						<button type="button" class="btn" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
+						<button type="button" class="btn btn-ghost" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
 					}
-					<a class="btn" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
+					<a class="btn btn-ghost" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
 				</div>
 			</div>
 		</div>
@@ -63,7 +63,7 @@ templ PlaylistPage(p *audio.Playlist) {
 				Empty. Add tracks from a track's ⋯ menu.
 			}
 		} else {
-			<ol id="playlist-tracks" class="divide-y divide-zinc-200 dark:divide-zinc-800" data-track-list>
+			<ol id="playlist-tracks" class="flex flex-col" data-track-list>
 				for _, t := range p.Tracks {
 					<li>
 						@Track(t)
@@ -96,14 +96,14 @@ templ PlaylistEditPage(p *audio.Playlist) {
 			hx-target="#playlist-edit-result"
 			hx-on::after-request="if (!event.detail.successful) document.getElementById('playlist-edit-result').textContent = event.detail.xhr.responseText || 'Could not save.'"
 		>
-			<ol id="playlist-edit-rows" class="divide-y divide-zinc-200 dark:divide-zinc-700">
+			<ol id="playlist-edit-rows" class="divide-y divide-line">
 				for _, t := range p.Tracks {
 					<li class="playlist-edit-row grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-2">
 						<input type="hidden" name="track_id" value={ t.ID.String() }/>
-						<span class="text-right text-sm text-zinc-500 tabular-nums" data-number></span>
+						<span class="text-right text-sm text-fg-muted tabular-nums" data-number></span>
 						<div class="min-w-0">
 							<strong class="block truncate">{ t.Title }</strong>
-							<span class="block truncate text-sm text-zinc-500 dark:text-zinc-400">{ artistNames(t.Artists) }</span>
+							<span class="block truncate text-sm text-fg-muted">{ artistNames(t.Artists) }</span>
 						</div>
 						<div class="flex gap-1">
 							<button type="button" class="btn px-2.5" data-action="up" aria-label="Move up">↑</button>
@@ -113,10 +113,10 @@ templ PlaylistEditPage(p *audio.Playlist) {
 					</li>
 				}
 			</ol>
-			<p class="py-4 text-sm text-zinc-500" data-edit-empty hidden?={ len(p.Tracks) > 0 }>No tracks.</p>
+			<p class="py-4 text-sm text-fg-muted" data-edit-empty hidden?={ len(p.Tracks) > 0 }>No tracks.</p>
 			<div class="mt-6 flex items-center gap-4">
 				<button type="submit" class="btn">Save order</button>
-				<span id="playlist-edit-result" class="text-sm text-red-600 dark:text-red-400" aria-live="polite"></span>
+				<span id="playlist-edit-result" class="text-sm text-st-failed" aria-live="polite"></span>
 			</div>
 		</form>
 		<section class="card mt-8">
@@ -133,14 +133,14 @@ templ PlaylistEditPage(p *audio.Playlist) {
 
 // PlaylistPicker lists playlists to add a track to, inside a track's menu.
 templ PlaylistPicker(trackID string, playlists []*audio.Playlist) {
-	<div class="mt-1 grid border-t border-zinc-200 pt-1 dark:border-zinc-700">
+	<div class="mt-1 grid border-t border-line pt-1">
 		if len(playlists) == 0 {
 			<a class="px-2 py-1" href="/playlists">Create a playlist first</a>
 		}
 		for _, p := range playlists {
 			<button
 				type="button"
-				class="truncate rounded px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700"
+				class="truncate rounded px-2 py-1 text-left hover:bg-panel-2"
 				hx-post={ "/ui/playlists/" + p.ID.String() + "/tracks/add" }
 				hx-vals={ fmt.Sprintf(`{"track_id": %q}`, trackID) }
 				hx-swap="outerHTML"
