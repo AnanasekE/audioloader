@@ -27,6 +27,8 @@ Optional / Future
 
 All optional; set as environment variables.
 
+Copy `.env.example` to `.env` and uncomment what you need.
+
 | Variable | What it does |
 |---|---|
 | `AUDIOLOADER_ADDR` | Address to listen on, default `:8080`. |
