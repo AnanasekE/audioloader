@@ -353,6 +353,21 @@ func TestParent(t *testing.T) {
 	}
 }
 
+func TestUploader(t *testing.T) {
+	_, s := newFake(t)
+	for in, want := range map[string]string{
+		"https://pages.example.test/items/someone/a-slug":        "someone",
+		"https://pages.example.test/items/someone":               "items",
+		"https://pages.example.test/items":                       "",
+		"https://pages.example.test/items/Some%20One%C3%A9/slug": "Some Oneé",
+		"https://evil.example.test/items/someone/a":              "",
+	} {
+		if got := s.Uploader(in); got != want {
+			t.Errorf("Uploader(%q) = %q; want %q", in, got, want)
+		}
+	}
+}
+
 func TestLookListsTheLinksOneLevelBelow(t *testing.T) {
 	f, s := newFake(t)
 	listURL := f.Page("/items/someone", `<html><head><title>someone</title></head><body>

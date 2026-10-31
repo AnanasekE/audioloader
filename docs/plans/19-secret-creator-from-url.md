@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] 1. Suggest a creator for a page URL
+- [x] 1. Suggest a creator for a page URL
 - [ ] 2. Pre-fill it in the form
 - [ ] 3. Docs
 

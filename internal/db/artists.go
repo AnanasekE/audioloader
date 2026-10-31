@@ -50,6 +50,38 @@ func GetArtist(v Viewer, id string) (*audio.Artist, error) {
 	return &a, err
 }
 
+// CreatorForUploader suggests the artist v can see for an uploader. First one
+// with a track whose source URL lies directly under parentPage (the one with
+// the most such tracks), else one named name, ignoring case. It returns nil
+// when neither matches.
+func CreatorForUploader(v Viewer, parentPage, name string) (*audio.Artist, error) {
+	var id string
+	if parentPage != "" {
+		prefix := strings.TrimSuffix(parentPage, "/") + "/"
+		err := DB.QueryRow(`
+			SELECT m.artist_id FROM tracks t
+			JOIN track_artist_map m ON m.track_id = t.uuid
+			JOIN artists a ON a.uuid = m.artist_id
+			WHERE substr(t.source_url, 1, ?) = ? AND instr(substr(t.source_url, ?), '/') = 0
+				AND substr(t.source_url, ?) != '' AND `+v.trackCond("t")+` AND `+v.artistCond("a")+`
+			GROUP BY m.artist_id ORDER BY COUNT(*) DESC, a.name COLLATE NOCASE
+			LIMIT 1;`, len(prefix), prefix, len(prefix)+1, len(prefix)+1).Scan(&id)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	}
+	if id == "" && strings.TrimSpace(name) != "" {
+		err := DB.QueryRow(`SELECT a.uuid FROM artists a WHERE lower(a.name) = lower(?) AND `+v.artistCond("a")+`;`, strings.TrimSpace(name)).Scan(&id)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	}
+	if id == "" {
+		return nil, nil
+	}
+	return GetArtist(v, id)
+}
+
 // AddArtist creates an artist. One made in secret mode stays hidden from
 // normal mode until it has a track. If the name belongs to an artist v can't
 // see, that artist is returned as if it had just been created: it is then

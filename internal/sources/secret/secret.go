@@ -174,6 +174,25 @@ func (s *Source) Parent(pageURL string) string {
 	return "https://" + s.Host + dir
 }
 
+// Uploader is the name of the uploader of a page: the unescaped last path
+// segment of Parent(pageURL), or "" if there's none. It comes from the
+// address only, never from the page's text.
+func (s *Source) Uploader(pageURL string) string {
+	parent := s.Parent(pageURL)
+	if parent == "" {
+		return ""
+	}
+	u, err := url.Parse(parent)
+	if err != nil {
+		return ""
+	}
+	name, err := url.PathUnescape(path.Base(u.EscapedPath()))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(name)
+}
+
 // client is the base client with a redirect policy that keeps every hop on
 // an allowed host over https.
 func (s *Source) client() *http.Client {
