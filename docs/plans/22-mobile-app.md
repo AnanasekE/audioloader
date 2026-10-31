@@ -8,7 +8,7 @@
 
 - [x] 1. Project skeleton and server setup screen
 - [x] 2. API client and mode
-- [ ] 3. Library screens
+- [x] 3. Library screens
 - [ ] 4. Player, queue and background audio
 - [ ] 5. Episode positions
 - [ ] 6. Secret mode in the app
