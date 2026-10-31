@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–24 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–25 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -31,6 +31,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 22 | [Mobile app](22-mobile-app.md) | Expo app for iOS and Android: browse, play, queue, background audio, secret mode |
 | 23 | [Add songs from a MusicBrainz link](23-add-from-musicbrainz-url.md) | Paste a MusicBrainz release or recording link on the Add page to list its tracks; add one or all |
 | 24 | [Queue panel](24-queue-panel.md) | On wide screens the queue is always shown on the right (now playing, up next, chapters) |
+| 25 | [Icons](25-icons.md) | Tab and header icons and an app icon on mobile; sidebar icons and a home-screen icon on the web |
 
 ## Rules for every plan
 

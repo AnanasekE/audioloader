@@ -146,6 +146,8 @@
 - Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, More; in secret mode Tracks, Tags, Creators) and a More sheet for Playlists, Podcasts, Tagging and Downloads
 - Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
 - Vault button in the sidebar and the phone top strip (when a vault is configured); in secret mode the same place has Lock
+- Icons next to every sidebar link, the Upload button, the phone tab bar and the More sheet, one icon per page
+- Home-screen icon and web app manifest (Safari "Add to Home Screen", standalone, start page `/tracks`)
 - Player with a play button, seek bar and elapsed/remaining time
 
 ### Tooling
@@ -153,6 +155,7 @@
 - Tailwind via the standalone CLI (no Node)
 - air live reload with browser refresh; Makefile (`build`, `css`, `css-watch`, `dev`)
 - Favicon and default track/artist images
+- `tools/make-icons.sh` regenerates the web and mobile app icons from `assets/img/favicon.png`
 - SQLite foreign keys enforced
 - Versioned migrations (`PRAGMA user_version`), DB tests (`go test ./...`)
 - JSON API for the mobile app (read-only, both modes) under `/api/v1/`, with the same visibility rules as the pages; see `docs/api.md`

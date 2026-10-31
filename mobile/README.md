@@ -36,6 +36,10 @@ Long-press a track for "Play next" and "Add to end of queue". The full-screen pl
 
 Episodes resume at their saved position and save it every 15 s, on pause, on switching track and at the end (`POST /api/tracks/{id}/position`), with the web player's rule: within 30 s of the end counts as finished.
 
+## Icons
+
+Tab and header icons are Ionicons from `@expo/vector-icons`. The app, splash, favicon and Android adaptive icons in `assets/images` are generated from `assets/img/favicon.png` by `tools/make-icons.sh` (needs ImageMagick); rerun it after changing the favicon.
+
 ## Known limits and not done
 
 - Lock-screen artwork cannot send the vault cookie, so it shows in normal mode only.

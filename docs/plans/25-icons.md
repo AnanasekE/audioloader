@@ -8,7 +8,7 @@
 
 - [x] 1. App icon images
 - [x] 2. Web: sidebar icons and home-screen icon
-- [ ] 3. Mobile: tab and header icons, app icon
+- [x] 3. Mobile: tab and header icons, app icon
 
 ## Rules
 
