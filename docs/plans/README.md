@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–21 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–21 and 23 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -28,6 +28,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 19 | [Creator from the secret source URL](19-secret-creator-from-url.md) | The Download from URL form suggests the creator from the uploader in the address |
 | 20 | [Share to the secret source](20-share-to-secret-source.md) | Share a page from iOS (Shortcut) to queue it as a secret track (REQUESTS.md) |
 | 21 | [JSON API](21-json-api.md) | Read-only JSON endpoints for the mobile app (`docs/api.md`) |
+| 23 | [Add songs from a MusicBrainz link](23-add-from-musicbrainz-url.md) | Paste a MusicBrainz release or recording link on the Add page to list its tracks; add one or all |
 
 ## Rules for every plan
 
