@@ -37,7 +37,7 @@ templ layout(title string, active string) {
 		// data-mode switches the accent color (styles/input.css) and tells
 		// player.js which mode its saved state belongs to
 		<body hx-boost="true" data-mode={ modeName(ctx) }>
-			<div class="min-[720px]:grid min-[720px]:grid-cols-[232px_minmax(0,1fr)]">
+			<div class="min-[720px]:grid min-[720px]:grid-cols-[232px_minmax(0,1fr)] min-[1200px]:grid-cols-[232px_minmax(0,1fr)_300px]">
 				@sidebar(active)
 				<div class="min-w-0">
 					@topStrip()
@@ -45,6 +45,7 @@ templ layout(title string, active string) {
 						{ children... }
 					</main>
 				</div>
+				@queuePanel()
 			</div>
 			@tabBar(active)
 			@moreSheet(active)
@@ -68,7 +69,7 @@ templ player() {
 				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">▶</button>
 				<button id="player-next" type="button" class="flex size-11 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 min-[720px]:size-9" aria-label="Next track">⏭</button>
 			</div>
-			<details id="player-queue" class="relative shrink-0 min-[720px]:order-3">
+			<details id="player-queue" class="relative shrink-0 min-[720px]:order-3 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">☰</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
@@ -100,6 +101,36 @@ templ player() {
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
+}
+
+// queuePanel is the queue column from 1200px up; player.js fills it. Like
+// the player it is hx-preserve'd, so page swaps keep it and its scroll position.
+templ queuePanel() {
+	<aside id="queue-panel" hx-preserve class="hidden flex-col gap-4 border-l border-line bg-panel p-3 pb-20 text-sm min-[1200px]:sticky min-[1200px]:top-0 min-[1200px]:flex min-[1200px]:h-dvh min-[1200px]:overflow-y-auto" aria-label="Queue">
+		<section>
+			<strong class="mb-2 block text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Now playing</strong>
+			<p data-now-empty class="text-fg-muted">Nothing playing.</p>
+			<div data-now class="flex items-center gap-3" hidden>
+				<img data-now-cover class="pixelated size-16 shrink-0 rounded-sm bg-panel-2 object-cover" alt=""/>
+				<div class="min-w-0">
+					<strong data-now-title class="block truncate font-semibold"></strong>
+					<span data-now-artists class="block truncate text-xs text-fg-muted"></span>
+				</div>
+			</div>
+		</section>
+		<section>
+			<div class="mb-1 flex items-center justify-between">
+				<strong class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Up next</strong>
+				<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+			</div>
+			<ol data-queue-list></ol>
+			<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
+		</section>
+		<section data-chapter-box hidden>
+			<strong class="mb-1 block text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Chapters</strong>
+			<ol data-chapter-list></ol>
+		</section>
+	</aside>
 }
 
 templ sidebar(active string) {

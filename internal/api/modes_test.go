@@ -647,6 +647,16 @@ func countJobs(typ string) (n int) {
 	return n
 }
 
+func TestQueuePanelInLayout(t *testing.T) {
+	a := newModeApp(t)
+	for _, secret := range []bool{false, true} {
+		body := a.do(secret, "GET", "/tracks", nil).Body.String()
+		if !strings.Contains(body, `<aside id="queue-panel" hx-preserve`) {
+			t.Errorf("secret=%v: no preserved #queue-panel in the layout", secret)
+		}
+	}
+}
+
 func TestVaultButton(t *testing.T) {
 	a := newModeApp(t)
 	if body := a.do(false, "GET", "/tracks", nil).Body.String(); !strings.Contains(body, `href="/vault"`) {

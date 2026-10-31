@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. The panel in the layout
+- [x] 1. The panel in the layout
 - [ ] 2. Render the queue into it
 - [ ] 3. Docs
 
