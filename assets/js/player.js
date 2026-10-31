@@ -22,13 +22,12 @@
 	const timeEl = document.getElementById("player-time");
 	const remainingEl = document.getElementById("player-remaining");
 	const shuffleBtn = document.getElementById("player-shuffle");
-	const queueList = document.getElementById("player-queue-list");
-	const queueEmpty = document.getElementById("player-queue-empty");
 	const episodeControls = document.getElementById("player-episode-controls");
 	const speed = document.getElementById("player-speed");
 	const chapterLabel = document.getElementById("player-chapter");
-	const chaptersBox = document.getElementById("player-chapters-box");
-	const chapterList = document.getElementById("player-chapters");
+	// the queue shows in the popover and in the side panel (layout.templ); both
+	// are filled from the same state, found by these attributes
+	const all = (attr) => document.querySelectorAll(`[${attr}]`);
 
 	let current = null; // {id, title, artists, img, src, kind?, show?, position?}
 	let chapters = []; // [{start (s), title}] of the current episode
@@ -69,6 +68,7 @@
 		current = track;
 		root.hidden = false;
 		cover.src = track.img;
+		renderNow();
 		title.textContent = track.title;
 		artists.textContent = track.coverOf ? `${track.artists} · cover of ${track.coverOf}` : track.artists;
 		if ("mediaSession" in navigator) {
@@ -109,6 +109,7 @@
 		audio.removeAttribute("src");
 		audio.load();
 		markRows();
+		renderNow();
 		renderQueue();
 		save();
 	}
@@ -200,29 +201,51 @@
 		save();
 	}
 
+	// playAt jumps to the track at play position p, after the current one:
+	// those in between stay behind in the history
+	function playAt(p) {
+		if (p <= pos || p >= order.length) return;
+		pos = p;
+		load(queue[order[pos]]);
+	}
+
 	function renderQueue() {
-		queueList.replaceChildren();
 		const upcoming = order.slice(pos + 1);
-		queueEmpty.hidden = upcoming.length > 0;
-		upcoming.forEach((qi, k) => {
-			const t = queue[qi];
-			const li = document.createElement("li");
-			li.className = "flex items-center gap-2 py-1";
-			const name = document.createElement("span");
-			name.className = "min-w-0 flex-1 truncate";
-			name.textContent = t.title;
-			name.title = `${t.title} · ${t.artists}`;
-			const rm = document.createElement("button");
-			rm.type = "button";
-			rm.className = "text-xs text-fg-muted hover:text-fg";
-			rm.textContent = "✕";
-			rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
-			rm.addEventListener("click", () => removeUpcoming(pos + 1 + k));
-			li.append(name, rm);
-			queueList.append(li);
+		all("data-queue-empty").forEach((el) => (el.hidden = upcoming.length > 0));
+		all("data-queue-list").forEach((list) => {
+			list.replaceChildren();
+			upcoming.forEach((qi, k) => {
+				const t = queue[qi];
+				const li = document.createElement("li");
+				li.className = "flex items-center gap-2";
+				const name = document.createElement("button");
+				name.type = "button";
+				name.className = "min-w-0 flex-1 truncate py-1 text-left hover:text-accent";
+				name.textContent = t.title;
+				name.title = `${t.title} · ${t.artists}`;
+				name.addEventListener("click", () => playAt(pos + 1 + k));
+				const rm = document.createElement("button");
+				rm.type = "button";
+				rm.className = "text-xs text-fg-muted hover:text-fg";
+				rm.textContent = "✕";
+				rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
+				rm.addEventListener("click", () => removeUpcoming(pos + 1 + k));
+				li.append(name, rm);
+				list.append(li);
+			});
 		});
 		document.getElementById("player-prev").disabled = !current;
 		document.getElementById("player-next").disabled = pos + 1 >= order.length;
+	}
+
+	// renderNow fills the "now playing" part of the side panel
+	function renderNow() {
+		all("data-now-empty").forEach((el) => (el.hidden = Boolean(current)));
+		all("data-now").forEach((el) => (el.hidden = !current));
+		if (!current) return;
+		all("data-now-cover").forEach((el) => (el.src = current.img));
+		all("data-now-title").forEach((el) => (el.textContent = current.title));
+		all("data-now-artists").forEach((el) => (el.textContent = current.coverOf ? `${current.artists} · cover of ${current.coverOf}` : current.artists));
 	}
 
 	function markRows() {
@@ -277,21 +300,23 @@
 	}
 
 	function renderChapters() {
-		chapterList.replaceChildren();
-		chaptersBox.hidden = chapters.length === 0;
+		all("data-chapter-box").forEach((el) => (el.hidden = chapters.length === 0));
 		chapterLabel.hidden = chapters.length === 0;
-		chapters.forEach((c) => {
-			const li = document.createElement("li");
-			const b = document.createElement("button");
-			b.type = "button";
-			b.className = "w-full truncate rounded px-1 py-0.5 text-left hover:bg-panel-2";
-			b.textContent = c.title || "Chapter";
-			b.addEventListener("click", () => {
-				audio.currentTime = c.start;
-				audio.play().catch(() => {});
+		all("data-chapter-list").forEach((list) => {
+			list.replaceChildren();
+			chapters.forEach((c) => {
+				const li = document.createElement("li");
+				const b = document.createElement("button");
+				b.type = "button";
+				b.className = "w-full truncate rounded px-1 py-0.5 text-left hover:bg-panel-2";
+				b.textContent = c.title || "Chapter";
+				b.addEventListener("click", () => {
+					audio.currentTime = c.start;
+					audio.play().catch(() => {});
+				});
+				li.append(b);
+				list.append(li);
 			});
-			li.append(b);
-			chapterList.append(li);
 		});
 		updateChapter();
 	}
@@ -301,7 +326,7 @@
 		let i = 0;
 		while (i + 1 < chapters.length && chapters[i + 1].start <= audio.currentTime) i++;
 		chapterLabel.textContent = chapters[i].title;
-		chapterList.querySelectorAll("button").forEach((b, j) => b.classList.toggle("font-semibold", j === i));
+		all("data-chapter-list").forEach((list) => list.querySelectorAll("button").forEach((b, j) => b.classList.toggle("font-semibold", j === i)));
 	}
 
 	// savePosition sends an episode's position to the server. Within 30 s of
@@ -373,12 +398,14 @@
 	document.getElementById("player-prev").addEventListener("click", prev);
 	document.getElementById("player-next").addEventListener("click", next);
 	shuffleBtn.addEventListener("click", toggleShuffle);
-	document.getElementById("player-queue-clear").addEventListener("click", () => {
-		// keep the current track, drop what's after it
-		order = order.slice(0, pos + 1);
-		renderQueue();
-		save();
-	});
+	all("data-queue-clear").forEach((btn) =>
+		btn.addEventListener("click", () => {
+			// keep the current track, drop what's after it
+			order = order.slice(0, pos + 1);
+			renderQueue();
+			save();
+		}),
+	);
 
 	// --- play button, seek bar and times ---------------------------------
 
@@ -484,7 +511,7 @@
 		if ("mediaSession" in navigator) navigator.mediaSession.metadata = null;
 	}
 
-	window.player = { playList, enqueue, playNext, next, prev, toggleShuffle, clear, reset };
+	window.player = { playList, enqueue, playNext, playAt, next, prev, toggleShuffle, clear, reset };
 
 	// a page of one mode must not resume what the other mode played: not
 	// playing, not queued, not in storage

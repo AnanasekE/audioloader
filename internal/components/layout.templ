@@ -74,13 +74,13 @@ templ player() {
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
 						<strong>Up next</strong>
-						<button id="player-queue-clear" type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+						<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
 					</div>
-					<ol id="player-queue-list" class="max-h-72 overflow-auto"></ol>
-					<p id="player-queue-empty" class="py-1 text-fg-muted">Nothing queued.</p>
-					<div id="player-chapters-box" class="mt-2 border-t border-line pt-2" hidden>
+					<ol data-queue-list class="max-h-72 overflow-auto"></ol>
+					<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
+					<div data-chapter-box class="mt-2 border-t border-line pt-2" hidden>
 						<strong>Chapters</strong>
-						<ol id="player-chapters" class="max-h-60 overflow-auto"></ol>
+						<ol data-chapter-list class="max-h-60 overflow-auto"></ol>
 					</div>
 				</div>
 			</details>
