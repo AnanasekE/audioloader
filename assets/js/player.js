@@ -25,12 +25,6 @@
 	const episodeControls = document.getElementById("player-episode-controls");
 	const speed = document.getElementById("player-speed");
 	const chapterLabel = document.getElementById("player-chapter");
-	const sleepEl = document.getElementById("player-sleep");
-	const sleepSummary = sleepEl.querySelector("summary");
-	const sleepLabel = document.getElementById("player-sleep-label");
-	const sleepStatus = document.getElementById("player-sleep-status");
-	const sleepExtra = document.getElementById("player-sleep-extra");
-	const sleepTrackBtn = document.getElementById("player-sleep-track");
 	// the queue shows in the popover and in the side panel (layout.templ); both
 	// are filled from the same state, found by these attributes
 	const all = (attr) => document.querySelectorAll(`[${attr}]`);
@@ -284,9 +278,7 @@
 	function setupEpisode(track) {
 		const episode = isEpisode(track);
 		episodeControls.hidden = !episode;
-		// the sleep button is always there on episodes, and from 720px up on music
-		sleepEl.classList.toggle("hidden", !episode);
-		sleepTrackBtn.textContent = episode ? "End of this episode" : "End of this track";
+		all("data-sleep-track").forEach((b) => (b.textContent = episode ? "End of this episode" : "End of this track"));
 		syncSleep();
 		chapters = [];
 		renderChapters();
@@ -438,14 +430,20 @@
 		const on = timer.active();
 		const mins = timer.minutesLeft(now);
 		const text = timer.endOfTrack() ? "End" : mins === null ? "" : `${mins}m`;
-		sleepLabel.hidden = !on;
-		sleepLabel.textContent = text;
-		sleepSummary.classList.toggle("text-accent", on);
-		sleepSummary.classList.toggle("text-fg-muted", !on);
-		sleepSummary.setAttribute("aria-label", on ? `Sleep timer: ${timer.endOfTrack() ? "stops at the end of the track" : `${mins} minutes left`}` : "Sleep timer");
-		sleepStatus.textContent = !on ? "Off" : timer.endOfTrack() ? `Pauses when this ${isEpisode(current) ? "episode" : "track"} ends` : `Pauses in ${mins} min`;
-		sleepExtra.hidden = !on;
-		sleepExtra.querySelector('[data-sleep="extend"]').hidden = timer.endOfTrack();
+		const status = !on ? "Off" : timer.endOfTrack() ? `Pauses when this ${isEpisode(current) ? "episode" : "track"} ends` : `Pauses in ${mins} min`;
+		const aria = on ? `Sleep timer: ${timer.endOfTrack() ? "stops at the end of the track" : `${mins} minutes left`}` : "Sleep timer";
+		// the button is drawn once per spot (layout.templ); keep every copy the same
+		all("data-sleep-label").forEach((el) => ((el.hidden = !on), (el.textContent = text)));
+		all("data-sleep-summary").forEach((el) => {
+			el.classList.toggle("text-accent", on);
+			el.classList.toggle("text-fg-muted", !on);
+			el.setAttribute("aria-label", aria);
+		});
+		all("data-sleep-status").forEach((el) => (el.textContent = status));
+		all("data-sleep-extra").forEach((el) => {
+			el.hidden = !on;
+			el.querySelector('[data-sleep="extend"]').hidden = timer.endOfTrack();
+		});
 	}
 
 	// endFade puts the volume back to where it was
@@ -482,24 +480,26 @@
 		syncSleep();
 	}
 
-	sleepSummary.addEventListener("click", () => {
-		// the first click with no timer starts the default one; the menu opens as usual
-		if (!timer.active() && !sleepEl.open) {
-			timer.start(window.sleepTimer.DEFAULT_MINUTES, Date.now());
+	all("data-sleep-box").forEach((box) => {
+		box.querySelector("summary").addEventListener("click", () => {
+			// the first click with no timer starts the default one; the menu opens as usual
+			if (!timer.active() && !box.open) {
+				timer.start(window.sleepTimer.DEFAULT_MINUTES, Date.now());
+				sleepChanged();
+			}
+		});
+		box.addEventListener("click", (e) => {
+			const b = e.target.closest("[data-sleep]");
+			if (!b) return;
+			const what = b.dataset.sleep;
+			if (what === "off") {
+				timer.cancel();
+				box.open = false;
+			} else if (what === "extend") timer.extend(15, Date.now());
+			else if (what === "track") timer.startEndOfTrack();
+			else timer.start(Number(what), Date.now());
 			sleepChanged();
-		}
-	});
-	sleepEl.addEventListener("click", (e) => {
-		const b = e.target.closest("[data-sleep]");
-		if (!b) return;
-		const what = b.dataset.sleep;
-		if (what === "off") {
-			timer.cancel();
-			sleepEl.open = false;
-		} else if (what === "extend") timer.extend(15, Date.now());
-		else if (what === "track") timer.startEndOfTrack();
-		else timer.start(Number(what), Date.now());
-		sleepChanged();
+		});
 	});
 	setInterval(sleepTick, 1000);
 

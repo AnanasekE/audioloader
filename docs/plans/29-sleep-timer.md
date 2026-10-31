@@ -18,7 +18,7 @@ As in plan 19 for the web; for `mobile/`, `npx tsc --noEmit` and `npx jest` pass
 
 - **Options:** 15, 30, 45, 60, 75, 90, 105 and 120 minutes, plus "End of this episode" ("End of this track" for music) and "Off".
 - **Where:**
-  - In the web player bar, a moon button. On episodes it sits next to −15/+30/speed, always visible. On music it's in the same place but at `min-[720px]` only, so the phone bar doesn't get more crowded.
+  - In the web player bar, a moon button, for music and episodes at every width. From 720px up it sits next to −15/+30/speed (episodes) or the seek bar (music). Below 720px it is in the top row of the bar, between next and ☰, for both kinds; the episode row on phones keeps −15/+30/speed. The button is drawn once per spot, and both copies are kept in step.
   - **Default 30 minutes:** with no timer running, one click starts a 30-minute timer right away and opens a small menu (like the queue popover) showing it running. From there you can pick another option or turn it off. With a timer running, the click only opens the menu.
   - While a timer runs, the button shows the minutes left ("23m") in the accent colour, and the menu has "Off" and "+15 min".
 - **What happens at the end:** the volume fades to 0 over the last 10 seconds, then playback pauses, then the volume goes back to where it was. Pausing saves the episode position as any pause does. "End of this episode" pauses when the current track ends, instead of moving to the next one.

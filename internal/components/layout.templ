@@ -82,6 +82,8 @@ templ player() {
 				</button>
 				<input id="player-volume" type="range" min="0" max="1" step="0.01" value="1" class="h-6 w-24 accent-accent" aria-label="Volume"/>
 			</div>
+			// sleep timer, phone spot: in the top row, between next and the queue
+			@sleepTimer("min-[720px]:hidden", "right-0")
 			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">☰</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
@@ -98,27 +100,8 @@ templ player() {
 				</div>
 			</details>
 			<div class="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-0 min-[720px]:order-2 min-[720px]:w-auto min-[720px]:flex-1 min-[720px]:flex-nowrap">
-				// sleep timer: always shown on episodes, from 720px up on music (player.js toggles the class)
-				<details id="player-sleep" class="relative hidden shrink-0 min-[720px]:block">
-					<summary class="flex h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-fg-muted hover:text-fg" aria-label="Sleep timer">
-						@icon("moon")
-						<span id="player-sleep-label" class="font-mono text-xs tabular-nums" hidden></span>
-					</summary>
-					<div class="absolute bottom-full left-0 mb-2 w-56 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
-						<strong class="block">Sleep timer</strong>
-						<p id="player-sleep-status" class="mb-1 text-xs text-fg-muted">Off</p>
-						<div id="player-sleep-extra" class="mb-1 flex gap-1" hidden>
-							<button data-sleep="extend" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">+15 min</button>
-							<button data-sleep="off" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">Off</button>
-						</div>
-						<ul class="max-h-60 overflow-auto">
-							for _, m := range []string{"15", "30", "45", "60", "75", "90", "105", "120"} {
-								<li><button data-sleep={ m } type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">{ m } minutes</button></li>
-							}
-							<li><button data-sleep="track" id="player-sleep-track" type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">End of this track</button></li>
-						</ul>
-					</div>
-				</details>
+				// sleep timer, desktop spot: next to the episode controls
+				@sleepTimer("hidden min-[720px]:block", "left-0")
 				<span id="player-episode-controls" class="flex shrink-0 items-center gap-1" hidden>
 					<button id="player-back" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Back 15 seconds">−15</button>
 					<button id="player-forward" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Forward 30 seconds">+30</button>
@@ -137,6 +120,32 @@ templ player() {
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
+}
+
+// sleepTimer is the moon button and its menu. It is drawn twice, one per spot
+// (phone: top row; 720px up: beside the seek bar), and player.js keeps both in
+// step through the data-sleep-* attributes.
+templ sleepTimer(class string, align string) {
+	<details data-sleep-box class={ "relative shrink-0", class }>
+		<summary data-sleep-summary class="flex h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-fg-muted hover:text-fg" aria-label="Sleep timer">
+			@icon("moon")
+			<span data-sleep-label class="font-mono text-xs tabular-nums" hidden></span>
+		</summary>
+		<div class={ "absolute bottom-full mb-2 w-56 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)", align }>
+			<strong class="block">Sleep timer</strong>
+			<p data-sleep-status class="mb-1 text-xs text-fg-muted">Off</p>
+			<div data-sleep-extra class="mb-1 flex gap-1" hidden>
+				<button data-sleep="extend" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">+15 min</button>
+				<button data-sleep="off" type="button" class="btn btn-ghost min-h-8 flex-1 px-2 text-xs">Off</button>
+			</div>
+			<ul class="max-h-60 overflow-auto">
+				for _, m := range []string{"15", "30", "45", "60", "75", "90", "105", "120"} {
+					<li><button data-sleep={ m } type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">{ m } minutes</button></li>
+				}
+				<li><button data-sleep="track" data-sleep-track type="button" class="w-full rounded px-1 py-1 text-left hover:bg-panel-2">End of this track</button></li>
+			</ul>
+		</div>
+	</details>
 }
 
 // queuePanel is the queue column from 1200px up; player.js fills it. Like
