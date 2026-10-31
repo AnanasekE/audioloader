@@ -210,6 +210,34 @@ func TestRecordingID(t *testing.T) {
 	}
 }
 
+func TestParseLink(t *testing.T) {
+	const id = "f3bba4cd-8018-468b-902e-bc8f029593e5"
+	for in, want := range map[string]string{
+		"https://musicbrainz.org/release/" + id:                   "release",
+		"https://musicbrainz.org/recording/" + id:                 "recording",
+		"https://beta.musicbrainz.org/release/" + id:              "release",
+		"http://musicbrainz.org/release/" + id:                    "release",
+		"https://musicbrainz.org/release/" + id + "/":             "release",
+		"https://musicbrainz.org/release/" + id + "/disc/1?x=1":   "release",
+		"https://musicbrainz.org/release/" + id + "#tracklist":    "release",
+		" https://musicbrainz.org/release/" + strings.ToUpper(id): "release",
+		"https://musicbrainz.org/track/" + id:                     "track",
+		"https://musicbrainz.org/release-group/" + id:             "release-group",
+		"https://example.com/musicbrainz.org/release/" + id:       "",
+		"https://musicbrainz.org/artist/" + id:                    "",
+		"https://musicbrainz.org/release/nope":                    "",
+		"https://musicbrainz.org/release/" + id + "0":             "",
+		id:                        "",
+		"Massive Attack Teardrop": "",
+		"":                        "",
+	} {
+		kind, got, ok := ParseLink(in)
+		if kind != want || ok != (want != "") || ok && got != id {
+			t.Errorf("ParseLink(%q) = %q, %q, %v", in, kind, got, ok)
+		}
+	}
+}
+
 func readFixture(t *testing.T, name string, v any) {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join("testdata", name))

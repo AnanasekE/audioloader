@@ -166,6 +166,8 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		"/ui/tracks/pick?q=zz", "/ui/tracks/pick?q=song",
 		"/tracks?sort=creator", "/tracks?sort=tag", "/tracks?sort=added",
 		"/upload/batch?release=" + ids["public release"],
+		"/api/v1/search?q=zz", "/api/v1/search?q=secret", "/api/v1/search?q=public", "/api/v1/search?q=shared", "/api/v1/search?q=artist",
+		"/api/v1/tracks?sort=creator", "/api/v1/tracks?sort=tag", "/api/v1/tracks?q=zz", "/api/v1/tracks?limit=1&offset=1",
 	}
 	for _, k := range []string{"public track", "secret track", "shared secret track"} {
 		extra = append(extra, "/ui/playlists/picker?track_id="+ids[k])
@@ -213,6 +215,16 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 				"/playlists":                       {"ZZPUBLIC Mix", "ZZPUBLIC Legacy"},
 				"/search?q=zzpublic":               {"ZZPUBLIC Song 1", "ZZPUBLIC Album"},
 				"/artists/" + ids["shared artist"]: {"ZZPUBLIC Shared Song"},
+
+				"/api/v1/tracks":                              {"ZZPUBLIC Song 1", "ZZPUBLIC Shared Song", "ZZPUBLIC Cover"},
+				"/api/v1/artists":                             {"ZZPUBLIC Artist", "Shared Artist"},
+				"/api/v1/releases":                            {"ZZPUBLIC Album"},
+				"/api/v1/shows":                               {"ZZPUBLIC Show"},
+				"/api/v1/playlists":                           {"ZZPUBLIC Mix", "ZZPUBLIC Legacy"},
+				"/api/v1/search?q=zzpublic":                   {"ZZPUBLIC Song 1", "ZZPUBLIC Album", "ZZPUBLIC Mix"},
+				"/api/v1/releases/" + ids["public release"]:   {"ZZPUBLIC Song 2"},
+				"/api/v1/shows/" + ids["public show"]:         {"ZZPUBLIC Episode"},
+				"/api/v1/playlists/" + ids["legacy playlist"]: {"ZZPUBLIC Song 1"},
 			}},
 		{"secret", true, "zzpublic", pick("public track", "public track 2", "shared public track", "public cover", "public release", "public single", "public episode", "public show", "public playlist", "legacy playlist", "public artist"),
 			map[string][]string{
@@ -222,6 +234,15 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 				"/playlists":                       {"ZZSECRET Mix"},
 				"/search?q=zzsecret":               {"ZZSECRET Song", "ZZSECRET Artist"},
 				"/artists/" + ids["shared artist"]: {"ZZSECRET Shared Song"},
+
+				"/api/v1/tracks":                              {"ZZSECRET Song", "ZZSECRET Shared Song", "ZZSECRET Cover"},
+				"/api/v1/artists":                             {"ZZSECRET Artist", "Shared Artist", "ZZSECRET Waiting"},
+				"/api/v1/shows":                               {"ZZSECRET Show"},
+				"/api/v1/playlists":                           {"ZZSECRET Mix"},
+				"/api/v1/search?q=zzsecret":                   {"ZZSECRET Song", "ZZSECRET Artist", "ZZSECRET Mix"},
+				"/api/v1/shows/" + ids["secret show"]:         {"ZZSECRET Episode"},
+				"/api/v1/playlists/" + ids["secret playlist"]: {"ZZSECRET Shared Song"},
+				"/api/v1/artists/" + ids["shared artist"]:     {"ZZSECRET Shared Song"},
 			}},
 	}
 	for _, m := range modes {

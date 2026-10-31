@@ -118,6 +118,7 @@
   - tags are prefilled from `[Tag]` markers in the title and description
   - addresses as pasted from a browser work too: http, no scheme, or `www.` in front; they're always fetched over https
   - a page without audio, such as an uploader's page, lists the pages it links one level below it: the ones not in the library first, each with a Download button, the ones already downloaded folded away. Only the listing is fetched until one is picked
+- Share a page from iOS (Shortcut) to queue it as a secret track: `POST /api/share` with `Authorization: Bearer <AUDIOLOADER_SHARE_TOKEN>` (at least 32 characters; off without it, without the vault or without a secret source) and a `url` form field or JSON body. The vault cookie plays no part. It does what Download from URL does with the page's own title, description and tags, and the creator from the uploader in the address; a URL without an uploader is not queued, the answer links the form instead. Answers are one line of plain text, at most 30 shares a minute. See `docs/ios-share.md`
   - "Other pages from this uploader" (the page one level up) on a downloaded track's edit page, its creator's page and the "already in the library" message
 - The migration that introduced the modes deleted releases made only of secret tracks (the tracks stayed); it first copied the database to `database.db.bak-18` and logged each removed release
 - A test requests every GET route in both modes and fails on any trace of the other mode's seed; the routes that only exist in normal mode (or only with a secret source) are checked to answer 404 elsewhere
@@ -152,6 +153,7 @@
 - Favicon and default track/artist images
 - SQLite foreign keys enforced
 - Versioned migrations (`PRAGMA user_version`), DB tests (`go test ./...`)
+- JSON API for the mobile app (read-only, both modes) under `/api/v1/`, with the same visibility rules as the pages; see `docs/api.md`
 
 ### Mobile app
 
@@ -178,7 +180,6 @@
 
 ### Apps
 
-- JSON API (`/api/v1/...`) for mobile and desktop apps
 - Wrapped web app (Tauri, Wails, Capacitor) or native (React Native)
 - Playback positions synced through the server
 

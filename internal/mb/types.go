@@ -131,15 +131,27 @@ type Recording struct {
 	Score            int        `json:"score"` // search results only
 }
 
-var recordingURL = regexp.MustCompile(`(?i)^(?:https?://)?(?:[a-z]+\.)?musicbrainz\.org/recording/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#].*)?$`)
+var linkURL = regexp.MustCompile(`(?i)^(?:https?://)?(?:[a-z]+\.)?musicbrainz\.org/(release|recording|track|release-group)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#].*)?$`)
+
+// ParseLink splits a MusicBrainz entity URL, e.g.
+// https://musicbrainz.org/release/<id>, into its kind ("release", "recording",
+// "track" or "release-group") and lowercased ID. ok is false for anything
+// else, including a bare ID.
+func ParseLink(s string) (kind, id string, ok bool) {
+	m := linkURL.FindStringSubmatch(strings.TrimSpace(s))
+	if m == nil {
+		return "", "", false
+	}
+	return strings.ToLower(m[1]), strings.ToLower(m[2]), true
+}
 
 // RecordingID extracts the recording ID from a MusicBrainz recording URL,
 // e.g. https://musicbrainz.org/recording/<id>. A bare ID is accepted too.
 // ok is false for anything else.
 func RecordingID(s string) (id string, ok bool) {
 	s = strings.TrimSpace(s)
-	if m := recordingURL.FindStringSubmatch(s); m != nil {
-		return strings.ToLower(m[1]), true
+	if kind, id, ok := ParseLink(s); ok {
+		return id, kind == "recording"
 	}
 	if _, err := uuid.Parse(s); err == nil {
 		return strings.ToLower(s), true

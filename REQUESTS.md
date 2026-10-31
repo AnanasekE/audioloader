@@ -8,7 +8,7 @@ The Expo app in `mobile/` browses and plays the library (see `FEATURES.md`). Sti
 
 - **Offline downloads** of tracks for listening without a connection.
 - **Uploading from the phone.**
-- **A share extension** in the app; until then the Shortcut from plan 20 covers sharing.
+- **A share extension** in the app, calling `POST /api/share`; until then the Shortcut from plan 20 covers sharing.
 - **A standalone (EAS) build** instead of Expo Go.
 - **Lock-screen artwork in secret mode:** the lock screen cannot send the vault cookie, so cover images show in normal mode only.
 
