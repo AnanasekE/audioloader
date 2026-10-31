@@ -9,11 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"audioloader/internal/audio"
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
 	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
+	"audioloader/internal/mb"
 )
 
 const (
@@ -149,7 +152,7 @@ func TestAddSongFromMusicBrainzLink(t *testing.T) {
 	// a release link lists its whole tracklist in order, each added to that release
 	code, body := get("https://musicbrainz.org/release/" + mezzanine + "?x=1")
 	if code != 200 || strings.Count(body, ">Add<") != 11 || !strings.Contains(body, "Mezzanine") || !strings.Contains(body, "11 tracks") ||
-		strings.Contains(body, "None of these") || strings.Count(body, `release_id&#34;: &#34;`+mezzanine) != 11 {
+		strings.Contains(body, "None of these") || strings.Count(body, `release_id&#34;: &#34;`+mezzanine) != 12 { // 11 tracks and "Add all"
 		t.Fatalf("release = %d\n%s", code, body)
 	}
 	if strings.Index(body, "Angel") > strings.Index(body, "Teardrop") || strings.Index(body, "Teardrop") > strings.Index(body, "Group Four") || !strings.Contains(body, "1.3 ") {
@@ -210,4 +213,81 @@ func mustRead(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+func TestAddReleaseFromMusicBrainz(t *testing.T) {
+	dbtest.New(t)
+	release := mustRead(t, "../mb/testdata/release.json")
+	fakeMusicBrainz(t, map[string]string{"/release/": release})
+	h := downloadsHandler(t)
+	form := url.Values{"release_id": {mezzanine}}
+
+	// one track is already in the library
+	a, _ := db.AddArtist(db.All, "Massive Attack")
+	_, err := db.AddTrack(db.All, []string{a.ID.String()}, &audio.Track{Title: "Teardrop", MBID: teardropRecording, Duration: 330 * time.Second},
+		bytes.NewReader([]byte("teardrop")), ".mp3", nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := do(h, "GET", "/ui/add/musicbrainz?q="+url.QueryEscape("https://musicbrainz.org/release/"+mezzanine), nil).Body.String()
+	if !strings.Contains(body, "Add all (10)") {
+		t.Fatalf("list:\n%s", body)
+	}
+
+	rec := do(h, "POST", "/ui/add/musicbrainz/release", form)
+	body = rec.Body.String()
+	if rec.Code != 200 || strings.Contains(body, ">Add<") || strings.Contains(body, "Add all") || strings.Count(body, "Already queued") != 10 {
+		t.Fatalf("add all = %d\n%s", rec.Code, body)
+	}
+	releases, _ := db.ListReleases(db.Normal)
+	var mez *audio.Release
+	for _, r := range releases {
+		if r.MBID == mezzanine {
+			mez, _ = db.GetRelease(db.All, r.ID.String())
+		}
+	}
+	// the owned track stays where it was; the 10 others share one release
+	if mez == nil || len(mez.Tracks) != 10 || mez.Tracks[0].Position != 1 || mez.Tracks[9].Position != 11 {
+		t.Fatalf("release = %+v", mez)
+	}
+	if counts, _ := jobs.Counts(downloads.JobDownload); counts["queued"] != 10 {
+		t.Fatalf("download jobs = %v", counts)
+	}
+	if queued, _ := db.ListDownloads(db.Normal, db.DownloadQueued); len(queued) != 10 {
+		t.Fatalf("downloads = %d", len(queued))
+	}
+
+	// a second time adds nothing
+	if rec := do(h, "POST", "/ui/add/musicbrainz/release", form); rec.Code != 200 {
+		t.Fatalf("again: %d", rec.Code)
+	}
+	if counts, _ := jobs.Counts(downloads.JobDownload); counts["queued"] != 10 {
+		t.Fatalf("download jobs after again = %v", counts)
+	}
+	if rec := do(h, "POST", "/ui/add/musicbrainz/release", url.Values{"release_id": {"nope"}}); rec.Code != 400 {
+		t.Fatalf("bad id: %d", rec.Code)
+	}
+}
+
+func TestAddReleaseFromMusicBrainzTooBig(t *testing.T) {
+	dbtest.New(t)
+	var rel mb.Release
+	if err := json.Unmarshal([]byte(mustRead(t, "../mb/testdata/release.json")), &rel); err != nil {
+		t.Fatal(err)
+	}
+	tracks := make([]mb.Track, 101)
+	for i := range tracks {
+		tracks[i] = mb.Track{Position: i + 1, Title: "t", Recording: mb.Recording{ID: uuid.NewString(), Title: "t"}}
+	}
+	rel.Media = []mb.Medium{{Position: 1, Tracks: tracks}}
+	big, _ := json.Marshal(rel)
+	fakeMusicBrainz(t, map[string]string{"/release/": string(big)})
+	h := downloadsHandler(t)
+
+	if rec := do(h, "POST", "/ui/add/musicbrainz/release", url.Values{"release_id": {mezzanine}}); rec.Code != 400 {
+		t.Fatalf("101 tracks = %d", rec.Code)
+	}
+	if counts, _ := jobs.Counts(downloads.JobDownload); counts["queued"] != 0 {
+		t.Fatalf("download jobs = %v", counts)
+	}
 }

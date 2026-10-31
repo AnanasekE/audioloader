@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -164,6 +165,9 @@ func renderRelease(w http.ResponseWriter, r *http.Request, rel *mb.Release) {
 			serverError(w, err)
 			return
 		}
+		if !cand.Owned() {
+			head.Missing++
+		}
 		found = append(found, cand)
 	}
 	render(w, r, components.SongCandidates("", head, found))
@@ -308,36 +312,83 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// another tab may have added it since the search
 	library, err := db.ListTracks(db.Normal)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	if id, _, _, err := ownedSong(library, it); err != nil {
-		serverError(w, err)
-		return
-	} else if id != "" {
+	if err := queueSong(library, song, it); errors.Is(err, errAlreadyOwned) {
 		http.Error(w, "this song is already in your library", http.StatusConflict)
 		return
+	} else if err != nil {
+		serverError(w, err)
+		return
 	}
+	hxLocation(w, "/downloads")
+}
 
-	trackID, newReleaseID, newRelease, err := db.AddSong(song)
+// maxAddAll caps how many tracks "Add all" queues at once.
+const maxAddAll = 100
+
+// addReleaseFromMusicBrainz adds every track of a release the library
+// doesn't have yet, all onto that release, and answers the refreshed list.
+func addReleaseFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
+	releaseID := validMBID(r.FormValue("release_id"))
+	if releaseID == "" {
+		http.Error(w, "invalid release id", http.StatusBadRequest)
+		return
+	}
+	rel, err := mb.Default().GetRelease(r.Context(), releaseID)
+	if errors.Is(err, mb.ErrNotFound) {
+		http.Error(w, "that release isn't on MusicBrainz", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	songs := releaseSongs(rel)
+	if len(songs) > maxAddAll {
+		http.Error(w, fmt.Sprintf("this release has %d tracks; add at most %d at once", len(songs), maxAddAll), http.StatusBadRequest)
+		return
+	}
+	library, err := db.ListTracks(db.Normal)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	if err := downloads.Enqueue(trackID); err != nil {
-		serverError(w, err)
-		return
-	}
-	if newRelease {
-		if err := tagging.EnqueueCover(newReleaseID); err != nil {
+	for _, s := range songs {
+		if err := queueSong(library, s.Song, s.Track); err != nil && !errors.Is(err, errAlreadyOwned) {
 			serverError(w, err)
 			return
 		}
 	}
-	hxLocation(w, "/downloads")
+	renderRelease(w, r, rel)
+}
+
+var errAlreadyOwned = errors.New("the library already has this song")
+
+// queueSong adds song (it is the same song as the library's ownership rule
+// sees it) as a placeholder and queues its download, unless the library has
+// it or has it queued.
+func queueSong(library []*audio.Track, song db.NewSong, it db.InboxTrack) error {
+	// another tab may have added it since the search
+	if id, _, _, err := ownedSong(library, it); err != nil {
+		return err
+	} else if id != "" {
+		return errAlreadyOwned
+	}
+	trackID, newReleaseID, newRelease, err := db.AddSong(song)
+	if err != nil {
+		return err
+	}
+	if err := downloads.Enqueue(trackID); err != nil {
+		return err
+	}
+	if newRelease {
+		return tagging.EnqueueCover(newReleaseID)
+	}
+	return nil
 }
 
 func firstPositive(a, b int) int {

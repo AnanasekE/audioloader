@@ -25,7 +25,7 @@ type SongCandidate struct {
 // MusicBrainz link.
 type SongRelease struct {
 	ID, Title, Artists, Year, CoverURL string
-	Tracks                             int
+	Tracks, Missing                    int // Missing: how many the library doesn't have
 }
 
 // Owned reports whether the library already has the song.
@@ -86,6 +86,15 @@ templ SongCandidates(q string, rel *SongRelease, found []SongCandidate) {
 						{ fmt.Sprintf(" · %d tracks", rel.Tracks) }
 					</span>
 				</span>
+				if rel.Missing > 0 {
+					<button
+						type="button"
+						class="btn"
+						hx-post="/ui/add/musicbrainz/release"
+						hx-vals={ fmt.Sprintf(`{"release_id": %q}`, rel.ID) }
+						hx-target="#add-results"
+					>{ fmt.Sprintf("Add all (%d)", rel.Missing) }</button>
+				}
 			</div>
 		}
 		if len(found) == 0 && rel != nil {

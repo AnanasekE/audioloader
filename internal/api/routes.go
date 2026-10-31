@@ -116,6 +116,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handleSecret(mux, "GET /ui/secret-source/status", getSecretSourceStatus)
 	handleNormal(mux, "GET /ui/add/musicbrainz", searchSongsMusicBrainz)
 	handleNormal(mux, "POST /ui/add/musicbrainz", addSongFromMusicBrainz)
+	handleNormal(mux, "POST /ui/add/musicbrainz/release", addReleaseFromMusicBrainz)
 	handleNormal(mux, "GET /ui/add/youtube", searchSongsYouTube)
 	handleNormal(mux, "POST /ui/add/youtube", addSongFromYouTube)
 	handleNormal(mux, "POST /ui/youtube/preview", previewYouTubeImport)
