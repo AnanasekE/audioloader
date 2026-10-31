@@ -10,7 +10,7 @@
 - [x] 2. API client and mode
 - [x] 3. Library screens
 - [x] 4. Player, queue and background audio
-- [ ] 5. Episode positions
+- [x] 5. Episode positions
 - [ ] 6. Secret mode in the app
 - [ ] 7. Docs
 

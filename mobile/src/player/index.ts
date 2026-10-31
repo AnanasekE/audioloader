@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylist, type AudioPlaylistStatus, type AudioSource } from "expo-audio";
 import { useSyncExternalStore } from "react";
-import { absoluteUrl, authHeaders } from "@/api/client";
+import { absoluteUrl, authHeaders, post } from "@/api/client";
 import type { Track } from "@/api/types";
 import { onModeReset } from "@/mode";
+import { bodyToSave, dueForSave, isEpisode, startPosition } from "./positions";
 import * as Q from "./queue";
 
 // The player. One expo-audio AudioPlaylist plays the queue: it is the only
@@ -23,9 +24,15 @@ let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, dur
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<PlayerState>) {
+  const prev = state;
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
-  if (patch.queue) schedulePersist();
+  if (patch.queue) {
+    schedulePersist();
+    const before = Q.current(prev.queue);
+    const after = Q.current(state.queue);
+    if (before?.id !== after?.id) trackSwitched(before, prev, after);
+  }
 }
 
 const subscribe = (l: () => void) => {
@@ -62,7 +69,45 @@ function engine(): AudioPlaylist {
 }
 
 function onStatus(s: AudioPlaylistStatus) {
-  set({ playing: s.playing, position: s.currentTime, duration: s.duration, buffering: s.isBuffering });
+  const wasPlaying = state.playing;
+  const t = Q.current(state.queue);
+  // ignore updates that still describe another track than the current one
+  const mine = s.currentIndex === state.queue.index;
+  if (mine && pendingSeek && t?.id === pendingSeek.id && s.isLoaded) {
+    const to = pendingSeek.seconds;
+    pendingSeek = null;
+    void playlist?.seekTo(to);
+  }
+  if (mine) set({ playing: s.playing, position: s.currentTime, duration: s.duration, buffering: s.isBuffering });
+  else set({ playing: s.playing });
+  if (!mine || !t || !isEpisode(t)) return;
+  if (s.didJustFinish) saveEpisode(t, s.currentTime, s.duration, true);
+  else if ((wasPlaying && !s.playing) || (s.playing && dueForSave(lastSave, Date.now()))) saveEpisode(t, s.currentTime, s.duration);
+}
+
+// ---- episode positions ----
+
+let pendingSeek: { id: string; seconds: number } | null = null;
+let lastSave = 0;
+// positions saved in this session, newer than the cached track lists
+const saved = new Map<string, number>();
+
+function saveEpisode(t: Track, position: number, duration: number, ended = false) {
+  lastSave = Date.now();
+  const body = bodyToSave(position, duration, ended);
+  saved.set(t.id, body.seconds);
+  post(`/api/tracks/${t.id}/position`, body).catch(() => {});
+}
+
+// trackSwitched runs when the current track changes: it saves where the
+// previous episode stopped and queues a seek to where the new one resumes.
+function trackSwitched(before: Track | null, prev: PlayerState, after: Track | null) {
+  if (before && isEpisode(before) && prev.duration > 0) saveEpisode(before, prev.position, prev.duration);
+  pendingSeek = null;
+  if (after && isEpisode(after)) {
+    const at = startPosition(after, saved.get(after.id));
+    if (at > 0) pendingSeek = { id: after.id, seconds: at };
+  }
 }
 
 function sourceOf(t: Track): AudioSource {
@@ -220,6 +265,8 @@ export function reset(): void {
     }
   }
   state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false };
+  pendingSeek = null;
+  saved.clear();
   listeners.forEach((l) => l());
   void AsyncStorage.removeItem(QUEUE_KEY).catch(() => {});
 }
@@ -251,11 +298,11 @@ export async function bindMode(secret: boolean): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(QUEUE_KEY);
     if (!raw || state.queue.items.length) return;
-    const saved = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState };
-    if (saved.secret !== secret) {
+    const snap = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState };
+    if (snap.secret !== secret) {
       await AsyncStorage.removeItem(QUEUE_KEY);
       return;
     }
-    if (saved.queue?.items?.length) load(saved.queue, false);
+    if (snap.queue?.items?.length) load(snap.queue, false);
   } catch {}
 }
