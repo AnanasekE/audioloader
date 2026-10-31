@@ -392,7 +392,7 @@ templ trackMenu(t *audio.Track) {
 templ playButton(t *audio.Track, size string) {
 	if !t.HasFile {
 		<span
-			class={ "btn btn-ghost shrink-0 justify-center rounded-full p-0 text-xs opacity-40", size }
+			class={ "btn btn-ghost shrink-0 self-center aspect-square min-h-0 justify-center rounded-full p-0 text-xs opacity-40", size }
 			title="Not in the library yet"
 			aria-label={ t.Title + " is not in the library yet" }
 		>–</span>
@@ -404,7 +404,7 @@ templ playButton(t *audio.Track, size string) {
 templ playableButton(t *audio.Track, size string) {
 	<button
 		type="button"
-		class={ "btn shrink-0 justify-center rounded-full p-0 text-xs", size }
+		class={ "btn shrink-0 self-center aspect-square min-h-0 justify-center rounded-full p-0 text-xs", size }
 		aria-label={ "Play " + t.Title }
 		aria-pressed="false"
 		{ playAttrs(t)... }

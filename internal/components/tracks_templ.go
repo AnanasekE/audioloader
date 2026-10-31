@@ -1048,7 +1048,7 @@ func playButton(t *audio.Track, size string) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if !t.HasFile {
-			var templ_7745c5c3_Var33 = []any{"btn btn-ghost shrink-0 justify-center rounded-full p-0 text-xs opacity-40", size}
+			var templ_7745c5c3_Var33 = []any{"btn btn-ghost shrink-0 self-center aspect-square min-h-0 justify-center rounded-full p-0 text-xs opacity-40", size}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var33...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1114,7 +1114,7 @@ func playableButton(t *audio.Track, size string) templ.Component {
 			templ_7745c5c3_Var36 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var37 = []any{"btn shrink-0 justify-center rounded-full p-0 text-xs", size}
+		var templ_7745c5c3_Var37 = []any{"btn shrink-0 self-center aspect-square min-h-0 justify-center rounded-full p-0 text-xs", size}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var37...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
