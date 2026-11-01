@@ -32,3 +32,32 @@ Bring an Apple Music library into audioloader, as placeholders on their MusicBra
 - **Favorites:** import the songs marked as favorites (loved).
 - **Share a song:** a song shared from Apple Music (its `music.apple.com` link, pasted into the Add box or sent through the share Shortcut) is added like a song search result.
 - **Playlists:** import a playlist by its link, adding each song and, optionally, creating the playlist in audioloader.
+
+## Unable to find / add hatsune miku from link to musicbrainz button
+
+- Real url https://musicbrainz.org/artist/130d679a-9a92-4373-8348-0800b6b93a30
+- unable to find user.
+- unclear what is use button under both found records.
+- unable to set exact link manually.
+
+## missing loop / loop 1 track feature.
+
+- missing looping feature that allows to loop the current song/album
+
+## queue missing features
+
+- unable to add whole album to queue.
+- missing dynamic: play next, add after queue
+
+## cover management
+
+- while adding track from youtube cannot pick type cover or set the status of the track as cover.
+
+## Autoplay
+
+- after finishing the queue or a single song an autoplay should enable suggesting tracks from simillar artists or other tracks overall.
+
+## UI
+
+- i can never know where to go to do any kind of action. need a UX redesign.
+- UX kinda sucks overall as there is no right click actions with current implementation. might need to rework the application into react. TODO this is an idea / feeling
