@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–29 are implemented. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–29 are implemented; 30–35 are planned. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -36,6 +36,12 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 27 | [Volume control](27-volume.md) | Volume slider and mute in the web player |
 | 28 | [Artist placeholder](28-artist-placeholder.md) | Artists without a picture show their newest release cover, else a pixel initials tile |
 | 29 | [Sleep timer](29-sleep-timer.md) | Sleep timer in the web player and the mobile app |
+| 30 | [Artist link fixes](30-artist-link-fixes.md) | MusicBrainz artist search by alias, visible manual link field (REQUESTS.md) |
+| 31 | [Repeat](31-repeat.md) | Repeat off / all / one in the web player and the mobile app (REQUESTS.md) |
+| 32 | [Queue whole releases](32-queue-more.md) | Play next / Add to queue for releases and playlists; Play next keeps order (REQUESTS.md) |
+| 33 | [Cover on YouTube add](33-cover-on-youtube-add.md) | "This is a cover" when adding from YouTube (REQUESTS.md) |
+| 34 | [Autoplay](34-autoplay.md) | Similar library tracks when the queue ends (REQUESTS.md) |
+| 35 | [React web app](35-react-web.md) | The web UI rebuilt in React with context menus and an action palette (REQUESTS.md) |
 
 ## Rules for every plan
 
