@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–34 and 36 are implemented; 35 is planned. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–34 and 36 are implemented; 35 is on hold, 37 is planned. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -43,6 +43,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 34 | [Autoplay](34-autoplay.md) | Similar library tracks when the queue ends (REQUESTS.md) |
 | 35 | [React web app](35-react-web.md) | The web UI rebuilt in React with context menus and an action palette (REQUESTS.md) |
 | 36 | [Apple Music links](36-apple-music.md) | Import public Apple Music playlists and song links onto MusicBrainz releases (REQUESTS.md) |
+| 37 | [Context menus and actions](37-context-menus.md) | Right-click / long-press menus, menus for releases, artists and playlists, ⌘K actions, UX audit (REQUESTS.md) |
 
 ## Rules for every plan
 
