@@ -429,3 +429,50 @@ func TestMapPlaylist(t *testing.T) {
 		}
 	}
 }
+
+func TestImportCover(t *testing.T) {
+	dbtest.New(t)
+	d := fakeDownloader(t)
+	a, _ := db.AddArtist(db.All, "Massive Attack")
+	imp := YouTubeImport{VideoID: "aqz-KE-bpKQ", Title: "Teardrop", ArtistIDs: []string{a.ID.String()},
+		Cover: &db.CoverEdit{TrackID: "00000000-0000-0000-0000-000000000000"}}
+
+	// an original that isn't in the library fails the whole import
+	if err := d.Import(context.Background(), imp); err == nil {
+		t.Fatal("bad original: no error")
+	}
+	if tracks, _ := db.ListTracks(db.All); len(tracks) != 0 {
+		t.Fatalf("a failed cover left tracks: %+v", tracks)
+	}
+
+	imp.Cover = &db.CoverEdit{Title: "Teardrop", Artists: "Massive Attack", MBID: "f3bba4cd-8018-468b-902e-bc8f029593e5"}
+	if err := d.Import(context.Background(), imp); err != nil {
+		t.Fatal(err)
+	}
+	tracks, _ := db.ListTracks(db.All)
+	if len(tracks) != 1 || tracks[0].CoverOf == nil || tracks[0].CoverOf.String() != "Teardrop by Massive Attack" {
+		t.Fatalf("tracks = %+v", tracks)
+	}
+	if len(tracks[0].Artists) != 1 || tracks[0].Artists[0].Name != "Massive Attack" {
+		t.Fatalf("artists = %+v", tracks[0].Artists)
+	}
+}
+
+func TestGuessCover(t *testing.T) {
+	cases := []struct {
+		title string
+		want  CoverGuess
+	}{
+		{"Teardrop", CoverGuess{false, "Teardrop"}},
+		{"Teardrop (Cover)", CoverGuess{true, "Teardrop"}},
+		{"Teardrop [piano COVER by Sam]", CoverGuess{true, "Teardrop"}},
+		{"Teardrop - Sam cover", CoverGuess{true, "Teardrop"}},
+		{"Teardrop cover", CoverGuess{true, "Teardrop cover"}},
+		{"Discover Teardrop", CoverGuess{false, "Discover Teardrop"}},
+	}
+	for _, c := range cases {
+		if got := GuessCover(c.title); got != c.want {
+			t.Errorf("GuessCover(%q) = %+v, want %+v", c.title, got, c.want)
+		}
+	}
+}

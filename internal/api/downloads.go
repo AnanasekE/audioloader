@@ -342,6 +342,15 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// the cover choices are only offered for a single video
+	var cover *db.CoverEdit
+	if len(videoIDs) == 1 {
+		var ok bool
+		if cover, ok = importCover(w, r); !ok {
+			return
+		}
+	}
+
 	next := 1
 	if releaseID != "" {
 		if validMBID(releaseID) == "" {
@@ -371,7 +380,7 @@ func importFromYouTube(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "every video needs a title", http.StatusBadRequest)
 			return
 		}
-		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs}
+		imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: artistIDs, Cover: cover}
 		if releaseID != "" {
 			imp.ReleaseID, imp.Disc, imp.Position = releaseID, 1, next
 			next++

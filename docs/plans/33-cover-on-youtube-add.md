@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. "This is a cover" on YouTube imports
+- [x] 1. "This is a cover" on YouTube imports
 
 ## Rules
 

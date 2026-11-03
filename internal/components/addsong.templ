@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
 	"audioloader/internal/sources/ytdlp"
 )
@@ -215,8 +216,9 @@ templ SongCandidates(q string, rel *SongRelease, found []SongCandidate) {
 
 // SongYouTubeCandidates lists YouTube results for q. titles and artists are
 // the guessed track title and artist of each result, for the person to
-// correct; owned holds the link to the library's track when it has the video.
-templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string) {
+// correct; owned holds the link to the library's track when it has the video
+// and covers whether each title announces a cover.
+templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string, covers []downloads.CoverGuess) {
 	<div class="text-fg">
 		if len(found) == 0 {
 			<p class="text-fg-muted">YouTube found nothing.</p>
@@ -234,6 +236,7 @@ templ SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string
 									<input type="hidden" name="video_id" value={ c.ID }/>
 									<input class="input" type="text" name="title" value={ titles[i] } aria-label="Title" required/>
 									<input class="input" type="text" name="artist" value={ artists[i] } aria-label="Artist" required/>
+									@youTubeCoverFields(covers[i])
 									<button class="btn" type="submit">Add</button>
 								</form>
 							</details>
