@@ -311,6 +311,39 @@ var migrations = []func(tx *sql.Tx) error{
 			UPDATE search_state SET dirty = 1;`)
 		return err
 	},
+	// 20: imports of Apple Music playlists, and the songs of each with what
+	// they were matched to on MusicBrainz. playlist_id is the audioloader
+	// playlist made from the import, if any.
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			CREATE TABLE apple_imports (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				url TEXT NOT NULL,
+				name TEXT NOT NULL DEFAULT '',
+				track_count INTEGER NOT NULL DEFAULT 0, -- what Apple says the playlist has
+				status TEXT NOT NULL DEFAULT 'queued', -- queued, running, done, failed
+				error TEXT NOT NULL DEFAULT '',
+				playlist_id TEXT REFERENCES playlists(uuid) ON DELETE SET NULL,
+				created_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			CREATE TABLE apple_import_tracks (
+				import_id INTEGER NOT NULL REFERENCES apple_imports(id) ON DELETE CASCADE,
+				position INTEGER NOT NULL,
+				title TEXT NOT NULL,
+				artist TEXT NOT NULL,
+				album TEXT NOT NULL DEFAULT '',
+				duration_ms INTEGER NOT NULL DEFAULT 0,
+				recording_id TEXT NOT NULL DEFAULT '',
+				release_id TEXT NOT NULL DEFAULT '',
+				match_title TEXT NOT NULL DEFAULT '', -- the matched recording, to show
+				match_artist TEXT NOT NULL DEFAULT '',
+				release_title TEXT NOT NULL DEFAULT '',
+				score REAL NOT NULL DEFAULT 0,
+				state TEXT NOT NULL DEFAULT 'pending', -- pending, matched, unsure, not_found, added, owned
+				PRIMARY KEY (import_id, position)
+			);`)
+		return err
+	},
 }
 
 // destructive lists the migrations (by number) that delete data. Init
