@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/db"
 	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
 	"audioloader/internal/sources/ytdlp"
@@ -20,6 +21,7 @@ type SongCandidate struct {
 	OwnedTrackID, OwnedReleaseID string
 	OwnedHasFile                 bool
 	Disc, Position               int // the track's place on its release; 0 when listed on its own
+	Best                         bool // the sure match for an Apple Music link
 }
 
 // SongRelease is the header above the tracks of a release listed from a
@@ -35,8 +37,9 @@ func (c SongCandidate) Owned() bool { return c.OwnedTrackID != "" }
 // AddPage is the one place to add things: a box that takes search text or
 // a link and sends it where it belongs (see api.classifyAddInput), and the
 // file upload forms below. A q fills the box and runs the lookup on load.
-// recent lists the latest YouTube imports (normal mode).
-templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jobs.Job) {
+// recent lists the latest YouTube imports and apple the latest Apple Music
+// playlist imports (normal mode).
+templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jobs.Job, apple []*db.AppleImport) {
 	@layout("Add", PageAdd) {
 		@pageHead("Add", addSubtitle(secretMode(ctx), secretSourceOn(ctx)))
 		if secretMode(ctx) && secretSourceOn(ctx) {
@@ -90,6 +93,11 @@ templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []j
 				<div id="add-results" class="mt-6" aria-live="polite"></div>
 			</div>
 		}
+		if len(apple) > 0 {
+			<div class="mt-8">
+				@AppleImportsList(apple)
+			</div>
+		}
 		if len(recent) > 0 {
 			<div class="mt-8">
 				@RecentImports(recent)
@@ -117,7 +125,7 @@ func addSubtitle(secret, source bool) string {
 	if secret {
 		return "Paste a link, or upload a file"
 	}
-	return "Search MusicBrainz, paste a MusicBrainz, YouTube or YouTube Music link, or upload a file"
+	return "Search MusicBrainz, paste a MusicBrainz, Apple Music, YouTube or YouTube Music link, or upload a file"
 }
 
 // SongCandidates lists MusicBrainz's best recordings for q. rel is set when
@@ -171,6 +179,9 @@ templ SongCandidates(q string, rel *SongRelease, found []SongCandidate) {
 							onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
 						/>
 						<span class="min-w-0 flex-1">
+							if c.Best {
+								<span class="block text-xs font-medium uppercase tracking-wide text-accent">Best match</span>
+							}
 							<span class="block truncate">
 								if c.Position > 0 {
 									<span class="text-fg-muted">{ fmt.Sprintf("%d.%d ", c.Disc, c.Position) }</span>

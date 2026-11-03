@@ -6,10 +6,10 @@
 
 ## Status
 
-- [ ] 1. Read Apple Music pages (`internal/applemusic`)
-- [ ] 2. Song links in the Add box and the share Shortcut
-- [ ] 3. Playlist import job
-- [ ] 4. Playlist import page
+- [x] 1. Read Apple Music pages (`internal/applemusic`)
+- [x] 2. Song links in the Add box and the share Shortcut
+- [x] 3. Playlist import job
+- [x] 4. Playlist import page
 
 ## Rules
 

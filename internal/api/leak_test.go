@@ -161,6 +161,8 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		"recording_id":  {"00000000-0000-0000-0000-000000000000"},
 		"release_group": {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", "00000000-0000-0000-0000-000000000000"},
 		"mbid":          {"10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8"},
+		"id":            {"1"}, // an Apple Music import
+		"position":      {"1"},
 	}
 	extra := []string{
 		"/search?q=zz", "/ui/search?q=zz", "/search?q=secret", "/search?q=public", "/ui/search?q=artist", "/search?q=shared",

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"audioloader/internal/api"
+	"audioloader/internal/appleimport"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
@@ -50,6 +51,7 @@ func main() {
 
 	tagging.Register()
 	tracking.Register()
+	appleimport.Register()
 	go tracking.Schedule(ctx)
 	downloads.Register()
 	downloads.Default() // logs the yt-dlp and spotDL versions, or why they're unavailable

@@ -1,0 +1,288 @@
+package components
+
+import (
+	"fmt"
+	"net/url"
+	"time"
+
+	"audioloader/internal/db"
+)
+
+// AppleSongRow is one song of an Apple Music playlist import and what it
+// was matched to.
+type AppleSongRow struct {
+	Position                              int
+	Title, Artist                         string
+	Length                                time.Duration
+	State                                 string // db.AppleSong...
+	MatchTitle, MatchArtist, ReleaseTitle string
+	Score                                 int // percent
+}
+
+// AppleImportView is what the import page shows.
+type AppleImportView struct {
+	ID         int64
+	Name       string
+	Running    bool   // still reading the page or matching
+	Error      string // the import failed; why
+	Listed     int    // songs on the page
+	TrackCount int    // songs Apple says the playlist has
+	Searched   int    // songs matched so far
+	Songs      []AppleSongRow
+	PlaylistID string // the audioloader playlist made from it, if any
+	Notice     string // what the last "Add selected" did
+}
+
+func (v AppleImportView) title() string {
+	if v.Name == "" {
+		return "Apple Music playlist"
+	}
+	return v.Name
+}
+
+func (v AppleImportView) in(state string) []AppleSongRow {
+	var out []AppleSongRow
+	for _, s := range v.Songs {
+		if s.State == state {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func (v AppleImportView) bodyURL() string { return fmt.Sprintf("/ui/add/apple/%d", v.ID) }
+
+// AppleImportPage is the page of one import: progress while it runs, then
+// its songs in groups to add from.
+templ AppleImportPage(v AppleImportView) {
+	@layout("Add", PageAdd) {
+		@pageHead(v.title(), "Apple Music playlist") {
+			<a class="btn btn-ghost" href="/add">Back to Add</a>
+		}
+		@AppleImportBody(v)
+	}
+}
+
+// AppleImportBody is the part of the page that changes: it polls every 2
+// seconds while the import runs, and stops when it is done or failed.
+templ AppleImportBody(v AppleImportView) {
+	<div
+		id="apple-import"
+		if v.Running {
+			hx-get={ v.bodyURL() }
+			hx-trigger="every 2s"
+			hx-swap="outerHTML"
+		}
+	>
+		if v.Error != "" {
+			<p class="mb-4 text-st-failed" role="alert">{ v.Error }</p>
+		}
+		if v.Running {
+			if v.Listed == 0 {
+				<p class="mb-2 text-fg-muted">Reading the playlist…</p>
+			} else {
+				<p class="mb-2 text-fg-muted">{ fmt.Sprintf("Matching songs on MusicBrainz: %d of %d", v.Searched, v.Listed) }</p>
+				@progress(v.Searched * 100 / v.Listed)
+			}
+		} else {
+			@appleImportResults(v)
+		}
+	</div>
+}
+
+templ appleImportResults(v AppleImportView) {
+	if v.Notice != "" {
+		<p class="mb-4">{ v.Notice }</p>
+	}
+	if v.Listed < v.TrackCount {
+		<p class="mb-4 text-fg-muted">{ fmt.Sprintf("Apple Music shows the first %d of %d songs on its public page.", v.Listed, v.TrackCount) }</p>
+	}
+	{{ matched, unsure, notFound := v.in(db.AppleSongMatched), v.in(db.AppleSongUnsure), v.in(db.AppleSongNotFound) }}
+	{{ owned, added := v.in(db.AppleSongOwned), v.in(db.AppleSongAdded) }}
+	<form
+		class="grid gap-6"
+		hx-post={ v.bodyURL() + "/add" }
+		hx-target="#apple-import"
+		hx-swap="outerHTML"
+		hx-on::after-request="if (!event.detail.successful) document.getElementById('apple-status').textContent = event.detail.xhr.responseText"
+	>
+		if len(matched) > 0 {
+			<section>
+				@sectionLabel(fmt.Sprintf("Matched (%d)", len(matched)))
+				@list() {
+					for _, s := range matched {
+						@appleSongRow(v.ID, s, true)
+					}
+				}
+			</section>
+		}
+		if len(unsure) > 0 {
+			<section>
+				@sectionLabel(fmt.Sprintf("Unsure (%d)", len(unsure)))
+				@list() {
+					for _, s := range unsure {
+						@appleSongRow(v.ID, s, false)
+					}
+				}
+			</section>
+		}
+		if len(notFound) > 0 {
+			<section>
+				@sectionLabel(fmt.Sprintf("Not found (%d)", len(notFound)))
+				@list() {
+					for _, s := range notFound {
+						@row("row-2 row-pad text-sm") {
+							<span class="min-w-0">
+								<span class="block truncate">{ s.Title }</span>
+								<span class="block truncate text-fg-muted">{ s.Artist }</span>
+							</span>
+							<a class="btn btn-ghost" href={ templ.SafeURL("/add?q=" + url.QueryEscape(s.Artist+" - "+s.Title)) }>Search</a>
+						}
+					}
+				}
+			</section>
+		}
+		if len(added) > 0 {
+			<section>
+				@sectionLabel(fmt.Sprintf("Added (%d)", len(added)))
+				@list() {
+					for _, s := range added {
+						@row("row-2 row-pad text-sm") {
+							<span class="min-w-0">
+								<span class="block truncate">{ s.Title }</span>
+								<span class="block truncate text-fg-muted">{ s.Artist }</span>
+							</span>
+							<a href="/downloads">Queued</a>
+						}
+					}
+				}
+			</section>
+		}
+		if len(owned) > 0 {
+			<section>
+				@sectionLabel(fmt.Sprintf("In your library (%d)", len(owned)))
+				@list() {
+					for _, s := range owned {
+						@row("row-2 row-pad text-sm") {
+							<span class="min-w-0">
+								<span class="block truncate">{ s.Title }</span>
+								<span class="block truncate text-fg-muted">{ s.Artist }</span>
+							</span>
+							<span class="text-fg-muted">In your library</span>
+						}
+					}
+				}
+			</section>
+		}
+		if len(matched)+len(unsure)+len(owned)+len(added) > 0 {
+			<div class="flex flex-wrap items-center gap-4">
+				<button class="btn" type="submit">Add selected</button>
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" name="playlist" value="1" checked/>
+					if v.PlaylistID == "" {
+						{ "Also create playlist “" + v.title() + "”" }
+					} else {
+						{ "Also update playlist “" + v.title() + "”" }
+					}
+				</label>
+				if v.PlaylistID != "" {
+					<a class="text-sm" href={ templ.SafeURL("/playlists/" + v.PlaylistID) }>Open playlist</a>
+				}
+				<span id="apple-status" class="text-sm text-st-failed" role="alert"></span>
+			</div>
+		}
+	</form>
+}
+
+// appleSongRow is a matched or unsure song: a checkbox, the Apple song, and
+// what it was matched to. An unsure song can be changed.
+templ appleSongRow(importID int64, s AppleSongRow, ticked bool) {
+	@row("grid-cols-[auto_minmax(0,1fr)_auto] items-center row-pad text-sm") {
+		<input type="checkbox" name="pos" value={ fmt.Sprint(s.Position) } checked?={ ticked } aria-label={ "Add " + s.Title }/>
+		<span class="min-w-0">
+			<span class="block truncate">{ s.Title }</span>
+			<span class="block truncate text-fg-muted">{ s.Artist }</span>
+			if s.MatchTitle != "" {
+				<span class="block truncate text-xs text-fg-muted">
+					{ s.MatchTitle + " · " + s.MatchArtist }
+					if s.ReleaseTitle != "" {
+						{ " · " + s.ReleaseTitle }
+					}
+					if !ticked {
+						{ fmt.Sprintf(" · %d%%", s.Score) }
+					}
+				</span>
+			}
+		</span>
+		if ticked {
+			<span class="text-fg-muted tabular-nums">{ formatDuration(s.Length) }</span>
+		} else {
+			<button
+				type="button"
+				class="btn btn-ghost"
+				hx-get={ fmt.Sprintf("/ui/add/apple/%d/%d/candidates", importID, s.Position) }
+				hx-target={ fmt.Sprintf("#apple-cand-%d", s.Position) }
+			>Change</button>
+		}
+		<div id={ fmt.Sprintf("apple-cand-%d", s.Position) } class="col-span-full"></div>
+	}
+}
+
+// AppleCandidate is a MusicBrainz recording offered for a song of an import.
+type AppleCandidate struct {
+	RecordingID, Title, Artists, ReleaseID, ReleaseTitle string
+	Length                                               time.Duration
+}
+
+// AppleCandidates lists the recordings a song may be, to pick the right one.
+templ AppleCandidates(importID int64, position int, found []AppleCandidate) {
+	if len(found) == 0 {
+		<p class="py-2 text-fg-muted">MusicBrainz has no other candidates.</p>
+	} else {
+		<ul class="divide-y divide-line">
+			for _, c := range found {
+				<li class="flex flex-wrap items-center gap-3 py-2">
+					<span class="min-w-0 flex-1">
+						<span class="block truncate">{ c.Title }</span>
+						<span class="block truncate text-fg-muted">
+							{ c.Artists }
+							if c.Length > 0 {
+								{ " · " + formatDuration(c.Length) }
+							}
+							if c.ReleaseTitle != "" {
+								{ " · " + c.ReleaseTitle }
+							}
+						</span>
+					</span>
+					<button
+						type="button"
+						class="btn"
+						hx-post={ fmt.Sprintf("/ui/add/apple/%d/%d/pick", importID, position) }
+						hx-vals={ fmt.Sprintf(`{"recording_id": %q, "release_id": %q}`, c.RecordingID, c.ReleaseID) }
+						hx-target="#apple-import"
+						hx-swap="outerHTML"
+					>Use this</button>
+				</li>
+			}
+		</ul>
+	}
+}
+
+// AppleImportsList is the latest imports, to reopen one under the Add box.
+templ AppleImportsList(imports []*db.AppleImport) {
+	@sectionLabel("Apple Music imports")
+	@list() {
+		for _, i := range imports {
+			<a class="row row-2 row-pad text-sm" href={ templ.SafeURL(fmt.Sprintf("/add/apple/%d", i.ID)) }>
+				<span class="truncate">
+					if i.Name != "" {
+						{ i.Name }
+					} else {
+						{ i.URL }
+					}
+				</span>
+				@statusChip(i.Status, i.Status)
+			</a>
+		}
+	}
+}

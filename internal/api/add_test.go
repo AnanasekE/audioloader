@@ -40,6 +40,10 @@ func TestClassifyAddInput(t *testing.T) {
 		{"youtu.be no scheme", db.Normal, "youtu.be/aqz-KE-bpKQ", addYouTube, "https://youtu.be/aqz-KE-bpKQ", ""},
 		{"youtube playlist", db.Normal, "https://youtube.com/playlist?list=PLabcdefghijk", addYouTube, "", ""},
 		{"youtube music", db.Normal, "https://music.youtube.com/watch?v=aqz-KE-bpKQ&list=PLabcdefghijk", addYouTube, "", ""},
+		{"apple music song", db.Normal, "https://music.apple.com/pl/song/x/1001", addAppleMusic, "", ""},
+		{"apple music playlist, www", db.Normal, "https://www.music.apple.com/us/playlist/x/pl.abc", addAppleMusic, "", ""},
+		{"apple music no scheme", db.Normal, "music.apple.com/us/album/x/1?i=2", addAppleMusic, "https://music.apple.com/us/album/x/1?i=2", ""},
+		{"apple music lookalike", db.Normal, "https://music.apple.com.evil.test/us/song/x/1", addRefused, "", msgBadSite},
 		{"youtube channel", db.Normal, "https://www.youtube.com/@someone", addRefused, "", msgBadSite},
 		{"other site", db.Normal, "https://example.com/song", addRefused, "", msgBadSite},
 		{"lookalike host", db.Normal, "https://musicbrainz.org.evil.test/release/" + rel, addRefused, "", msgBadSite},
@@ -55,6 +59,7 @@ func TestClassifyAddInput(t *testing.T) {
 		{"secret link no scheme", db.Secret, secrettest.PageHost + "/items/someone/one", addSecretSource, "", ""},
 		{"secret mode, other site", db.Secret, "https://example.com/song", addRefused, "", msgBadSite},
 		{"secret mode, youtube", db.Secret, "https://youtu.be/aqz-KE-bpKQ", addRefused, "", msgBadSite},
+		{"secret mode, apple music", db.Secret, "https://music.apple.com/us/song/x/1", addRefused, "", msgBadSite},
 		{"secret mode, mb", db.Secret, "https://musicbrainz.org/release/" + rel, addRefused, "", msgBadSite},
 		{"secret mode, text", db.Secret, "some words", addRefused, "", msgSecretNoText},
 	}

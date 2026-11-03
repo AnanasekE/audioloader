@@ -16,6 +16,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"audioloader/internal/applemusic"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
 	"audioloader/internal/sources/secret"
@@ -131,16 +132,32 @@ func cut(s string, n int) string {
 	return s[:n]
 }
 
+// share is what the share token opens. An Apple Music link is added as a
+// normal song; anything else is a page of the secret source, which needs the
+// vault and the source (else the route doesn't exist).
+func share(w http.ResponseWriter, r *http.Request) {
+	link := shareURL(r)
+	if _, _, _, ok := applemusic.ParseLink(link); ok {
+		shareAppleSong(w, r.WithContext(db.WithViewer(r.Context(), db.Normal)), link)
+		return
+	}
+	if !shareEnabled() {
+		http.NotFound(w, r)
+		return
+	}
+	shareSecretPage(w, r.WithContext(db.WithViewer(r.Context(), db.Secret)), link)
+}
+
 // shareSecretPage does what "Download from URL" does for a page, as the
 // secret viewer, with the page's own defaults. It answers in one line of
 // plain text, for a notification.
-func shareSecretPage(w http.ResponseWriter, r *http.Request) {
+func shareSecretPage(w http.ResponseWriter, r *http.Request, link string) {
 	if !allowShare() {
 		http.Error(w, "Too many shares; try again in a minute.", http.StatusTooManyRequests)
 		return
 	}
 	src := secret.Default()
-	pageURL, err := src.Normalize(shareURL(r))
+	pageURL, err := src.Normalize(link)
 	if err != nil {
 		secretSourceError(w, err)
 		return
