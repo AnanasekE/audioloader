@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ type YouTubeImport struct {
 	VideoID   string
 	Title     string
 	ArtistIDs []string
+	// Cover, if set, is saved with the track.
+	Cover *db.CoverEdit
 	// ReleaseID places the track on a release at Disc and Position; without
 	// it the track becomes its own single, released on Date.
 	ReleaseID string
@@ -88,7 +91,7 @@ func (d *Downloader) Import(ctx context.Context, imp YouTubeImport) error {
 	if _, err := f.Seek(0, 0); err != nil {
 		return err
 	}
-	res, err := db.AddTrack(db.Normal, imp.ArtistIDs, &audio.Track{Title: imp.Title, Duration: dur.Round(time.Second)}, f, ".opus", link, imp.Date)
+	res, err := db.AddCoverTrack(db.Normal, imp.ArtistIDs, &audio.Track{Title: imp.Title, Duration: dur.Round(time.Second)}, f, ".opus", link, imp.Date, imp.Cover)
 	if err != nil {
 		return permanentIfBad(err)
 	}
@@ -201,4 +204,29 @@ func MapTracks(r *audio.Release, videos []Entry) []Mapping {
 		out[p.ti].ID, out[p.ti].Title, out[p.ti].Score = videos[p.vi].ID, videos[p.vi].Title, p.score
 	}
 	return out
+}
+
+// CoverGuess says whether a video title announces a cover, and the title
+// without the cover part, which is probably the original's title.
+type CoverGuess struct {
+	Cover bool
+	Title string
+}
+
+var (
+	// "Song (Cover)", "Song [piano cover by X]"
+	coverBracketed = regexp.MustCompile(`(?i)\s*[\(\[][^\)\]]*\bcover\b[^\)\]]*[\)\]]`)
+	// "Song - Cover", "Song - X cover"
+	coverSuffix = regexp.MustCompile(`(?i)\s+[-–—|]\s+[^-–—|]*\bcover\b.*$`)
+	coverWord   = regexp.MustCompile(`(?i)\bcover\b`)
+)
+
+// GuessCover looks for the word "cover" in a video title.
+func GuessCover(title string) CoverGuess {
+	if !coverWord.MatchString(title) {
+		return CoverGuess{Title: title}
+	}
+	base := coverBracketed.ReplaceAllString(title, "")
+	base = coverSuffix.ReplaceAllString(base, "")
+	return CoverGuess{Cover: true, Title: strings.TrimSpace(base)}
 }

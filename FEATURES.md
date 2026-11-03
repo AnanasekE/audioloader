@@ -152,6 +152,7 @@
 - Search also matches the original's title and artists (ranked lower); artist pages list "Covered by"
 - Auto-tagging suggests the original from MusicBrainz (a recording's `cover` performance relation on a work); Apply or Reject on the Tagging page, never overwrites a set original
 - Songs added from MusicBrainz (Add page, release or recording link, search) get "Cover of" from MusicBrainz: when the picked recording is a cover, a background job sets the original as text (title, artists, MusicBrainz ID), or links the library track that has that recording; it never overwrites a set original and skips secret tracks. Songs matched or added before are checked once at startup (a one-off job, in the non-download lane) and their covers become suggestions on the Tagging page
+- Adding a song from YouTube (the "Use this" form, or a pasted video link) has a "This is a cover" checkbox that shows the same "Cover of" choices as the edit form; a title with "cover" in it ticks it and fills in the title without that part. The original is saved with the new track in one transaction. Not shown for playlists or in secret mode
 
 ### UI
 

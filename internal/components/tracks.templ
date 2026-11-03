@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/downloads"
 	"audioloader/internal/trim"
 )
 
@@ -579,7 +580,7 @@ templ TrackEditPage(t *audio.Track, artists []*audio.Artist, uploader string) {
 				<input type="hidden" name="kind" value="music"/>
 			}
 			if !t.IsEpisode() && !t.Secret {
-				@coverOfFields(t)
+				@coverOfFields(t, false, "")
 			}
 			<div class="flex items-center gap-4">
 				<button class="btn" type="submit">Save</button>
@@ -631,24 +632,31 @@ templ trackImageForm(t *audio.Track) {
 	</form>
 }
 
-// coverOfFields is the "Cover of" part of the edit form. cover_mode picks
-// what the fields below it mean; "keep" leaves the cover as it is, which is
-// also right for a hidden original (the form can't show it).
-templ coverOfFields(t *audio.Track) {
-	<fieldset id="cover-of" class="group grid gap-3 rounded-md border border-line p-3">
+// coverOfFields is the "Cover of" part of a track form. cover_mode picks
+// what the fields below it mean; on the edit form "keep" leaves the cover as
+// it is, which is also right for a hidden original (the form can't show it).
+// adding is the form of a track that doesn't exist yet: no keep or remove,
+// and guess, if set, is the original's title to start from. Nothing here
+// relies on an id, so a page can hold several of these.
+templ coverOfFields(t *audio.Track, adding bool, guess string) {
+	<fieldset { coverFieldsetAttrs(adding)... } class="group grid gap-3 rounded-md border border-line p-3">
 		<legend class="px-1 text-sm font-medium">Cover of</legend>
 		if t.CoverOf != nil {
 			<p class="text-sm text-fg-muted">Now: { t.CoverOf.String() }</p>
 		}
-		<select id="cover-mode" class="input" name="cover_mode" aria-label="Set the original song by">
-			<option value="keep" selected>Leave as it is</option>
-			<option id="cover-opt-library" value="library">Pick a track in the library</option>
-			<option id="cover-opt-text" value="text">Title and artist as text</option>
-			<option id="cover-opt-mbid" value="mbid">MusicBrainz recording URL</option>
-			<option value="none">Not a cover (remove)</option>
+		<select class="input" name="cover_mode" aria-label="Set the original song by">
+			if !adding {
+				<option value="keep" selected>Leave as it is</option>
+			}
+			<option value="library" selected?={ adding && guess == "" }>Pick a track in the library</option>
+			<option value="text" selected?={ adding && guess != "" }>Title and artist as text</option>
+			<option value="mbid">MusicBrainz recording URL</option>
+			if !adding {
+				<option value="none">Not a cover (remove)</option>
+			}
 		</select>
-		<div class="hidden group-has-[#cover-opt-library:checked]:block">
-			<input type="hidden" id="cover-track-id" name="cover_track_id"/>
+		<div class="hidden group-has-[option[value=library]:checked]:block">
+			<input type="hidden" name="cover_track_id"/>
 			<input
 				class="input"
 				type="search"
@@ -658,22 +666,45 @@ templ coverOfFields(t *audio.Track) {
 				aria-label="Search for the original track"
 				hx-get="/ui/tracks/pick"
 				hx-trigger="input changed delay:250ms"
-				hx-target="#cover-pick-results"
+				hx-target="next .cover-pick-results"
 				hx-vals={ `{"exclude": "` + t.ID.String() + `"}` }
 				hx-on:keydown="if (event.key === 'Enter') event.preventDefault()"
 			/>
-			<p id="cover-track-label" class="mt-1 text-sm text-fg-muted empty:hidden"></p>
-			<div id="cover-pick-results"></div>
+			<p class="cover-track-label mt-1 text-sm text-fg-muted empty:hidden"></p>
+			<div class="cover-pick-results"></div>
 		</div>
-		<div class="hidden gap-2 group-has-[#cover-opt-text:checked]:grid">
-			<input class="input" type="text" name="cover_title" placeholder="Original title" aria-label="Original title"/>
+		<div class="hidden gap-2 group-has-[option[value=text]:checked]:grid">
+			<input class="input" type="text" name="cover_title" value={ guess } placeholder="Original title" aria-label="Original title"/>
 			<input class="input" type="text" name="cover_artists" placeholder="Original artists, e.g. A &amp; B" aria-label="Original artists"/>
 		</div>
-		<div class="hidden group-has-[#cover-opt-mbid:checked]:block">
+		<div class="hidden group-has-[option[value=mbid]:checked]:block">
 			<input class="input" type="url" name="cover_mb_url" placeholder="https://musicbrainz.org/recording/…" aria-label="MusicBrainz recording URL"/>
 			<small class="mt-1 block text-fg-muted">Title and artists are looked up when you save.</small>
 		</div>
 	</fieldset>
+}
+
+// coverFieldsetAttrs gives the edit form's fieldset the id the track menu
+// links to; the add forms have several, so none there.
+func coverFieldsetAttrs(adding bool) templ.Attributes {
+	if adding {
+		return nil
+	}
+	return templ.Attributes{"id": "cover-of"}
+}
+
+// youTubeCoverFields is the "This is a cover" checkbox of a YouTube add form;
+// ticking it shows the "Cover of" choices. g ticks it from the video's title.
+templ youTubeCoverFields(g downloads.CoverGuess) {
+	<div class="group grid gap-2">
+		<label class="flex items-center gap-2 text-sm">
+			<input class="cover-box" type="checkbox" name="is_cover" value="1" checked?={ g.Cover }/>
+			This is a cover
+		</label>
+		<div class="hidden group-has-[.cover-box:checked]:block">
+			@coverOfFields(&audio.Track{}, true, g.Title)
+		</div>
+	</div>
 }
 
 // CoverPickResults lists library songs to pick as a cover's original;
@@ -690,7 +721,7 @@ templ CoverPickResults(tracks []*audio.Track) {
 						class="block w-full truncate rounded px-2 py-1 text-left hover:bg-panel-2"
 						data-id={ t.ID.String() }
 						data-label={ coverPickLabel(t) }
-						hx-on:click="document.getElementById('cover-track-id').value = this.dataset.id; document.getElementById('cover-track-label').textContent = 'Picked: ' + this.dataset.label; document.getElementById('cover-mode').value = 'library'; this.closest('ul').remove()"
+						hx-on:click="const f = this.closest('fieldset'); f.querySelector('[name=cover_track_id]').value = this.dataset.id; f.querySelector('.cover-track-label').textContent = 'Picked: ' + this.dataset.label; f.querySelector('[name=cover_mode]').value = 'library'; this.closest('ul').remove()"
 					>
 						{ t.Title }<span class="text-fg-muted">{ " · " + artistNames(t.Artists) }</span>
 					</button>

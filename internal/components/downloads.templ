@@ -337,6 +337,9 @@ templ YouTubePreview(info *ytdlp.Info, titles []string, artists []*audio.Artist,
 				<p class="mt-1 text-xs text-fg-muted">On a release, videos are added after its last track, in this order.</p>
 			</div>
 		</div>
+		if info.Type != "playlist" {
+			@youTubeCoverFields(downloads.GuessCover(info.Videos()[0].Title))
+		}
 		<div class="flex items-center gap-4">
 			<button class="btn" type="submit">Import</button>
 			<span id="youtube-import-result" class="text-sm text-st-failed" aria-live="polite"></span>

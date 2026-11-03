@@ -436,7 +436,9 @@ func searchSongsYouTube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	titles, artists, owned := make([]string, len(found)), make([]string, len(found)), make([]string, len(found))
+	covers := make([]downloads.CoverGuess, len(found))
 	for i, e := range found {
+		covers[i] = downloads.GuessCover(e.Title)
 		artists[i] = downloads.GuessArtist(e)
 		titles[i] = downloads.CleanTitle(e.Title, []string{artists[i]})
 		id, err := db.TrackBySourceURL(ytdlp.VideoURL(e.ID))
@@ -451,11 +453,20 @@ func searchSongsYouTube(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	render(w, r, components.SongYouTubeCandidates(found, titles, artists, owned))
+	render(w, r, components.SongYouTubeCandidates(found, titles, artists, owned, covers))
+}
+
+// importCover reads the "This is a cover" part of a YouTube add form. It
+// returns nil when the box isn't ticked, and writes a 400 for bad values.
+func importCover(w http.ResponseWriter, r *http.Request) (*db.CoverEdit, bool) {
+	if r.FormValue("is_cover") == "" {
+		return nil, true
+	}
+	return coverFromForm(w, r)
 }
 
 // addSongFromYouTube imports a picked video as a single, with the title and
-// artist the person confirmed.
+// artist the person confirmed, and the original if it is a cover.
 func addSongFromYouTube(w http.ResponseWriter, r *http.Request) {
 	ref, err := ytdlp.Parse(ytdlp.VideoURL(r.FormValue("video_id")))
 	if err != nil {
@@ -474,12 +485,16 @@ func addSongFromYouTube(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "this video is already in your library", http.StatusConflict)
 		return
 	}
+	cover, ok := importCover(w, r)
+	if !ok {
+		return
+	}
 	ids, err := db.ResolveArtists(db.Normal, []string{artist})
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: []string{ids[artist]}}
+	imp := downloads.YouTubeImport{VideoID: ref.Video, Title: title, ArtistIDs: []string{ids[artist]}, Cover: cover}
 	if err := downloads.EnqueueImport(imp); err != nil {
 		serverError(w, err)
 		return

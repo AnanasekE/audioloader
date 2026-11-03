@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"audioloader/internal/audio"
+	"audioloader/internal/downloads"
 	"audioloader/internal/jobs"
 	"audioloader/internal/sources/ytdlp"
 )
@@ -116,7 +117,7 @@ func AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jo
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(q)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 69, Col: 15}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 70, Col: 15}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 				if templ_7745c5c3_Err != nil {
@@ -242,7 +243,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.ResolveAttributeValue(rel.CoverURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 130, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 131, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -255,7 +256,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(rel.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 136, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 137, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -268,7 +269,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(rel.Artists)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 138, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 139, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -282,7 +283,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + rel.Year)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 140, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 141, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -296,7 +297,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(" · %d tracks", rel.Tracks))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 142, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 143, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -314,7 +315,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf(`{"release_id": %q}`, rel.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 150, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 151, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 				if templ_7745c5c3_Err != nil {
@@ -327,7 +328,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Add all (%d)", rel.Missing))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 152, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 153, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -356,7 +357,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/add/youtube?q=" + url.QueryEscape(q))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 160, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 161, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 			if templ_7745c5c3_Err != nil {
@@ -379,7 +380,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(c.CoverURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 167, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 168, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 				if templ_7745c5c3_Err != nil {
@@ -397,7 +398,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d.%d ", c.Disc, c.Position))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 175, Col: 80}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 176, Col: 80}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -411,7 +412,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(c.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 177, Col: 17}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 178, Col: 17}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -424,7 +425,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(c.Artists)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 180, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 181, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -438,7 +439,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + formatDuration(c.Length))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 182, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 183, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
@@ -457,7 +458,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 					var templ_7745c5c3_Var18 string
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(c.ReleaseTitle)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 187, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 188, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
@@ -471,7 +472,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 						var templ_7745c5c3_Var19 string
 						templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + c.Year)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 189, Col: 27}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 190, Col: 27}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 						if templ_7745c5c3_Err != nil {
@@ -495,7 +496,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 					var templ_7745c5c3_Var20 templ.SafeURL
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/releases/" + c.OwnedReleaseID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 195, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 196, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 					if templ_7745c5c3_Err != nil {
@@ -518,7 +519,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 					var templ_7745c5c3_Var21 string
 					templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf(`{"recording_id": %q, "release_id": %q}`, c.RecordingID, c.ReleaseID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 203, Col: 99}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 204, Col: 99}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 					if templ_7745c5c3_Err != nil {
@@ -546,7 +547,7 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue("/ui/add/youtube?q=" + url.QueryEscape(q))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 210, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 211, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 				if templ_7745c5c3_Err != nil {
@@ -568,8 +569,9 @@ func SongCandidates(q string, rel *SongRelease, found []SongCandidate) templ.Com
 
 // SongYouTubeCandidates lists YouTube results for q. titles and artists are
 // the guessed track title and artist of each result, for the person to
-// correct; owned holds the link to the library's track when it has the video.
-func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string) templ.Component {
+// correct; owned holds the link to the library's track when it has the video
+// and covers whether each title announces a cover.
+func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string, covers []downloads.CoverGuess) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -637,7 +639,7 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 							var templ_7745c5c3_Var26 templ.SafeURL
 							templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(owned[i]))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 229, Col: 40}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 231, Col: 40}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 							if templ_7745c5c3_Err != nil {
@@ -655,7 +657,7 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 							var templ_7745c5c3_Var27 string
 							templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.ResolveAttributeValue(c.ID)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 234, Col: 58}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 236, Col: 58}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 							if templ_7745c5c3_Err != nil {
@@ -668,7 +670,7 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 							var templ_7745c5c3_Var28 string
 							templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.ResolveAttributeValue(titles[i])
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 235, Col: 72}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 237, Col: 72}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 							if templ_7745c5c3_Err != nil {
@@ -681,13 +683,21 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 							var templ_7745c5c3_Var29 string
 							templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.ResolveAttributeValue(artists[i])
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 236, Col: 74}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/addsong.templ`, Line: 238, Col: 74}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" aria-label=\"Artist\" required> <button class=\"btn\" type=\"submit\">Add</button></form></details>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" aria-label=\"Artist\" required>")
+							if templ_7745c5c3_Err != nil {
+								return templ_7745c5c3_Err
+							}
+							templ_7745c5c3_Err = youTubeCoverFields(covers[i]).Render(ctx, templ_7745c5c3_Buffer)
+							if templ_7745c5c3_Err != nil {
+								return templ_7745c5c3_Err
+							}
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "<button class=\"btn\" type=\"submit\">Add</button></form></details>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -706,7 +716,7 @@ func SongYouTubeCandidates(found []ytdlp.Entry, titles, artists, owned []string)
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

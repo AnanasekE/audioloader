@@ -158,6 +158,13 @@ type AddResult struct {
 // says. For a viewer who can't see it, a file stored on the other side gives
 // ErrHidden: a generic failure that doesn't reveal the track exists.
 func AddTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeeker, ext string, link *ReleaseLink, singleDate string) (AddResult, error) {
+	return AddCoverTrack(v, artistIDs, track, file, ext, link, singleDate, nil)
+}
+
+// AddCoverTrack is AddTrack that also sets which song the new track covers,
+// in the same transaction, so a bad cover leaves no track behind. A nil
+// cover sets nothing. It does nothing for a track that already existed.
+func AddCoverTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeeker, ext string, link *ReleaseLink, singleDate string, cover *CoverEdit) (AddResult, error) {
 	fp, err := FingerprintOf(file)
 	if err != nil {
 		return AddResult{}, err
@@ -177,7 +184,7 @@ func AddTrack(v Viewer, artistIDs []string, track *audio.Track, file io.ReadSeek
 	if err != nil {
 		return AddResult{}, err
 	}
-	if err := insertTrack(id, v.IsSecret(), artistIDs, track, fp, link, singleDate); err != nil {
+	if err := insertTrack(v, id, artistIDs, track, fp, link, singleDate, cover); err != nil {
 		os.Remove(path)
 		// insertReleaseTrack maps its own constraint errors, so a remaining
 		// unique violation is the fingerprint index: an identical upload won the race
@@ -215,7 +222,8 @@ func linkOrExists(v Viewer, fp Fingerprint, link *ReleaseLink) (AddResult, error
 
 // insertTrack inserts the track row, its artist mappings and its release
 // placement (the given release, or a new single) in one transaction.
-func insertTrack(id string, secret bool, artistIDs []string, track *audio.Track, fp Fingerprint, link *ReleaseLink, singleDate string) error {
+func insertTrack(v Viewer, id string, artistIDs []string, track *audio.Track, fp Fingerprint, link *ReleaseLink, singleDate string, cover *CoverEdit) error {
+	secret := v.IsSecret()
 	tx, err := DB.Begin()
 	if err != nil {
 		return err
@@ -256,6 +264,11 @@ func insertTrack(id string, secret bool, artistIDs []string, track *audio.Track,
 	}
 	if err := insertReleaseTrack(tx, id, *link); err != nil {
 		return err
+	}
+	if cover != nil {
+		if err := setCover(tx, v, id, *cover); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }

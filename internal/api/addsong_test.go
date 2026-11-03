@@ -342,3 +342,105 @@ func TestAddReleaseQueuesCoverOf(t *testing.T) {
 		}
 	}
 }
+
+func TestAddSongFromYouTubeCover(t *testing.T) {
+	dbtest.New(t)
+	h := downloadsHandler(t)
+
+	body := do(h, "GET", "/ui/add/youtube?q=Massive+Attack+Teardrop", nil).Body.String()
+	if strings.Count(body, "This is a cover") != 5 || !strings.Contains(body, `value="mbid"`) {
+		t.Fatalf("search has no cover choices:\n%s", body)
+	}
+
+	post := func(video string, extra url.Values) int {
+		form := url.Values{"video_id": {video}, "title": {"Teardrop"}, "artist": {"Massive Attack"}}
+		for k, v := range extra {
+			form[k] = v
+		}
+		return do(h, "POST", "/ui/add/youtube", form).Code
+	}
+	// the import queued for a video, nil if none
+	queued := func(video string) *downloads.YouTubeImport {
+		recent, err := jobs.Recent(downloads.JobYouTubeImport, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, j := range recent {
+			var imp downloads.YouTubeImport
+			json.Unmarshal(j.Payload, &imp)
+			if imp.VideoID == video {
+				return &imp
+			}
+		}
+		return nil
+	}
+
+	// not ticked: the cover fields are ignored, even when filled in
+	if code := post("aaaaaaaaaa1", url.Values{"cover_mode": {"text"}, "cover_title": {"Ignored"}}); code != 204 {
+		t.Fatalf("no cover: %d", code)
+	}
+	if q := queued("aaaaaaaaaa1"); q == nil || q.Cover != nil {
+		t.Fatalf("no cover: %+v", q)
+	}
+
+	// ticked, but incomplete: refused before anything is queued
+	if code := post("aaaaaaaaaa2", url.Values{"is_cover": {"1"}, "cover_mode": {"text"}, "cover_title": {" "}}); code != 400 {
+		t.Fatalf("empty title: %d", code)
+	}
+	if code := post("aaaaaaaaaa2", url.Values{"is_cover": {"1"}, "cover_mode": {"mbid"}, "cover_mb_url": {"https://example.com/x"}}); code != 400 {
+		t.Fatalf("bad url: %d", code)
+	}
+	if q := queued("aaaaaaaaaa2"); q != nil {
+		t.Fatalf("refused cover queued: %+v", q)
+	}
+
+	// ticked with the original as text, then as a library track
+	if code := post("aaaaaaaaaa3", url.Values{"is_cover": {"1"}, "cover_mode": {"text"}, "cover_title": {"Teardrop"}, "cover_artists": {"Massive Attack"}}); code != 204 {
+		t.Fatalf("text cover: %d", code)
+	}
+	if q := queued("aaaaaaaaaa3"); q == nil || q.Cover == nil || q.Cover.Title != "Teardrop" || q.Cover.Artists != "Massive Attack" || q.Cover.TrackID != "" {
+		t.Fatalf("text cover = %+v", q)
+	}
+	orig := uuid.New().String()
+	if code := post("aaaaaaaaaa4", url.Values{"is_cover": {"1"}, "cover_mode": {"library"}, "cover_track_id": {orig}}); code != 204 {
+		t.Fatalf("library cover: %d", code)
+	}
+	if q := queued("aaaaaaaaaa4"); q == nil || q.Cover == nil || q.Cover.TrackID != orig {
+		t.Fatalf("library cover: %+v", q)
+	}
+}
+
+func TestPastedYouTubeLinkCover(t *testing.T) {
+	dbtest.New(t)
+	h := downloadsHandler(t)
+
+	// a single video gets the cover choices, a playlist doesn't
+	body := do(h, "POST", "/ui/youtube/preview", url.Values{"url": {"https://www.youtube.com/watch?v=aqz-KE-bpKQ"}}).Body.String()
+	if !strings.Contains(body, "This is a cover") {
+		t.Fatalf("video preview:\n%s", body)
+	}
+	body = do(h, "POST", "/ui/youtube/preview", url.Values{"url": {"https://www.youtube.com/playlist?list=PLa1F2ddGya_-UvuAqHAksYnB0qL9yWDO6"}}).Body.String()
+	if !strings.Contains(body, "Mezzanine") || strings.Contains(body, "This is a cover") {
+		t.Fatalf("playlist preview:\n%s", body)
+	}
+
+	a, _ := db.AddArtist(db.All, "Massive Attack")
+	form := url.Values{"video_id": {"aqz-KE-bpKQ"}, "title_aqz-KE-bpKQ": {"Teardrop"}, "artist_id": {a.ID.String()},
+		"is_cover": {"1"}, "cover_mode": {"text"}, "cover_title": {"Teardrop"}, "cover_artists": {"Massive Attack"}}
+	if rec := do(h, "POST", "/ui/youtube/import", form); rec.Code != 204 {
+		t.Fatalf("import: %d %s", rec.Code, rec.Body)
+	}
+	recent, _ := jobs.Recent(downloads.JobYouTubeImport, 5)
+	if len(recent) != 1 {
+		t.Fatalf("jobs = %v", recent)
+	}
+	var imp downloads.YouTubeImport
+	json.Unmarshal(recent[0].Payload, &imp)
+	if imp.Cover == nil || imp.Cover.Title != "Teardrop" {
+		t.Fatalf("import = %+v", imp)
+	}
+	form.Set("cover_title", "")
+	if rec := do(h, "POST", "/ui/youtube/import", form); rec.Code != 400 {
+		t.Fatalf("empty cover title: %d", rec.Code)
+	}
+}
