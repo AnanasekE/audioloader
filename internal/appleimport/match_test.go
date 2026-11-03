@@ -162,3 +162,38 @@ func TestArtistNames(t *testing.T) {
 		t.Fatalf("names = %q", got)
 	}
 }
+
+func TestAlbumTitle(t *testing.T) {
+	for in, want := range map[string]string{
+		"Record Player - Single": "Record Player",
+		"Muse - EP":              "Muse",
+		"Muse - ep":              "Muse",
+		"X - SINGLE":             "X",
+		"Mezzanine":              "Mezzanine",
+		"Single - Remixes":       "Single - Remixes",
+		"":                       "",
+	} {
+		if got := albumTitle(in); got != want {
+			t.Errorf("albumTitle(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestFindSkipsLiveAndBootlegReleases(t *testing.T) {
+	live := `{"id":"rel-live","title":"2021-12-06: Pamnation HQ","status":"Bootleg","date":"2021","release-group":{"primary-type":"Album","secondary-types":["Live"]}}`
+	single := `{"id":"rel-single","title":"Record Player","status":"Official","date":"2022","release-group":{"primary-type":"Single"}}`
+	for name, releases := range map[string]string{"live first": live + "," + single, "single first": single + "," + live} {
+		body := `{"recordings":[{"id":"r1","title":"Record Player","length":180000,
+			"artist-credit":[{"name":"Daisy the Great","artist":{"id":"a1","name":"Daisy the Great"}}],"releases":[` + releases + `]}]}`
+		song := applemusic.Song{ID: "1", Title: "Record Player", Artist: "Daisy the Great", Album: "Record Player - Single", Duration: 180 * time.Second}
+		c, _ := fakeMB(t, body)
+		cands, _ := Find(context.Background(), c, song)
+		if len(cands) != 1 || cands[0].Release == nil || cands[0].Release.ID != "rel-single" {
+			t.Errorf("%s: release = %+v", name, cands)
+		}
+		// the suffix-stripped album also scores as the album
+		if cands[0].Score < 0.99 {
+			t.Errorf("%s: score = %v, want album bonus", name, cands[0].Score)
+		}
+	}
+}

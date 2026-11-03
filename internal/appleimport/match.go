@@ -5,6 +5,7 @@ package appleimport
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func score(song applemusic.Song, rec mb.Recording) Candidate {
 
 	cand := Candidate{Recording: rec, Release: pickRelease(rec.Releases, song.Album)}
 	album := 0.0
-	if cand.Release != nil && match.Same(cand.Release.Title, song.Album) {
+	if cand.Release != nil && match.Same(cand.Release.Title, albumTitle(song.Album)) {
 		album = 1
 	}
 	artistScore := 0.0
@@ -119,8 +120,10 @@ func score(song applemusic.Song, rec mb.Recording) Candidate {
 }
 
 // pickRelease prefers a release titled like the Apple album; the
-// recording's other releases are then only a fallback.
+// recording's other releases are then only a fallback, where official
+// studio releases beat bootlegs, live albums and compilations.
 func pickRelease(releases []mb.Release, album string) *mb.Release {
+	album = albumTitle(album)
 	var same []mb.Release
 	for _, r := range releases {
 		if album != "" && match.Same(r.Title, album) {
@@ -130,7 +133,27 @@ func pickRelease(releases []mb.Release, album string) *mb.Release {
 	if len(same) > 0 {
 		return tagging.PickRelease(same)
 	}
+	var plain []mb.Release
+	for _, r := range releases {
+		if r.Status != "Bootleg" && !slices.Contains(r.ReleaseGroup.SecondaryTypes, "Live") && !slices.Contains(r.ReleaseGroup.SecondaryTypes, "Compilation") {
+			plain = append(plain, r)
+		}
+	}
+	if len(plain) > 0 {
+		return tagging.PickRelease(plain)
+	}
 	return tagging.PickRelease(releases)
+}
+
+// albumTitle is an Apple album title as MusicBrainz would name the release:
+// without the store's " - Single" or " - EP" suffix.
+func albumTitle(album string) string {
+	for _, suffix := range []string{" - single", " - ep"} {
+		if n := len(album) - len(suffix); n > 0 && strings.EqualFold(album[n:], suffix) {
+			return strings.TrimSpace(album[:n])
+		}
+	}
+	return album
 }
 
 // lengthScore rates two lengths: 1 within confidentLength, 0.5 within 10 s,
