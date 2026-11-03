@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Repeat logic and saved state (web)
+- [x] 1. Repeat logic and saved state (web)
 - [ ] 2. Repeat button (web)
 - [ ] 3. Mobile app
 

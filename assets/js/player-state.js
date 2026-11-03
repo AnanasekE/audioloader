@@ -17,6 +17,28 @@ window.playerState = {
 		return s.endOfTrack === true ? { endOfTrack: true } : null;
 	},
 
+	// repeatFrom returns the repeat mode to restore from a saved state:
+	// "off", "all" or "one"; anything else is "off".
+	repeatFrom(state) {
+		return state?.repeat === "all" || state?.repeat === "one" ? state.repeat : "off";
+	},
+
+	// nextPos returns the play position after pos in a queue of length, or -1
+	// at the end. Only "all" wraps to the start ("one" is handled when a track
+	// ends; Next still moves on).
+	nextPos(pos, length, repeat) {
+		if (pos + 1 < length) return pos + 1;
+		return repeat === "all" && length > 0 ? 0 : -1;
+	},
+
+	// keepOutOfFirst returns order with `last` (the track that just played
+	// out) not in the first slot, by swapping it with the second one.
+	keepOutOfFirst(order, last) {
+		const a = order.slice();
+		if (a.length > 1 && a[0] === last) [a[0], a[1]] = [a[1], a[0]];
+		return a;
+	},
+
 	// audioSettings returns the volume and mute to restore from a saved state;
 	// a missing or bad field gives null, meaning "leave as it is".
 	audioSettings(state) {

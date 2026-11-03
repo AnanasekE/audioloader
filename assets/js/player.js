@@ -38,6 +38,7 @@
 	let order = [];
 	let pos = 0;
 	let shuffle = false;
+	let repeat = "off"; // "off", "all" or "one"
 	// sleep timer (sleep-timer.js); fadeBase is the volume to go back to while a fade runs
 	let timer = window.sleepTimer.create(null);
 	let fadeBase = null;
@@ -53,7 +54,7 @@
 			}
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: fadeBase ?? audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle, sleep: timer.save() }),
+				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: fadeBase ?? audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle, repeat, sleep: timer.save() }),
 			);
 		} catch {
 			// storage can be full or disabled (private mode); playback still works
@@ -163,10 +164,32 @@
 	}
 
 	function next() {
-		if (pos + 1 >= order.length) return false;
-		pos++;
+		const p = window.playerState.nextPos(pos, order.length, repeat);
+		if (p < 0) return false;
+		if (p === 0 && pos > 0 && shuffle) {
+			// a new pass: reshuffled, but not starting with the track that just played
+			order = window.playerState.keepOutOfFirst(shuffled(order), order[pos]);
+		}
+		pos = p;
 		load(queue[order[pos]]);
 		return true;
+	}
+
+	// toggleRepeat steps off -> all -> one -> off
+	function toggleRepeat() {
+		repeat = { off: "all", all: "one", one: "off" }[repeat];
+		syncRepeat();
+		save();
+	}
+
+	function syncRepeat() {
+		const label = `Repeat: ${repeat}`;
+		all("data-repeat").forEach((b) => {
+			b.setAttribute("aria-pressed", String(repeat !== "off"));
+			b.setAttribute("aria-label", label);
+			b.querySelector("[data-repeat-icon=one]").hidden = repeat !== "one";
+			b.querySelector("[data-repeat-icon=all]").hidden = repeat === "one";
+		});
 	}
 
 	function prev() {
@@ -239,7 +262,7 @@
 			});
 		});
 		document.getElementById("player-prev").disabled = !current;
-		document.getElementById("player-next").disabled = pos + 1 >= order.length;
+		document.getElementById("player-next").disabled = window.playerState.nextPos(pos, order.length, repeat) < 0;
 	}
 
 	// renderNow fills the "now playing" part of the side panel
@@ -410,6 +433,7 @@
 	document.getElementById("player-prev").addEventListener("click", prev);
 	document.getElementById("player-next").addEventListener("click", next);
 	shuffleBtn.addEventListener("click", toggleShuffle);
+	all("data-repeat").forEach((b) => b.addEventListener("click", () => (toggleRepeat(), renderQueue())));
 	all("data-queue-clear").forEach((btn) =>
 		btn.addEventListener("click", () => {
 			// keep the current track, drop what's after it
@@ -606,6 +630,12 @@
 			syncSleep();
 			return (markRows(), save());
 		}
+		// repeat one: the same track again (Next still moves on)
+		if (repeat === "one") {
+			audio.currentTime = 0;
+			audio.play().catch(() => {});
+			return;
+		}
 		if (!next()) (markRows(), save());
 	});
 	audio.addEventListener("volumechange", () => fadeBase === null && (syncVolume(), save()));
@@ -660,6 +690,7 @@
 
 	syncVolume();
 	syncSleep();
+	syncRepeat();
 
 	// a page of one mode must not resume what the other mode played: not
 	// playing, not queued, not in storage
@@ -694,6 +725,8 @@
 		}
 		shuffle = Boolean(state.shuffle);
 		shuffleBtn.setAttribute("aria-pressed", String(shuffle));
+		repeat = window.playerState.repeatFrom(state);
+		syncRepeat();
 		load(state.track, { time: state.time, autoplay: !state.paused, restoring: true });
 	} else {
 		renderQueue();

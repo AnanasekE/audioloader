@@ -75,6 +75,33 @@ test("a saved sleep timer is restored, an expired or bad one dropped", () => {
 	assert.equal(f(null, 1000), null);
 });
 
+test("the repeat mode is restored, anything else is off", () => {
+	const f = window.playerState.repeatFrom;
+	assert.equal(f({ repeat: "all" }), "all");
+	assert.equal(f({ repeat: "one" }), "one");
+	assert.equal(f({ repeat: "loop" }), "off");
+	assert.equal(f({}), "off");
+	assert.equal(f(null), "off");
+});
+
+test("nextPos moves on, and only repeat all wraps", () => {
+	const n = window.playerState.nextPos;
+	assert.equal(n(0, 3, "off"), 1);
+	assert.equal(n(2, 3, "off"), -1);
+	assert.equal(n(2, 3, "one"), -1);
+	assert.equal(n(2, 3, "all"), 0);
+	assert.equal(n(0, 1, "all"), 0);
+	assert.equal(n(0, 0, "all"), -1);
+	assert.equal(n(0, 3, "one"), 1);
+});
+
+test("keepOutOfFirst moves the track that just played off the first slot", () => {
+	const k = window.playerState.keepOutOfFirst;
+	assert.deepEqual(k([2, 0, 1], 2), [0, 2, 1]);
+	assert.deepEqual(k([0, 2, 1], 2), [0, 2, 1]);
+	assert.deepEqual(k([0], 0), [0]);
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);
