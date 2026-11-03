@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–29 are implemented; 30–35 are planned. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–29 are implemented; 30–36 are planned. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
@@ -42,6 +42,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 33 | [Cover on YouTube add](33-cover-on-youtube-add.md) | "This is a cover" when adding from YouTube (REQUESTS.md) |
 | 34 | [Autoplay](34-autoplay.md) | Similar library tracks when the queue ends (REQUESTS.md) |
 | 35 | [React web app](35-react-web.md) | The web UI rebuilt in React with context menus and an action palette (REQUESTS.md) |
+| 36 | [Apple Music links](36-apple-music.md) | Import public Apple Music playlists and song links onto MusicBrainz releases (REQUESTS.md) |
 
 ## Rules for every plan
 
