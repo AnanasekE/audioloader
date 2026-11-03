@@ -39,6 +39,70 @@ window.playerState = {
 		return Math.min(pos + 1 + Math.max(0, nextAt), length);
 	},
 
+	HISTORY_MAX: 50,
+	AUTOPLAY_SEEDS: 5,
+
+	// autoplayFrom returns whether autoplay is on in a saved state; it is on
+	// unless the state says false.
+	autoplayFrom(state) {
+		return state?.autoplay !== false;
+	},
+
+	// historyFrom returns the recently played track IDs of a saved state (at
+	// most HISTORY_MAX, oldest first); anything that isn't a list of strings gives [].
+	historyFrom(state) {
+		const h = state?.history;
+		if (!Array.isArray(h) || !h.every((id) => typeof id === "string")) return [];
+		return h.slice(-window.playerState.HISTORY_MAX);
+	},
+
+	// pushHistory returns history with id as the most recent; an earlier
+	// play of the same track moves up instead of repeating.
+	pushHistory(history, id) {
+		return [...history.filter((h) => h !== id), id].slice(-window.playerState.HISTORY_MAX);
+	},
+
+	// autoplayURL is the request for suggestions: the last few played tracks
+	// are the seeds, the newest first, and all of the history is excluded.
+	autoplayURL(history, n) {
+		const q = new URLSearchParams();
+		history.slice(-window.playerState.AUTOPLAY_SEEDS).reverse().forEach((id) => q.append("seed", id));
+		history.forEach((id) => q.append("exclude", id));
+		q.set("n", String(n));
+		return `/api/v1/autoplay?${q}`;
+	},
+
+	// trackFromAPI turns a track of the JSON API into a queue entry. Autoplay
+	// entries carry auto: true; a track of secret mode carries secret: true.
+	trackFromAPI(j, secret) {
+		const t = {
+			id: j.id,
+			title: j.title,
+			artists: (j.artists || []).map((a) => a.name).join(", "),
+			img: j.imageUrl || (secret ? "/assets/img/default_secret.png" : "/assets/img/default_track.png"),
+			src: j.streamUrl,
+			auto: true,
+		};
+		if (secret) t.secret = true;
+		return t;
+	},
+
+	// autoStart returns the play position of the first autoplay track after
+	// pos, or the length of order when there is none: what the user adds goes
+	// in before it.
+	autoStart(order, queue, pos) {
+		for (let p = pos + 1; p < order.length; p++) if (queue[order[p]]?.auto) return p;
+		return order.length;
+	},
+
+	// autoLast returns order with the upcoming autoplay tracks moved behind
+	// the others, each group keeping its order.
+	autoLast(order, queue, pos) {
+		const upcoming = order.slice(pos + 1);
+		const auto = (i) => Boolean(queue[i]?.auto);
+		return [...order.slice(0, pos + 1), ...upcoming.filter((i) => !auto(i)), ...upcoming.filter(auto)];
+	},
+
 	// keepOutOfFirst returns order with `last` (the track that just played
 	// out) not in the first slot, by swapping it with the second one.
 	keepOutOfFirst(order, last) {

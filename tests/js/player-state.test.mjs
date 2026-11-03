@@ -113,6 +113,64 @@ test("playNextSlot keeps Play next in the order added", () => {
 	assert.equal(s(0, -2, 4), 1);
 });
 
+test("autoplay is on unless saved as off; the history is a list of IDs", () => {
+	const p = window.playerState;
+	assert.equal(p.autoplayFrom({}), true);
+	assert.equal(p.autoplayFrom(null), true);
+	assert.equal(p.autoplayFrom({ autoplay: false }), false);
+	assert.equal(p.autoplayFrom({ autoplay: true }), true);
+	assert.deepEqual(p.historyFrom({ history: ["a", "b"] }), ["a", "b"]);
+	assert.deepEqual(p.historyFrom({ history: ["a", 3] }), []);
+	assert.deepEqual(p.historyFrom({ history: "a" }), []);
+	assert.deepEqual(p.historyFrom({}), []);
+	const long = Array.from({ length: 80 }, (_, i) => "t" + i);
+	assert.equal(p.historyFrom({ history: long }).length, 50);
+	assert.equal(p.historyFrom({ history: long })[49], "t79");
+});
+
+test("pushHistory keeps the last 50, newest at the end, no repeats", () => {
+	const p = window.playerState;
+	assert.deepEqual(p.pushHistory(["a", "b"], "c"), ["a", "b", "c"]);
+	assert.deepEqual(p.pushHistory(["a", "b", "c"], "a"), ["b", "c", "a"]);
+	let h = [];
+	for (let i = 0; i < 60; i++) h = p.pushHistory(h, "t" + i);
+	assert.equal(h.length, 50);
+	assert.equal(h[0], "t10");
+	assert.equal(h[49], "t59");
+});
+
+test("autoplayURL seeds with the last 5 newest first and excludes the history", () => {
+	const url = new URL(window.playerState.autoplayURL(["a", "b", "c", "d", "e", "f", "g"], 10), "http://x");
+	assert.equal(url.pathname, "/api/v1/autoplay");
+	assert.deepEqual(url.searchParams.getAll("seed"), ["g", "f", "e", "d", "c"]);
+	assert.deepEqual(url.searchParams.getAll("exclude"), ["a", "b", "c", "d", "e", "f", "g"]);
+	assert.equal(url.searchParams.get("n"), "10");
+	assert.deepEqual(new URL(window.playerState.autoplayURL([], 10), "http://x").searchParams.getAll("seed"), []);
+});
+
+test("trackFromAPI builds a queue entry marked as autoplay", () => {
+	const j = { id: "x", title: "T", artists: [{ id: "1", name: "A" }, { id: "2", name: "B" }], imageUrl: "/covers/x", streamUrl: "/api/tracks/x/stream" };
+	assert.deepEqual(window.playerState.trackFromAPI(j, false), { id: "x", title: "T", artists: "A, B", img: "/covers/x", src: "/api/tracks/x/stream", auto: true });
+	const s = window.playerState.trackFromAPI({ ...j, imageUrl: "", artists: [] }, true);
+	assert.equal(s.secret, true);
+	assert.equal(s.img, "/assets/img/default_secret.png");
+	assert.equal(s.artists, "");
+	assert.equal(window.playerState.trackFromAPI({ ...j, imageUrl: "" }, false).img, "/assets/img/default_track.png");
+});
+
+test("autoStart and autoLast keep what the user adds before the autoplay tracks", () => {
+	const p = window.playerState;
+	const queue = [{ id: "a" }, { id: "b" }, { id: "x", auto: true }, { id: "y", auto: true }, { id: "c" }];
+	// playing a (position 0): b, then autoplay x y, then c added later
+	const order = [0, 1, 2, 3, 4];
+	assert.equal(p.autoStart(order, queue, 0), 2);
+	assert.equal(p.autoStart([0, 1, 4], queue, 0), 3);
+	assert.equal(p.autoStart(order, queue, 2), 3);
+	assert.deepEqual(p.autoLast(order, queue, 0), [0, 1, 4, 2, 3]);
+	// what has played already stays where it is, even an autoplay track
+	assert.deepEqual(p.autoLast([2, 0, 3, 1], queue, 1), [2, 0, 1, 3]);
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);

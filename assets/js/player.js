@@ -41,6 +41,12 @@
 	let repeat = "off"; // "off", "all" or "one"
 	// how many tracks "Play next" has put after the current one since it started
 	let nextAt = 0;
+	// autoplay: when the queue runs out, suggestions from the library are
+	// appended; history is the last played track IDs (newest last), which the
+	// suggestions are based on and never repeat
+	let autoplay = true;
+	let history = [];
+	let fetchingAuto = false;
 	// sleep timer (sleep-timer.js); fadeBase is the volume to go back to while a fade runs
 	let timer = window.sleepTimer.create(null);
 	let fadeBase = null;
@@ -56,7 +62,7 @@
 			}
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: fadeBase ?? audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle, repeat, sleep: timer.save() }),
+				JSON.stringify({ mode: MODE, track: current, time: audio.currentTime, volume: fadeBase ?? audio.volume, muted: audio.muted, paused: audio.paused, queue, order, pos, shuffle, repeat, autoplay, history, sleep: timer.save() }),
 			);
 		} catch {
 			// storage can be full or disabled (private mode); playback still works
@@ -91,6 +97,7 @@
 
 	function load(track, { time = 0, autoplay = true, restoring = false } = {}) {
 		nextAt = 0;
+		if (!restoring) history = window.playerState.pushHistory(history, track.id);
 		if (current && current !== track) savePosition();
 		show(track);
 		audio.src = track.src;
@@ -155,7 +162,9 @@
 		tracks = [].concat(tracks);
 		if (!tracks.length) return;
 		if (!current) return playList(tracks);
-		order.push(...tracks.map((t) => queue.push(t) - 1));
+		// before the autoplay tracks, which stay at the end
+		const at = window.playerState.autoStart(order, queue, pos);
+		order.splice(at, 0, ...tracks.map((t) => queue.push(t) - 1));
 		renderQueue();
 		save();
 	}
@@ -164,7 +173,7 @@
 		tracks = [].concat(tracks);
 		if (!tracks.length) return;
 		if (!current) return playList(tracks);
-		const at = window.playerState.playNextSlot(pos, nextAt, order.length);
+		const at = Math.min(window.playerState.playNextSlot(pos, nextAt, order.length), window.playerState.autoStart(order, queue, pos));
 		order.splice(at, 0, ...tracks.map((t) => queue.push(t) - 1));
 		nextAt += tracks.length;
 		renderQueue();
@@ -173,7 +182,12 @@
 
 	function next() {
 		const p = window.playerState.nextPos(pos, order.length, repeat);
-		if (p < 0) return false;
+		if (p < 0) {
+			// the queue is out: autoplay fetches more and plays on
+			if (!canAutoplay()) return false;
+			fetchAutoplay();
+			return true;
+		}
 		if (p === 0 && pos > 0 && shuffle) {
 			// a new pass: reshuffled, but not starting with the track that just played
 			order = window.playerState.keepOutOfFirst(shuffled(order), order[pos]);
@@ -181,6 +195,49 @@
 		pos = p;
 		load(queue[order[pos]]);
 		return true;
+	}
+
+	// episodes have no suggestions
+	const canAutoplay = () => autoplay && current && !isEpisode(current);
+
+	// fetchAutoplay appends suggestions to the queue and plays the first one,
+	// unless the user moved on while it was loading. A failed fetch just stops.
+	async function fetchAutoplay() {
+		if (fetchingAuto) return;
+		fetchingAuto = true;
+		const from = current;
+		let tracks = [];
+		try {
+			const res = await fetch(window.playerState.autoplayURL(history, 10));
+			if (res.ok) {
+				const have = new Set(queue.map((t) => t.id));
+				tracks = (await res.json()).items.filter((j) => j.streamUrl && !have.has(j.id)).map((j) => window.playerState.trackFromAPI(j, MODE === "secret"));
+			}
+		} catch {
+			// as before autoplay existed: playback stops at the end
+		}
+		fetchingAuto = false;
+		if (!current || !autoplay || !tracks.length) return (markRows(), renderQueue(), save());
+		const first = order.length;
+		order.push(...tracks.map((t) => queue.push(t) - 1));
+		if (current === from) {
+			pos = first;
+			load(queue[order[pos]]);
+		} else {
+			renderQueue();
+			save();
+		}
+	}
+
+	function toggleAutoplay() {
+		autoplay = !autoplay;
+		syncAutoplay();
+		renderQueue();
+		save();
+	}
+
+	function syncAutoplay() {
+		all("data-autoplay").forEach((b) => b.setAttribute("aria-checked", String(autoplay)));
 	}
 
 	// toggleRepeat steps off -> all -> one -> off
@@ -217,10 +274,11 @@
 			if (shuffle) {
 				// only what hasn't played yet gets shuffled
 				const upcoming = order.slice(pos + 1);
-				order = [...order.slice(0, pos + 1), ...shuffled(upcoming)];
+				order = window.playerState.autoLast([...order.slice(0, pos + 1), ...shuffled(upcoming)], queue, pos);
 			} else {
 				order = identity(queue.length);
 				pos = playing;
+				order = window.playerState.autoLast(order, queue, pos);
 			}
 		}
 		shuffleBtn.setAttribute("aria-pressed", String(shuffle));
@@ -252,6 +310,13 @@
 			list.replaceChildren();
 			upcoming.forEach((qi, k) => {
 				const t = queue[qi];
+				// autoplay tracks come last, under a divider
+				if (t.auto && !queue[upcoming[k - 1]]?.auto) {
+					const div = document.createElement("li");
+					div.className = "mt-2 border-t border-line pt-1 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase";
+					div.textContent = "Autoplay";
+					list.append(div);
+				}
 				const li = document.createElement("li");
 				li.className = "flex items-center gap-2";
 				const name = document.createElement("button");
@@ -271,7 +336,7 @@
 			});
 		});
 		document.getElementById("player-prev").disabled = !current;
-		document.getElementById("player-next").disabled = window.playerState.nextPos(pos, order.length, repeat) < 0;
+		document.getElementById("player-next").disabled = window.playerState.nextPos(pos, order.length, repeat) < 0 && !canAutoplay();
 	}
 
 	// renderNow fills the "now playing" part of the side panel
@@ -466,6 +531,7 @@
 	document.getElementById("player-next").addEventListener("click", next);
 	shuffleBtn.addEventListener("click", toggleShuffle);
 	all("data-repeat").forEach((b) => b.addEventListener("click", () => (toggleRepeat(), renderQueue())));
+	all("data-autoplay").forEach((b) => b.addEventListener("click", toggleAutoplay));
 	all("data-queue-clear").forEach((btn) =>
 		btn.addEventListener("click", () => {
 			// keep the current track, drop what's after it
@@ -712,6 +778,7 @@
 		endFade();
 		syncSleep();
 		audio.pause();
+		history = [];
 		clear();
 		try {
 			localStorage.removeItem(STORAGE_KEY);
@@ -724,6 +791,7 @@
 	syncVolume();
 	syncSleep();
 	syncRepeat();
+	syncAutoplay();
 
 	// a page of one mode must not resume what the other mode played: not
 	// playing, not queued, not in storage
@@ -760,6 +828,9 @@
 		shuffleBtn.setAttribute("aria-pressed", String(shuffle));
 		repeat = window.playerState.repeatFrom(state);
 		syncRepeat();
+		history = window.playerState.historyFrom(state);
+		autoplay = window.playerState.autoplayFrom(state);
+		syncAutoplay();
 		load(state.track, { time: state.time, autoplay: !state.paused, restoring: true });
 	} else {
 		renderQueue();

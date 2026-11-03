@@ -44,10 +44,6 @@ Bring an Apple Music library into audioloader, as placeholders on their MusicBra
 
 - while adding track from youtube cannot pick type cover or set the status of the track as cover.
 
-## Autoplay
-
-- after finishing the queue or a single song an autoplay should enable suggesting tracks from simillar artists or other tracks overall.
-
 ## UI
 
 - i can never know where to go to do any kind of action. need a UX redesign.

@@ -96,7 +96,10 @@ templ player() {
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
 					<div class="mb-1 flex items-center justify-between">
 						<strong>Up next</strong>
-						<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+						<span class="flex items-center gap-3">
+							@autoplaySwitch()
+							<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+						</span>
 					</div>
 					<ol data-queue-list class="max-h-72 overflow-auto"></ol>
 					<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
@@ -131,6 +134,17 @@ templ player() {
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
+}
+
+// autoplaySwitch turns autoplay on and off in a queue header. It is drawn in
+// the popover and in the side panel; player.js keeps both in step (data-autoplay).
+templ autoplaySwitch() {
+	<button data-autoplay type="button" role="switch" aria-checked="true" class="group flex items-center gap-1.5 text-xs text-fg-muted hover:text-fg aria-checked:text-accent" title="Keep playing similar tracks when the queue ends">
+		<span class="relative inline-block h-3.5 w-6 rounded-full bg-panel-2 ring-1 ring-line ring-inset group-aria-checked:bg-accent-dim">
+			<span class="absolute top-0.5 left-0.5 size-2.5 rounded-full bg-current transition-transform group-aria-checked:translate-x-2.5"></span>
+		</span>
+		Autoplay
+	</button>
 }
 
 // repeatButton cycles off, all, one. It is drawn twice, one per spot, and
@@ -186,7 +200,10 @@ templ queuePanel() {
 		<section>
 			<div class="mb-1 flex items-center justify-between">
 				<strong class="text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">Up next</strong>
-				<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+				<span class="flex items-center gap-3">
+					@autoplaySwitch()
+					<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
+				</span>
 			</div>
 			<ol data-queue-list></ol>
 			<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
