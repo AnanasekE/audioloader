@@ -397,6 +397,16 @@
 		} catch {}
 	});
 
+	// toast shows a line above the player for a moment
+	let toastTimer;
+	function toast(text) {
+		const el = document.querySelector("[data-queue-toast]");
+		if (!el) return;
+		el.textContent = text;
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => (el.textContent = ""), 3000);
+	}
+
 	// tracksIn returns the playable tracks of a list, once each, in order
 	function tracksIn(list) {
 		const seen = new Set();
@@ -426,6 +436,19 @@
 			if ("shuffle" in listBtn.dataset && !shuffle) toggleShuffle();
 			if (!("shuffle" in listBtn.dataset) && shuffle) toggleShuffle();
 			playList(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0);
+			return;
+		}
+
+		const allBtn = e.target.closest("[data-queue-all]");
+		if (allBtn) {
+			const menu = allBtn.closest("[data-queue-tracks]");
+			const list = document.getElementById(menu.dataset.queueTracks);
+			const tracks = list ? tracksIn(list) : [];
+			menu.removeAttribute("open");
+			if (!tracks.length) return;
+			if (allBtn.dataset.queueAll === "next") playNext(tracks);
+			else enqueue(tracks);
+			toast(`Added ${tracks.length} track${tracks.length === 1 ? "" : "s"} to the queue`);
 			return;
 		}
 

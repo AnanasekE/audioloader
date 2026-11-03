@@ -152,6 +152,7 @@ templ releaseActions(r *audio.Release) {
 	if missingCount(r) < len(r.Tracks) {
 		<button type="button" class="btn" data-play-list="release-tracks">Play</button>
 		<button type="button" class="btn btn-ghost" data-play-list="release-tracks" data-shuffle>Shuffle</button>
+		@queueListMenu("release-tracks")
 	}
 	<a class="btn btn-ghost" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
 	<a class="btn btn-ghost" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>

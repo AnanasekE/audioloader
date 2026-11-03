@@ -103,6 +103,7 @@
 - Streaming with Range requests (seeking)
 - Duration detection: WAV, MP3, FLAC, Ogg Opus, MP4/M4A
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
+- A ⋯ menu next to Play and Shuffle on releases and playlists: Play next / Add to queue for the whole list (placeholders skipped), with a short "Added n tracks" note
 - Repeat button next to shuffle: off, all (back to the start, reshuffled when shuffling) or one (the track plays again; Next still moves on); saved with the queue
 - Play next / Add to queue from a track's menu (several Play nexts in a row play in the order added); "Up next" list with remove and clear; queue survives a reload
 - On wide screens the queue is always shown on the right: now playing, up next (click to play, ✕ to remove) and chapters

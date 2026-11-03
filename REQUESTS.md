@@ -40,11 +40,6 @@ Bring an Apple Music library into audioloader, as placeholders on their MusicBra
 - unclear what is use button under both found records.
 - unable to set exact link manually.
 
-## queue missing features
-
-- unable to add whole album to queue.
-- missing dynamic: play next, add after queue
-
 ## cover management
 
 - while adding track from youtube cannot pick type cover or set the status of the track as cover.

@@ -126,6 +126,8 @@ templ player() {
 			</div>
 			// player.js builds the queue remove buttons from this
 			<template id="player-x-icon">@iconClass("x", "size-3.5")</template>
+			// short feedback when tracks are queued (player.js); hidden when empty
+			<div data-queue-toast role="status" aria-live="polite" class="pop absolute right-3 bottom-full mb-2 px-3 py-2 text-sm empty:hidden"></div>
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>

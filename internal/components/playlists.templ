@@ -45,6 +45,7 @@ templ PlaylistPage(p *audio.Playlist) {
 			if p.Count > 0 {
 				<button type="button" class="btn" data-play-list="playlist-tracks">Play</button>
 				<button type="button" class="btn btn-ghost" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
+				@queueListMenu("playlist-tracks")
 			}
 			<a class="btn btn-ghost" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
 		}
