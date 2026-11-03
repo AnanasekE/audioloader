@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Context menu on track rows
+- [x] 1. Context menu on track rows
 - [ ] 2. Menus for releases, artists and playlists
 - [ ] 3. Actions in ⌘K, and a shortcuts dialog
 - [ ] 4. UX audit and quick fixes

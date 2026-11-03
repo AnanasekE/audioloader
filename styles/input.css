@@ -629,6 +629,15 @@
 	.menu-item {
 		@apply flex min-h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-fg no-underline hover:bg-panel-2 hover:no-underline max-[719px]:min-h-11;
 	}
+	.menu-backdrop {
+		@apply fixed inset-0 z-40 bg-black/50;
+	}
+	[data-menu-host] {
+		-webkit-touch-callout: none;
+	}
+	[data-menu-host]:focus-visible {
+		@apply outline-2 -outline-offset-2 outline-accent;
+	}
 }
 
 @keyframes eq {
@@ -644,4 +653,23 @@
 	50% {
 		opacity: 0.3;
 	}
+}
+
+/* a menu opened by right-click or long-press (context-menu.js): at the
+   pointer, or a bottom sheet on phones. Outside the layers, so these win over
+   the utility classes on the menu's own div. */
+[data-menu][data-ctx] > .pop {
+	position: fixed;
+	z-index: 50;
+	margin: 0;
+	right: auto;
+}
+[data-menu][data-ctx="sheet"] > .pop {
+	left: 0;
+	right: 0;
+	top: auto;
+	bottom: 0;
+	width: auto;
+	border-radius: 1rem 1rem 0 0;
+	padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
 }

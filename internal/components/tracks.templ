@@ -223,7 +223,7 @@ templ Track(t *audio.Track) {
 // secret track (the Tags page uses it). The # cell is the play button: the
 // number, a play glyph on hover, the playing bars while it plays.
 templ trackRow(t *audio.Track, highlight map[string]bool, n int) {
-	<article class={ "row row-track group/row", templ.KV("is-missing", !t.HasFile) } data-track-row data-filter-row>
+	<article class={ "row row-track group/row", templ.KV("is-missing", !t.HasFile) } data-track-row data-filter-row data-menu-host tabindex="0">
 		if t.HasFile {
 			<button type="button" class="play" aria-label={ "Play " + t.Title } aria-pressed="false" data-bare { playAttrs(t)... }>
 				<span class="n">{ trackNo(n) }</span>
@@ -341,7 +341,7 @@ func playAttrs(t *audio.Track) templ.Attributes {
 // reads the track from the play button in the same [data-track-row].
 templ trackMenu(t *audio.Track) {
 	if t.HasFile {
-		<details class="relative" data-track-menu>
+		<details class="relative" data-menu>
 			<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8" aria-label={ "More for " + t.Title }>@icon("more")</summary>
 			<div class="pop absolute right-0 z-10 mt-1 grid w-48">
 				<button type="button" class="menu-item" data-queue="next">Play next</button>
