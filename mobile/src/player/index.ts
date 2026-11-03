@@ -35,7 +35,10 @@ function set(patch: Partial<PlayerState>) {
   if (patch.queue) {
     const before = Q.current(prev.queue);
     const after = Q.current(state.queue);
-    if (before?.id !== after?.id) trackSwitched(before, prev, after);
+    if (before?.id !== after?.id) {
+      nextAt = 0;
+      trackSwitched(before, prev, after);
+    }
   }
 }
 
@@ -229,6 +232,10 @@ function load(q: Q.QueueState, autoplay: boolean) {
 
 // ---- actions ----
 
+// how many tracks "Play next" has put after the current one since it started
+let nextAt = 0;
+const playable = (t: Track | Track[]): Track[] => (Array.isArray(t) ? t : [t]).filter((x) => x.streamUrl);
+
 // playFrom starts tracks[index] with the rest of the list queued after it,
 // as clicking a row does on the web.
 export function playFrom(tracks: Track[], index: number): void {
@@ -244,19 +251,26 @@ export function playNow(track: Track): void {
   load(Q.setQueue([track], 0), true);
 }
 
-export function playNext(track: Track): void {
-  if (!track.streamUrl) return;
-  if (!state.queue.items.length) return playNow(track);
-  const q = Q.playNext(state.queue, track);
-  engine().insert(sourceOf(track), state.queue.index + 1);
+// playNext and addToEnd take a track or a batch (a release, a playlist). The
+// batch goes in as given; placeholders (no file) are skipped.
+export function playNext(tracks: Track | Track[]): void {
+  const add = playable(tracks);
+  if (!add.length) return;
+  if (!state.queue.items.length) return load(Q.setQueue(add, 0), true);
+  const at = Q.playNextSlot(state.queue, nextAt);
+  const pl = engine();
+  add.forEach((t, k) => pl.insert(sourceOf(t), at + k));
+  const q = Q.playNext(state.queue, add, nextAt);
+  nextAt += add.length;
   set({ queue: q });
 }
 
-export function addToEnd(track: Track): void {
-  if (!track.streamUrl) return;
-  if (!state.queue.items.length) return playNow(track);
-  engine().add(sourceOf(track));
-  set({ queue: Q.addToEnd(state.queue, track) });
+export function addToEnd(tracks: Track | Track[]): void {
+  const add = playable(tracks);
+  if (!add.length) return;
+  if (!state.queue.items.length) return load(Q.setQueue(add, 0), true);
+  add.forEach((t) => engine().add(sourceOf(t)));
+  set({ queue: Q.addToEnd(state.queue, add) });
 }
 
 export function toggle(): void {
@@ -315,6 +329,7 @@ export function removeAt(i: number): void {
     next();
   }
   engine().remove(i);
+  if (i > q.index && i <= q.index + nextAt) nextAt--;
   set({ queue: Q.removeAt(state.queue, i) });
 }
 
@@ -352,6 +367,7 @@ export function reset(): void {
   }
   state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: state.repeat };
   pendingSeek = null;
+  nextAt = 0;
   applyLoop();
   saved.clear();
   listeners.forEach((l) => l());

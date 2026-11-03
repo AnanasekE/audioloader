@@ -8,7 +8,7 @@
 
 - [x] 1. Play next keeps order
 - [x] 2. Queue a release or a playlist (web)
-- [ ] 3. Mobile app
+- [x] 3. Mobile app
 
 ## Rules
 

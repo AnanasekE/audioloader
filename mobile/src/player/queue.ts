@@ -21,17 +21,31 @@ export function setQueue(tracks: Track[], index: number): QueueState {
   return { items, index: items.findIndex((t) => t.id === wanted.id) };
 }
 
-// playNext puts a track right after the current one.
-export function playNext(q: QueueState, track: Track): QueueState {
-  if (!q.items.length) return { items: [track], index: 0 };
+// playNextSlot is the index where "Play next" inserts: right after the
+// current track and after the nextAt tracks already put there since it
+// started, so several in a row play in the order added. Never past the end.
+export function playNextSlot(q: QueueState, nextAt: number): number {
+  return Math.min(q.index + 1 + Math.max(0, nextAt), q.items.length);
+}
+
+const asList = (t: Track | Track[]): Track[] => (Array.isArray(t) ? t : [t]);
+
+// playNext puts tracks (one or a batch, in order) after the current one and
+// after what "Play next" added before (nextAt).
+export function playNext(q: QueueState, tracks: Track | Track[], nextAt = 0): QueueState {
+  const add = asList(tracks);
+  if (!add.length) return q;
+  if (!q.items.length) return { items: add, index: 0 };
   const items = q.items.slice();
-  items.splice(q.index + 1, 0, track);
+  items.splice(playNextSlot(q, nextAt), 0, ...add);
   return { items, index: q.index };
 }
 
-export function addToEnd(q: QueueState, track: Track): QueueState {
-  if (!q.items.length) return { items: [track], index: 0 };
-  return { items: [...q.items, track], index: q.index };
+export function addToEnd(q: QueueState, tracks: Track | Track[]): QueueState {
+  const add = asList(tracks);
+  if (!add.length) return q;
+  if (!q.items.length) return { items: add, index: 0 };
+  return { items: [...q.items, ...add], index: q.index };
 }
 
 // removeAt drops the track at i. Removing the current track leaves index on

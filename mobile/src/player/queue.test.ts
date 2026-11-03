@@ -28,10 +28,29 @@ describe("adding", () => {
     expect(ids(q)).toBe("abxcd");
     expect(q.index).toBe(1);
   });
+  it("Play next after Play next keeps the order added", () => {
+    const q1 = Q.playNext(abcd(), t("x"), 0);
+    const q2 = Q.playNext(q1, t("y"), 1);
+    expect(ids(q2)).toBe("abxycd");
+    expect(ids(Q.playNext(q2, [t("p"), t("q")], 2))).toBe("abxypqcd");
+  });
+  it("a batch goes in as one block, and nextAt never passes the end", () => {
+    expect(ids(Q.playNext(abcd(), [t("x"), t("y")]))).toBe("abxycd");
+    expect(ids(Q.playNext(abcd(), t("x"), 9))).toBe("abcdx");
+    expect(Q.playNextSlot(abcd(), 1)).toBe(3);
+  });
+  it("addToEnd takes a batch and an empty batch changes nothing", () => {
+    expect(ids(Q.addToEnd(abcd(), [t("x"), t("y")]))).toBe("abcdxy");
+    const q = abcd();
+    expect(Q.addToEnd(q, [])).toBe(q);
+    expect(Q.playNext(q, [])).toEqual(q);
+    expect(Q.addToEnd(Q.emptyQueue, [])).toBe(Q.emptyQueue);
+  });
   it("addToEnd appends", () => {
     expect(ids(Q.addToEnd(abcd(), t("x")))).toBe("abcdx");
   });
-  it("both start a queue from empty", () => {
+  it("both start a queue from empty, a batch too", () => {
+    expect(Q.playNext(Q.emptyQueue, [t("x"), t("y")])).toEqual({ items: [t("x"), t("y")], index: 0 });
     expect(Q.playNext(Q.emptyQueue, t("x"))).toEqual({ items: [t("x")], index: 0 });
     expect(Q.addToEnd(Q.emptyQueue, t("x"))).toEqual({ items: [t("x")], index: 0 });
   });

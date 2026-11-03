@@ -1,9 +1,10 @@
 import { Stack } from "expo-router";
 import type { ReactElement } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import type { Track } from "@/api/types";
-import { playFrom } from "@/player";
+import { addToEnd, playFrom, playNext } from "@/player";
 import { colors, font } from "@/theme";
+import { Btn } from "./player-ui";
 import { Cover, Message, TrackRow } from "./ui";
 
 // TrackListDetail is the body of the artist, release, playlist and show
@@ -18,6 +19,7 @@ export function TrackListDetail({
   error,
   extra,
   emptyText = "No tracks.",
+  queueAll,
 }: {
   title?: string;
   subtitle?: string;
@@ -27,6 +29,8 @@ export function TrackListDetail({
   error: Error | null;
   extra?: ReactElement | null;
   emptyText?: string;
+  // a Queue button in the header: Play next / Add to queue for the whole list
+  queueAll?: boolean;
 }) {
   if (loading) return <ActivityIndicator style={styles.fill} color={colors.accent} />;
   if (error) return <Message error>{error.message}</Message>;
@@ -48,6 +52,20 @@ export function TrackListDetail({
                 {subtitle ? <Text style={styles.sub}>{subtitle}</Text> : null}
               </View>
             </View>
+            {queueAll && list.some((t) => t.streamUrl) ? (
+              <View style={styles.actions}>
+                <Btn
+                  label="Queue…"
+                  onPress={() =>
+                    Alert.alert(title ?? "Queue", undefined, [
+                      { text: "Play next", onPress: () => playNext(list) },
+                      { text: "Add to end of queue", onPress: () => addToEnd(list) },
+                      { text: "Cancel", style: "cancel" },
+                    ])
+                  }
+                />
+              </View>
+            ) : null}
             {extra}
           </View>
         }
@@ -61,5 +79,6 @@ const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: "row", gap: 16, padding: 16, alignItems: "center" },
   title: { color: colors.fg, fontSize: font.xl, fontWeight: "700" },
+  actions: { flexDirection: "row", paddingHorizontal: 8, paddingBottom: 8 },
   sub: { color: colors.fgMuted, fontSize: font.base, marginTop: 4 },
 });

@@ -13,6 +13,7 @@ export default function ReleaseScreen() {
       tracks={q.data?.tracks.map((rt) => rt.track)}
       loading={q.isLoading}
       error={q.error}
+      queueAll
     />
   );
 }
