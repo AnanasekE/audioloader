@@ -250,10 +250,15 @@
 			display: none;
 		}
 	}
-	/* a single in a shelf: cover, title over artists, year */
+	/* a single in a shelf: cover, title over artists, year, menu */
 	.row-single {
-		grid-template-columns: 28px minmax(0, 1fr) auto;
+		grid-template-columns: 28px minmax(0, 1fr) auto 32px;
 		padding-block: 4px;
+	}
+	@media (max-width: 719px) {
+		.row-single {
+			grid-template-columns: 28px minmax(0, 1fr) auto 44px;
+		}
 	}
 	/* an episode: play, title over date, progress, time left, action */
 	.row-ep {
@@ -658,6 +663,9 @@
 /* a menu opened by right-click or long-press (context-menu.js): at the
    pointer, or a bottom sheet on phones. Outside the layers, so these win over
    the utility classes on the menu's own div. */
+[data-menu][data-ctx] {
+	z-index: auto; /* not a stacking context of its own, or the sheet stays under the tab bar */
+}
 [data-menu][data-ctx] > .pop {
 	position: fixed;
 	z-index: 50;

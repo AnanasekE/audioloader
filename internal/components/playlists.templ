@@ -32,7 +32,10 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 		} else {
 			@cardGrid() {
 				for _, p := range playlists {
-					@card(p.ImgURL, p.Name, plural(p.Count, "track")+" · "+formatLongDuration(p.Duration), string(playlistURL(p)))
+					@tileWithMenu() {
+						@card(p.ImgURL, p.Name, plural(p.Count, "track")+" · "+formatLongDuration(p.Duration), string(playlistURL(p)))
+						@playlistMenu(p, "card")
+					}
 				}
 			}
 		}
@@ -45,9 +48,9 @@ templ PlaylistPage(p *audio.Playlist) {
 			if p.Count > 0 {
 				<button type="button" class="btn" data-play-list="playlist-tracks">Play</button>
 				<button type="button" class="btn btn-ghost" data-play-list="playlist-tracks" data-shuffle>Shuffle</button>
-				@queueListMenu("playlist-tracks")
 			}
 			<a class="btn btn-ghost" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit playlist</a>
+			@playlistMenu(p, "head")
 		}
 		if p.Count == 0 {
 			@emptyState() {
@@ -61,6 +64,20 @@ templ PlaylistPage(p *audio.Playlist) {
 				}
 			</div>
 		}
+	}
+}
+
+// playlistMenu is the ⋯ menu of a playlist, on its card and in its header.
+templ playlistMenu(p *audio.Playlist, where string) {
+	@ctxMenu(where, "More for "+p.Name) {
+		@sourceItems("playlists/"+p.ID.String(), "Play", true)
+		<a class="menu-item" href={ templ.SafeURL(string(playlistURL(p)) + "/edit") }>Edit</a>
+		<button
+			type="button"
+			class="menu-item"
+			hx-post={ "/ui/playlists/" + p.ID.String() + "/delete" }
+			hx-confirm={ "Delete the playlist " + p.Name + "? Its tracks stay in your library." }
+		>Delete…</button>
 	}
 }
 

@@ -478,6 +478,44 @@
 		return [...list.querySelectorAll("[data-play-track]")].map(trackOf).filter((t) => !seen.has(t.id) && seen.add(t.id));
 	}
 
+	// playBatch plays the tracks from the first, or from a random one with
+	// shuffle on; the shuffle switch follows wantShuffle
+	function playBatch(tracks, wantShuffle) {
+		if (wantShuffle !== shuffle) toggleShuffle();
+		playList(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0);
+	}
+
+	// sourceTracks fetches the playable tracks of "releases/ID", "playlists/ID"
+	// or "artists/ID" from the JSON API, for menus on cards where the tracks
+	// are not on the page. null when they could not be loaded.
+	async function sourceTracks(src) {
+		const secret = MODE === "secret";
+		const getJSON = async (url) => {
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(url);
+			return res.json();
+		};
+		try {
+			const d = await getJSON(`/api/v1/${src}`);
+			if (!src.startsWith("artists/")) return window.playerState.tracksOf(d.tracks, secret);
+			const releases = await Promise.all((d.releases || []).map((r) => getJSON(`/api/v1/releases/${r.id}`)));
+			return window.playerState.artistTracks(d, releases, secret);
+		} catch {
+			return null;
+		}
+	}
+
+	// runSource does a menu action (play, shuffle, next, add) on a source
+	async function runSource(src, act) {
+		const tracks = await sourceTracks(src);
+		if (!tracks) return toast("Could not load the tracks");
+		if (!tracks.length) return toast("Nothing to play there");
+		if (act === "play" || act === "shuffle") return playBatch(tracks, act === "shuffle");
+		if (act === "next") playNext(tracks);
+		else enqueue(tracks);
+		toast(`Added ${tracks.length} track${tracks.length === 1 ? "" : "s"} to the queue`);
+	}
+
 	document.addEventListener("click", (e) => {
 		const btn = e.target.closest("[data-play-track]");
 		if (btn) {
@@ -498,22 +536,14 @@
 			const list = document.getElementById(listBtn.dataset.playList);
 			const tracks = list ? tracksIn(list) : [];
 			if (!tracks.length) return;
-			if ("shuffle" in listBtn.dataset && !shuffle) toggleShuffle();
-			if (!("shuffle" in listBtn.dataset) && shuffle) toggleShuffle();
-			playList(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0);
+			playBatch(tracks, "shuffle" in listBtn.dataset);
 			return;
 		}
 
-		const allBtn = e.target.closest("[data-queue-all]");
-		if (allBtn) {
-			const menu = allBtn.closest("[data-queue-tracks]");
-			const list = document.getElementById(menu.dataset.queueTracks);
-			const tracks = list ? tracksIn(list) : [];
-			menu.removeAttribute("open");
-			if (!tracks.length) return;
-			if (allBtn.dataset.queueAll === "next") playNext(tracks);
-			else enqueue(tracks);
-			toast(`Added ${tracks.length} track${tracks.length === 1 ? "" : "s"} to the queue`);
+		const srcBtn = e.target.closest("[data-queue-src]");
+		if (srcBtn) {
+			srcBtn.closest("details")?.removeAttribute("open");
+			runSource(srcBtn.dataset.queueSrc, srcBtn.dataset.queueAct);
 			return;
 		}
 

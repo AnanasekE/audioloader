@@ -73,18 +73,41 @@ window.playerState = {
 	},
 
 	// trackFromAPI turns a track of the JSON API into a queue entry. Autoplay
-	// entries carry auto: true; a track of secret mode carries secret: true.
-	trackFromAPI(j, secret) {
+	// entries carry auto: true (the default); what the user queues does not.
+	// A track of secret mode carries secret: true.
+	trackFromAPI(j, secret, auto = true) {
 		const t = {
 			id: j.id,
 			title: j.title,
 			artists: (j.artists || []).map((a) => a.name).join(", "),
 			img: j.imageUrl || (secret ? "/assets/img/default_secret.png" : "/assets/img/default_track.png"),
 			src: j.streamUrl,
-			auto: true,
 		};
+		if (auto) t.auto = true;
 		if (secret) t.secret = true;
+		if (j.kind === "episode") Object.assign(t, { kind: "episode", show: j.showId, position: j.finished ? 0 : j.position || 0 });
 		return t;
+	},
+
+	// tracksOf returns the queue entries of a release, playlist or list of
+	// API tracks: placeholders (no streamUrl) skipped, each track once, in
+	// order. A release lists {disc, number, track}; the rest list tracks.
+	tracksOf(list, secret) {
+		const seen = new Set();
+		return (list || [])
+			.map((x) => x.track ?? x)
+			.filter((j) => j.streamUrl && !seen.has(j.id) && seen.add(j.id))
+			.map((j) => window.playerState.trackFromAPI(j, secret, false));
+	},
+
+	// artistTracks returns an artist's tracks to play: the tracks of their
+	// releases (details, as the API gives them) oldest release first, then the
+	// artist's own tracks that are on none of them.
+	artistTracks(artist, releases, secret) {
+		const dated = (r) => r.date || "\uffff"; // no date: last
+		const byDate = [...releases].sort((a, b) => (dated(a) < dated(b) ? -1 : dated(a) > dated(b) ? 1 : 0));
+		const list = byDate.flatMap((r) => r.tracks || []).concat(artist.tracks || []);
+		return window.playerState.tracksOf(list, secret);
 	},
 
 	// autoStart returns the play position of the first autoplay track after

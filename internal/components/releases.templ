@@ -116,7 +116,10 @@ templ NewReleaseForm(artists []*audio.Artist, upload bool) {
 templ releaseGrid(releases []*audio.Release) {
 	@cardGrid() {
 		for _, r := range releases {
-			@card(r.ImgURL, r.Title, joinDot([]string{artistNames(r.Artists), r.Year()}), string(releaseURL(r)))
+			@tileWithMenu() {
+				@card(r.ImgURL, r.Title, joinDot([]string{artistNames(r.Artists), r.Year()}), string(releaseURL(r)))
+				@releaseMenu(r, "card")
+			}
 		}
 	}
 }
@@ -125,14 +128,16 @@ templ releaseGrid(releases []*audio.Release) {
 templ singleList(releases []*audio.Release) {
 	@list() {
 		for _, r := range releases {
-			<a class="row row-single text-inherit hover:no-underline" href={ releaseURL(r) }>
+			<div class="row row-single relative" data-menu-host>
 				@cover(r.ImgURL, 28)
 				<span class="stack">
-					<b>{ r.Title }</b>
+					// the link covers the row, the menu sits above it
+					<a class="after:absolute after:inset-0" href={ releaseURL(r) }><b>{ r.Title }</b></a>
 					<span>{ artistNames(r.Artists) }</span>
 				</span>
 				<span class="mono text-fg-muted">{ r.Year() }</span>
-			</a>
+				@releaseMenu(r, "row")
+			</div>
 		}
 	}
 }
@@ -152,11 +157,27 @@ templ releaseActions(r *audio.Release) {
 	if missingCount(r) < len(r.Tracks) {
 		<button type="button" class="btn" data-play-list="release-tracks">Play</button>
 		<button type="button" class="btn btn-ghost" data-play-list="release-tracks" data-shuffle>Shuffle</button>
-		@queueListMenu("release-tracks")
 	}
 	<a class="btn btn-ghost" href={ templ.SafeURL("/upload/batch?release=" + r.ID.String()) }>Upload tracks</a>
 	<a class="btn btn-ghost" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit release</a>
 	@removeReleaseButton(r)
+	@releaseMenu(r, "head")
+}
+
+// releaseMenu is the ⋯ menu of a release: on its card or row, and in its
+// page header. Releases exist in normal mode only.
+templ releaseMenu(r *audio.Release, where string) {
+	@ctxMenu(where, "More for "+r.Title) {
+		@sourceItems("releases/"+r.ID.String(), "Play", true)
+		<a class="menu-item" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit") }>Edit</a>
+		<a class="menu-item" href={ templ.SafeURL("/releases/" + r.ID.String() + "/edit#release-edit") }>Edit tracklist</a>
+		<button
+			type="button"
+			class="menu-item"
+			hx-post={ "/ui/releases/" + r.ID.String() + "/remove" }
+			hx-confirm={ removeReleaseConfirm(r) }
+		>Remove release…</button>
+	}
 }
 
 templ removeReleaseButton(r *audio.Release) {
@@ -171,6 +192,10 @@ templ removeReleaseButton(r *audio.Release) {
 // removeReleaseConfirm counts what removing r takes with it: its tracks that
 // are on no other release go, the rest stay.
 func removeReleaseConfirm(r *audio.Release) string {
+	// a card doesn't load the tracks, so it can't count them
+	if len(r.Tracks) == 0 {
+		return "Remove " + r.Title + "? Its tracks that are on no other release go too, with their files."
+	}
 	gone, withFiles, stay := 0, 0, 0
 	for _, rt := range r.Tracks {
 		if len(rt.Track.Releases) <= 1 {

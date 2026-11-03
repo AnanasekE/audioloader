@@ -183,11 +183,33 @@ templ artistPickerNew(artists []*audio.Artist, selected []string, newCreator str
 }
 
 templ Artist(a *audio.Artist) {
-	if secretMode(ctx) {
-		// creators have no releases to count
-		@avatarCard(a.ImgURL, a.Name, "", string(artistURL(a)))
-	} else {
-		@avatarCard(a.ImgURL, a.Name, releaseCountLabel(a.ReleaseCount), string(artistURL(a)))
+	@tileWithMenu() {
+		if secretMode(ctx) {
+			// creators have no releases to count
+			@avatarCard(a.ImgURL, a.Name, "", string(artistURL(a)))
+		} else {
+			@avatarCard(a.ImgURL, a.Name, releaseCountLabel(a.ReleaseCount), string(artistURL(a)))
+		}
+		@artistMenu(a, "card")
+	}
+}
+
+// artistMenu is the ⋯ menu of an artist, on their card and in their header.
+// Renaming and linking are in the page's Manage section.
+templ artistMenu(a *audio.Artist, where string) {
+	@ctxMenu(where, "More for "+a.Name) {
+		@sourceItems("artists/"+a.ID.String(), "Play all", false)
+		<a class="menu-item" href={ templ.SafeURL("/artists/" + a.ID.String() + "#manage") }>Edit / rename</a>
+		if !secretMode(ctx) {
+			if a.Followed {
+				<a class="menu-item" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>Following ✓</a>
+			} else {
+				<a class="menu-item" href={ templ.SafeURL("/artists/" + a.ID.String() + "/follow") }>Follow releases</a>
+			}
+			if a.MBID == "" {
+				<a class="menu-item" href={ templ.SafeURL("/artists/" + a.ID.String() + "#manage") }>Link to MusicBrainz…</a>
+			}
+		}
 	}
 }
 
@@ -239,6 +261,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				}
 			}
 			<a class="btn btn-ghost" href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Batch upload</a>
+			@artistMenu(a, "head")
 		}
 		if len(releases) == 0 && len(tracks) == 0 && len(covers) == 0 {
 			@emptyState() {
@@ -269,7 +292,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				@TrackList(covers)
 			</section>
 		}
-		<details class="mb-8">
+		<details id="manage" class="mb-8">
 			<summary class="btn btn-ghost inline-flex cursor-pointer list-none">Manage</summary>
 			<div class="mt-3">
 				@formPanel() {
@@ -282,6 +305,8 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 				}
 			</div>
 		</details>
+		// the ⋯ menu links to #manage, which should be open when it is there
+		<script>if (location.hash === "#manage") document.getElementById("manage").open = true</script>
 	}
 }
 

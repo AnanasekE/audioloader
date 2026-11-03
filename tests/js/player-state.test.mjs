@@ -158,6 +158,32 @@ test("trackFromAPI builds a queue entry marked as autoplay", () => {
 	assert.equal(window.playerState.trackFromAPI({ ...j, imageUrl: "" }, false).img, "/assets/img/default_track.png");
 });
 
+test("trackFromAPI leaves out auto for what the user queues, and keeps episode state", () => {
+	const j = { id: "e", title: "Ep", artists: [], imageUrl: "/i", streamUrl: "/s", kind: "episode", showId: "sh", position: 90, finished: false };
+	const t = window.playerState.trackFromAPI(j, false, false);
+	assert.equal(t.auto, undefined);
+	assert.deepEqual([t.kind, t.show, t.position], ["episode", "sh", 90]);
+	assert.equal(window.playerState.trackFromAPI({ ...j, finished: true }, false, false).position, 0);
+});
+
+test("tracksOf skips placeholders and repeats, and unwraps a release's tracklist", () => {
+	const j = (id, stream = "/s/" + id) => ({ id, title: id, artists: [], imageUrl: "", streamUrl: stream });
+	const list = [{ disc: 1, number: 1, track: j("a") }, { disc: 1, number: 2, track: j("gone", "") }, { disc: 1, number: 3, track: j("b") }, { disc: 2, number: 1, track: j("a") }];
+	const got = window.playerState.tracksOf(list, false);
+	assert.deepEqual(got.map((x) => x.id), ["a", "b"]);
+	assert.equal(got[0].auto, undefined);
+	assert.deepEqual(window.playerState.tracksOf([j("p"), j("q"), j("p")], true).map((x) => [x.id, x.secret]), [["p", true], ["q", true]]);
+	assert.deepEqual(window.playerState.tracksOf(undefined, false), []);
+});
+
+test("artistTracks: releases oldest first (undated last), then the loose tracks", () => {
+	const j = (id) => ({ id, title: id, artists: [], streamUrl: "/s/" + id });
+	const rel = (date, ...ids) => ({ date, tracks: ids.map((id, i) => ({ disc: 1, number: i + 1, track: j(id) })) });
+	const artist = { tracks: [j("loose"), j("a2")] };
+	const got = window.playerState.artistTracks(artist, [rel("", "u1"), rel("2020-05", "n1", "n2"), rel("2012", "o1", "a2")], false);
+	assert.deepEqual(got.map((x) => x.id), ["o1", "a2", "n1", "n2", "u1", "loose"]);
+});
+
 test("autoStart and autoLast keep what the user adds before the autoplay tracks", () => {
 	const p = window.playerState;
 	const queue = [{ id: "a" }, { id: "b" }, { id: "x", auto: true }, { id: "y", auto: true }, { id: "c" }];

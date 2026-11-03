@@ -130,7 +130,7 @@ templ avatarHeader(src string, kind string, title string, sub templ.Component, m
 }
 
 templ mediaHead(src string, kind string, title string, sub templ.Component, meta string, round bool) {
-	<header class="media-head">
+	<header class="media-head" data-menu-host>
 		if round {
 			<img class="avatar" src={ src } alt=""/>
 		} else {
@@ -174,6 +174,14 @@ templ card(coverSrc string, title string, sub string, href string) {
 			}
 		</span>
 	</a>
+}
+
+// tileWithMenu is a card with its ⋯ menu (children: the card, then the menu
+// built with menuLook "card") over the corner. Right-click on it opens the menu.
+templ tileWithMenu() {
+	<div class="group/tile relative grid min-w-0" data-menu-host>
+		{ children... }
+	</div>
 }
 
 // avatarCard is card with a round picture, for artists.
@@ -280,4 +288,50 @@ templ kindChoice(id string, value string, label string, checked bool) {
 		<input id={ id } class="sr-only" type="radio" name="kind" value={ value } checked?={ checked }/>
 		{ label }
 	</label>
+}
+
+// menuLook is the classes of a ⋯ menu where it sits: "card" over the corner
+// of a tile, "row" at the end of a row, "head" as a button in a page header.
+type menuLook struct{ details, summary, panel string }
+
+func lookOf(where string) menuLook {
+	switch where {
+	case "card":
+		return menuLook{
+			"absolute top-2 right-2 z-[1]",
+			"flex size-8 cursor-pointer list-none items-center justify-center rounded-md bg-bg/80 text-fg hover:bg-bg min-[720px]:opacity-0 min-[720px]:group-focus-within/tile:opacity-100 min-[720px]:group-hover/tile:opacity-100 min-[720px]:group-has-[[open]]/tile:opacity-100",
+			"absolute right-0 z-10 mt-1 grid w-48",
+		}
+	case "row":
+		return menuLook{
+			"relative z-[1]",
+			"flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-8",
+			"absolute right-0 z-10 mt-1 grid w-48",
+		}
+	}
+	return menuLook{"relative", "btn btn-ghost list-none", "absolute left-0 z-10 mt-1 grid w-48"}
+}
+
+// ctxMenu is the ⋯ menu of a release, artist or playlist, built like the
+// track menu: context-menu.js opens it from right-click on its [data-menu-host].
+templ ctxMenu(where string, label string) {
+	{{ look := lookOf(where) }}
+	<details class={ look.details } data-menu>
+		<summary class={ look.summary } aria-label={ label }>@icon("more")</summary>
+		<div class={ "pop", look.panel }>
+			{ children... }
+		</div>
+	</details>
+}
+
+// sourceItems are the Play, Shuffle, Play next and Add to queue items of a
+// menu whose tracks are not on the page: player.js fetches src ("releases/ID",
+// "playlists/ID" or "artists/ID") from the JSON API and plays or queues it.
+templ sourceItems(src string, play string, shuffle bool) {
+	<button type="button" class="menu-item" data-queue-src={ src } data-queue-act="play">{ play }</button>
+	if shuffle {
+		<button type="button" class="menu-item" data-queue-src={ src } data-queue-act="shuffle">Shuffle</button>
+	}
+	<button type="button" class="menu-item" data-queue-src={ src } data-queue-act="next">Play next</button>
+	<button type="button" class="menu-item" data-queue-src={ src } data-queue-act="add">Add to queue</button>
 }
