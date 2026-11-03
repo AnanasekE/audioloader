@@ -8,6 +8,7 @@ import (
 
 	"audioloader/internal/db"
 	"audioloader/internal/dbtest"
+	"audioloader/internal/tracking"
 )
 
 func TestCandidateReleases(t *testing.T) {
@@ -202,5 +203,29 @@ func TestAddArtistFromMusicBrainz(t *testing.T) {
 	}
 	if rec := postForm(h, "/ui/artists/musicbrainz", "mbid=nope&name=X"); rec.Code != http.StatusBadRequest {
 		t.Fatalf("bad mbid = %d", rec.Code)
+	}
+}
+
+func TestCheckFollowsNow(t *testing.T) {
+	dbtest.New(t)
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	h := WithViewer(mux)
+	for _, name := range []string{"One", "Two"} {
+		a, err := db.AddArtist(db.Normal, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetFollow(a.ID.String(), "mb-"+name, db.DefaultFilters()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rec := postForm(h, "/ui/follows/check", "")
+	if rec.Code != 204 || rec.Header().Get("HX-Location") == "" {
+		t.Fatalf("check = %d %v", rec.Code, rec.Header())
+	}
+	var n int
+	if err := db.DB.QueryRow(`SELECT COUNT(*) FROM jobs WHERE type = ?;`, tracking.JobCheck).Scan(&n); err != nil || n != 2 {
+		t.Fatalf("%d check jobs queued, want 2 (err %v)", n, err)
 	}
 }

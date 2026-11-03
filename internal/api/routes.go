@@ -104,6 +104,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handleNormal(mux, "POST /ui/artists/{artist_id}/follow", followArtist)
 	handleNormal(mux, "POST /ui/artists/{artist_id}/unfollow", unfollowArtist)
 	handleNormal(mux, "POST /ui/artists/{artist_id}/check", checkArtistNow)
+	handleNormal(mux, "POST /ui/follows/check", checkFollowsNow)
 	handleNormal(mux, "GET /ui/downloads/active", getActiveDownloads)
 	handleNormal(mux, "POST /ui/downloads/{track_id}/retry", retryDownload)
 	handleNormal(mux, "POST /ui/downloads/{track_id}/youtube", downloadFromYouTube)

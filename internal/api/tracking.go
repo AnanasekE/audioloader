@@ -167,6 +167,22 @@ func checkArtistNow(w http.ResponseWriter, r *http.Request) {
 	hxLocation(w, "/inbox")
 }
 
+// checkFollowsNow queues a check of every followed artist, for the ⌘K action.
+func checkFollowsNow(w http.ResponseWriter, r *http.Request) {
+	follows, err := db.ListFollows()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	for _, f := range follows {
+		if err := tracking.EnqueueCheck(f.Artist.ID.String(), time.Time{}); err != nil {
+			serverError(w, err)
+			return
+		}
+	}
+	hxLocation(w, "/inbox")
+}
+
 // inboxFilter reads the inbox's filters, sort and search from the query string.
 func inboxFilter(r *http.Request, status string) db.InboxFilter {
 	q := r.URL.Query()

@@ -34,6 +34,7 @@ templ layout(title string, active string) {
 			<script src="/assets/js/player-state.js" defer></script>
 			<script src="/assets/js/sleep-timer.js" defer></script>
 			<script src="/assets/js/player.js" defer></script>
+			<script src="/assets/js/commands.js" defer></script>
 			<script src="/assets/js/nav.js" defer></script>
 			<script src="/assets/js/context-menu.js" defer></script>
 			<script src="/assets/js/filter.js" defer></script>
@@ -55,6 +56,7 @@ templ layout(title string, active string) {
 			</div>
 			@tabBar(active)
 			@moreSheet(active)
+			@shortcutsDialog()
 			@player()
 		</body>
 	</html>
@@ -298,7 +300,7 @@ templ topStrip() {
 				type="search"
 				name="q"
 				placeholder="Search"
-				aria-label="Search the library"
+				aria-label="Search the library, or type > for actions"
 				autocomplete="off"
 				hx-get="/ui/search"
 				hx-trigger="input changed delay:200ms, focus"
@@ -427,6 +429,30 @@ templ moreSheet(active string) {
 			</ul>
 		</dialog>
 	}
+}
+
+// shortcutsDialog lists the keys and the ways into a menu. nav.js opens it on ?.
+templ shortcutsDialog() {
+	<dialog id="shortcuts-dialog" class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-line bg-panel p-4 text-fg shadow-(--shadow-pop) backdrop:bg-black/50" aria-label="Keyboard shortcuts">
+		<h2 class="mb-3 text-base font-semibold">Keyboard shortcuts</h2>
+		<dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+			@shortcut("Ctrl K  or  ⌘K", "Search, or run an action. Start with > for actions only.")
+			@shortcut("/", "Search")
+			@shortcut("Space", "Play or pause")
+			@shortcut("m", "Mute")
+			@shortcut("?", "This list")
+			@shortcut("Shift F10  or  Menu", "Open the menu of the focused row or card")
+		</dl>
+		<p class="mt-3 text-sm text-fg-muted">Right-click a track, release, artist or playlist for its menu (Shift + right-click keeps the browser's). On a phone, press and hold.</p>
+		<form method="dialog" class="mt-4 text-right">
+			<button class="btn btn-ghost">Close</button>
+		</form>
+	</dialog>
+}
+
+templ shortcut(keys string, what string) {
+	<dt><kbd class="rounded-sm border border-line px-1.5 font-mono text-xs whitespace-pre text-fg-muted">{ keys }</kbd></dt>
+	<dd>{ what }</dd>
 }
 
 templ sheetLink(href string, label string, iconName string, current bool, badgeURL string) {

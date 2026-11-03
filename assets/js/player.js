@@ -816,7 +816,22 @@
 		if ("mediaSession" in navigator) navigator.mediaSession.metadata = null;
 	}
 
-	window.player = { playList, enqueue, playNext, playAt, next, prev, toggleShuffle, clear, reset };
+	// for the ⌘K actions (commands.js)
+	const snapshot = () => ({ shuffle, repeat, autoplay, sleeping: timer.active() });
+	function setRepeat(mode) {
+		repeat = mode;
+		syncRepeat();
+		renderQueue();
+		save();
+	}
+	// sleepIn starts the sleep timer, or turns it off with null
+	function sleepIn(minutes) {
+		if (minutes === null) timer.cancel();
+		else timer.start(minutes, Date.now());
+		sleepChanged();
+	}
+
+	window.player = { playList, enqueue, playNext, playAt, next, prev, toggleShuffle, toggleAutoplay, setRepeat, sleepIn, state: snapshot, clear, reset };
 
 	syncVolume();
 	syncSleep();
