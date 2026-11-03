@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Search aliases and sort names
+- [x] 1. Search aliases and sort names
 - [ ] 2. A visible manual field and clear buttons
 
 ## Rules

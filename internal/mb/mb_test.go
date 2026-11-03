@@ -100,8 +100,15 @@ func TestDecodeFixtures(t *testing.T) {
 	if err != nil || len(artists) == 0 || artists[0].Name != "Massive Attack" {
 		t.Fatalf("artists = %v, %v", artists, err)
 	}
+	if got := (*reqs)[len(*reqs)-1].URL.Query().Get("query"); got != `artist:"Massive Attack" OR alias:"Massive Attack" OR sortname:"Massive Attack"` {
+		t.Fatalf("artist query = %q", got)
+	}
 	if a := artists[0]; a.Area.Name != "United Kingdom" || a.LifeSpan.Begin != "1987" || a.LifeSpan.Ended {
 		t.Fatalf("artist details = %+v", a)
+	}
+	byAlias, err := c.SearchArtists(ctx, "Massiv Attack", 3)
+	if err != nil || len(byAlias) == 0 || byAlias[0].MatchedAlias != "Massiv Attack" {
+		t.Fatalf("alias match = %+v, %v", byAlias, err)
 	}
 	groups, count, err := c.BrowseReleaseGroups(ctx, "10adbe5e-a2c0-4bf3-8249-2b4cbf6e6ca8", 0)
 	if err != nil || len(groups) == 0 || count < len(groups) || groups[0].PrimaryType == "" {

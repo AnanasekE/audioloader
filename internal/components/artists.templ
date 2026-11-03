@@ -411,6 +411,9 @@ templ artistCandidate(c mb.Artist) {
 		{ children... }
 		<div class="min-w-0 flex-1">
 			<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
+			if c.MatchedAlias != "" {
+				<span class="text-fg-muted">{ " (alias: " + c.MatchedAlias + ")" }</span>
+			}
 			if d := candidateDetails(c); d != "" {
 				<span class="text-fg-muted">{ " " + d }</span>
 			}
