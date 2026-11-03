@@ -8,7 +8,7 @@
 
 - [x] 1. Repeat logic and saved state (web)
 - [x] 2. Repeat button (web)
-- [ ] 3. Mobile app
+- [x] 3. Mobile app
 
 ## Rules
 

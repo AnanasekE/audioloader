@@ -91,3 +91,38 @@ describe("next and previous", () => {
     expect(Q.hasPrevious(q)).toBe(false);
   });
 });
+
+describe("repeat", () => {
+  it("cycles off, all, one", () => {
+    expect(Q.nextRepeat("off")).toBe("all");
+    expect(Q.nextRepeat("all")).toBe("one");
+    expect(Q.nextRepeat("one")).toBe("off");
+  });
+  it("repeatFrom keeps a valid mode, else off", () => {
+    expect(Q.repeatFrom("all")).toBe("all");
+    expect(Q.repeatFrom("one")).toBe("one");
+    expect(Q.repeatFrom("loop")).toBe("off");
+    expect(Q.repeatFrom(undefined)).toBe("off");
+  });
+  it("only all wraps at the end", () => {
+    const last = Q.setQueue(["a", "b", "c"].map(t), 2);
+    expect(Q.nextIndex(last, "off")).toBe(-1);
+    expect(Q.nextIndex(last, "one")).toBe(-1);
+    expect(Q.nextIndex(last, "all")).toBe(0);
+    expect(Q.hasNext(last)).toBe(false);
+    expect(Q.hasNext(last, "all")).toBe(true);
+    expect(Q.current(Q.next(last, "all"))?.id).toBe("a");
+    expect(Q.next(last)).toBe(last);
+  });
+  it("moves on normally in the middle, and an empty queue has no next", () => {
+    expect(Q.nextIndex(abcd(), "all")).toBe(2);
+    expect(Q.nextIndex(Q.emptyQueue, "all")).toBe(-1);
+  });
+  it("loopMode maps to expo-audio, and the sleep timer beats repeat one", () => {
+    expect(Q.loopMode("off", false)).toBe("none");
+    expect(Q.loopMode("all", false)).toBe("all");
+    expect(Q.loopMode("one", false)).toBe("single");
+    expect(Q.loopMode("one", true)).toBe("none");
+    expect(Q.loopMode("all", true)).toBe("all");
+  });
+});

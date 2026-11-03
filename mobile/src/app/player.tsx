@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Btn, SleepTimer, Transport } from "@/components/player-ui";
+import { Btn, RepeatButton, SleepTimer, Transport } from "@/components/player-ui";
 import { artistNames, Cover, Message } from "@/components/ui";
 import { jumpTo, move, removeAt, usePlayer } from "@/player";
 import { current } from "@/player/queue";
@@ -35,6 +35,7 @@ export default function PlayerScreen() {
           <Text style={styles.sub}>{artistNames(t)}</Text>
           <View style={{ height: 16 }} />
           <Transport />
+          <RepeatButton />
           <SleepTimer episode={isEpisode(t)} />
           <Text style={styles.section}>Queue</Text>
         </View>

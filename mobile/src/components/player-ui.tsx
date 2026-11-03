@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { cancelSleep, extendSleep, next, previous, seekTo, skipBy, sleepAtEndOfTrack, startSleep, toggle, usePlayer } from "@/player";
-import { current } from "@/player/queue";
+import { cancelSleep, extendSleep, next, previous, seekTo, skipBy, sleepAtEndOfTrack, startSleep, toggle, toggleRepeat, usePlayer } from "@/player";
+import { current, hasNext } from "@/player/queue";
 import * as S from "@/player/sleepTimer";
 import { colors, font, radius } from "@/theme";
 import { artistNames, Cover, formatDuration } from "./ui";
@@ -54,7 +54,7 @@ export function MiniPlayer() {
         </View>
         {S.isActive(p.sleep) ? <Text style={styles.miniSleep}>{S.badge(p.sleep, Date.now())}</Text> : null}
         <Btn label={p.playing ? "Pause" : "Play"} onPress={toggle} />
-        <Btn label="Next" onPress={next} disabled={p.queue.index + 1 >= p.queue.items.length} />
+        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat)} />
       </Pressable>
     </View>
   );
@@ -114,6 +114,17 @@ function Chip({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
+// RepeatButton steps off, all, one (the same three modes as on the web).
+export function RepeatButton() {
+  const p = usePlayer();
+  const on = p.repeat !== "off";
+  return (
+    <Pressable style={[styles.sleepBtn, { marginTop: 20 }, on && { backgroundColor: colors.accentDim }]} onPress={toggleRepeat} accessibilityLabel={`Repeat: ${p.repeat}`}>
+      <Text style={[styles.btnText, on && { color: colors.accent }]}>{`Repeat: ${p.repeat}`}</Text>
+    </Pressable>
+  );
+}
+
 export function Transport() {
   const p = usePlayer();
   const t = current(p.queue);
@@ -130,7 +141,7 @@ export function Transport() {
         <Btn label="-15" onPress={() => void skipBy(-15)} />
         <Btn label={p.playing ? "Pause" : "Play"} onPress={toggle} big />
         <Btn label="+30" onPress={() => void skipBy(30)} />
-        <Btn label="Next" onPress={next} disabled={p.queue.index + 1 >= p.queue.items.length} />
+        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat)} />
       </View>
     </View>
   );

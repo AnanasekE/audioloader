@@ -20,17 +20,19 @@ export type PlayerState = {
   duration: number;
   buffering: boolean;
   sleep: S.SleepTimer;
+  repeat: Q.Repeat;
 };
 
-let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off };
+let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: "off" };
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<PlayerState>) {
   const prev = state;
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
+  if (patch.repeat !== undefined || patch.sleep) applyLoop();
+  if (patch.queue || patch.repeat !== undefined) schedulePersist();
   if (patch.queue) {
-    schedulePersist();
     const before = Q.current(prev.queue);
     const after = Q.current(state.queue);
     if (before?.id !== after?.id) trackSwitched(before, prev, after);
@@ -72,6 +74,7 @@ function engine(): AudioPlaylist {
     }
   });
   playlist = pl;
+  applyLoop();
   return pl;
 }
 
@@ -93,6 +96,13 @@ function onStatus(s: AudioPlaylistStatus) {
   if (s.didJustFinish) saveEpisode(t, s.currentTime, s.duration, true);
   else if ((wasPlaying && !s.playing) || (s.playing && dueForSave(lastSave, Date.now()))) saveEpisode(t, s.currentTime, s.duration);
 }
+
+// applyLoop gives the playlist the loop mode of the repeat mode (see queue.ts)
+function applyLoop() {
+  if (playlist) playlist.loop = Q.loopMode(state.repeat, state.sleep.kind === "track");
+}
+
+export const toggleRepeat = () => set({ repeat: Q.nextRepeat(state.repeat) });
 
 // ---- sleep timer ----
 // The logic is in sleepTimer.ts. This part runs a once-a-second check while a
@@ -257,9 +267,13 @@ export function toggle(): void {
 }
 
 export function next(): void {
-  if (!Q.hasNext(state.queue)) return;
-  set({ queue: Q.next(state.queue), position: 0 });
-  engine().next();
+  const i = Q.nextIndex(state.queue, state.repeat);
+  if (i < 0) return;
+  // a wrap goes back to the start, so it is a jump, not the playlist's next()
+  const wrapped = i <= state.queue.index;
+  set({ queue: Q.jumpTo(state.queue, i), position: 0 });
+  if (wrapped) engine().skipTo(i);
+  else engine().next();
   updateLockScreen();
 }
 
@@ -336,8 +350,9 @@ export function reset(): void {
       mutating--;
     }
   }
-  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off };
+  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: state.repeat };
   pendingSeek = null;
+  applyLoop();
   saved.clear();
   listeners.forEach((l) => l());
   void AsyncStorage.removeItem(QUEUE_KEY).catch(() => {});
@@ -356,7 +371,7 @@ function schedulePersist() {
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
     const q = state.queue;
-    const op = q.items.length ? AsyncStorage.setItem(QUEUE_KEY, JSON.stringify({ secret: modeSecret, queue: q })) : AsyncStorage.removeItem(QUEUE_KEY);
+    const op = q.items.length ? AsyncStorage.setItem(QUEUE_KEY, JSON.stringify({ secret: modeSecret, queue: q, repeat: state.repeat })) : AsyncStorage.removeItem(QUEUE_KEY);
     op.catch(() => {});
   }, 500);
 }
@@ -370,11 +385,14 @@ export async function bindMode(secret: boolean): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(QUEUE_KEY);
     if (!raw || state.queue.items.length) return;
-    const snap = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState };
+    const snap = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState; repeat?: unknown };
     if (snap.secret !== secret) {
       await AsyncStorage.removeItem(QUEUE_KEY);
       return;
     }
-    if (snap.queue?.items?.length) load(snap.queue, false);
+    if (snap.queue?.items?.length) {
+      load(snap.queue, false);
+      set({ repeat: Q.repeatFrom(snap.repeat) });
+    }
   } catch {}
 }

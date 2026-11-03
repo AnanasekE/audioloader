@@ -61,8 +61,32 @@ export function move(q: QueueState, from: number, to: number): QueueState {
   return { items, index };
 }
 
-export function hasNext(q: QueueState): boolean {
-  return q.index >= 0 && q.index + 1 < q.items.length;
+// Repeat is the same three modes as on the web: "all" wraps from the last
+// track to the first, "one" plays the current track again when it ends (Next
+// still moves on).
+export type Repeat = "off" | "all" | "one";
+
+export const nextRepeat = (r: Repeat): Repeat => (r === "off" ? "all" : r === "all" ? "one" : "off");
+
+// repeatFrom returns a saved repeat mode, or "off" for anything else.
+export const repeatFrom = (v: unknown): Repeat => (v === "all" || v === "one" ? v : "off");
+
+// nextIndex is the index Next goes to, or -1 at the end. Only "all" wraps.
+export function nextIndex(q: QueueState, repeat: Repeat = "off"): number {
+  if (q.index < 0) return -1;
+  if (q.index + 1 < q.items.length) return q.index + 1;
+  return repeat === "all" ? 0 : -1;
+}
+
+// loopMode is the expo-audio loop mode for a repeat mode. A sleep timer set
+// to "end of this track" wins over repeat one, so the track is not looped.
+export function loopMode(repeat: Repeat, sleepAtTrackEnd: boolean): "none" | "single" | "all" {
+  if (repeat === "all") return "all";
+  return repeat === "one" && !sleepAtTrackEnd ? "single" : "none";
+}
+
+export function hasNext(q: QueueState, repeat: Repeat = "off"): boolean {
+  return nextIndex(q, repeat) >= 0;
 }
 
 export function hasPrevious(q: QueueState): boolean {
@@ -74,8 +98,9 @@ export function jumpTo(q: QueueState, i: number): QueueState {
 }
 
 // next and previous return the same state at the ends.
-export function next(q: QueueState): QueueState {
-  return hasNext(q) ? jumpTo(q, q.index + 1) : q;
+export function next(q: QueueState, repeat: Repeat = "off"): QueueState {
+  const i = nextIndex(q, repeat);
+  return i >= 0 ? jumpTo(q, i) : q;
 }
 
 export function previous(q: QueueState): QueueState {
