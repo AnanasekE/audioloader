@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylist, type AudioPlaylistStatus, type AudioSource } from "expo-audio";
 import { useSyncExternalStore } from "react";
-import { absoluteUrl, authHeaders, post } from "@/api/client";
-import type { Track } from "@/api/types";
+import { absoluteUrl, authHeaders, get, post } from "@/api/client";
+import type { Page, Track } from "@/api/types";
 import { onModeReset } from "@/mode";
+import { asAutoplay, autoplayPath, BATCH, historyFrom, pushHistory } from "./autoplay";
 import { bodyToSave, dueForSave, isEpisode, startPosition } from "./positions";
 import * as Q from "./queue";
 import * as S from "./sleepTimer";
@@ -21,9 +22,10 @@ export type PlayerState = {
   buffering: boolean;
   sleep: S.SleepTimer;
   repeat: Q.Repeat;
+  autoplay: boolean; // when the queue runs out, suggestions play on
 };
 
-let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: "off" };
+let state: PlayerState = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: "off", autoplay: true };
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<PlayerState>) {
@@ -31,12 +33,13 @@ function set(patch: Partial<PlayerState>) {
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
   if (patch.repeat !== undefined || patch.sleep) applyLoop();
-  if (patch.queue || patch.repeat !== undefined) schedulePersist();
+  if (patch.queue || patch.repeat !== undefined || patch.autoplay !== undefined) schedulePersist();
   if (patch.queue) {
     const before = Q.current(prev.queue);
     const after = Q.current(state.queue);
     if (before?.id !== after?.id) {
       nextAt = 0;
+      if (after) history = pushHistory(history, after.id);
       trackSwitched(before, prev, after);
     }
   }
@@ -91,7 +94,8 @@ function onStatus(s: AudioPlaylistStatus) {
     pendingSeek = null;
     void playlist?.seekTo(to);
   }
-  // the last track of the queue ended
+  // the last track of the queue ended: autoplay plays on, unless the sleep timer stops here
+  if (s.didJustFinish && mine && !Q.hasNext(state.queue, state.repeat) && state.repeat !== "one" && state.sleep.kind !== "track") void fetchAutoplay(true);
   if (s.didJustFinish && state.sleep.kind === "track") endSleep();
   if (mine) set({ playing: s.playing, position: s.currentTime, duration: s.duration, buffering: s.isBuffering });
   else set({ playing: s.playing });
@@ -161,6 +165,38 @@ export const startSleep = (minutes: number) => setSleep(S.start(minutes, Date.no
 export const sleepAtEndOfTrack = () => setSleep(S.endOfTrack());
 export const extendSleep = (minutes: number) => setSleep(S.extend(state.sleep, minutes, Date.now()));
 export const cancelSleep = () => endSleep();
+
+// ---- autoplay ----
+// The rules are in autoplay.ts. History is the last 50 played track IDs; the
+// suggestions are based on it and never repeat it.
+
+let history: string[] = [];
+let fetchingAuto = false;
+
+// autoplayPossible: autoplay is on and what plays is music (an episode has no suggestions)
+export const autoplayPossible = (p: PlayerState): boolean => p.autoplay && Q.current(p.queue)?.kind === "music";
+
+export const toggleAutoplay = () => set({ autoplay: !state.autoplay });
+
+// fetchAutoplay appends suggestions to the queue, after everything else, and
+// with advance starts the first one, unless the user moved on meanwhile. A
+// failed fetch just stops, as before autoplay existed.
+async function fetchAutoplay(advance: boolean): Promise<void> {
+  if (fetchingAuto || !autoplayPossible(state)) return;
+  fetchingAuto = true;
+  const from = Q.current(state.queue)?.id;
+  let tracks: Q.QueueTrack[] = [];
+  try {
+    const page = await get<Page<Track>>(autoplayPath(history, BATCH));
+    tracks = asAutoplay(page.items, state.queue.items);
+  } catch {}
+  fetchingAuto = false;
+  if (!tracks.length || !state.autoplay || !state.queue.items.length) return;
+  const first = state.queue.items.length;
+  tracks.forEach((t) => engine().add(sourceOf(t)));
+  set({ queue: Q.appendAuto(state.queue, tracks) });
+  if (advance && Q.current(state.queue)?.id === from) jumpTo(first);
+}
 
 // ---- episode positions ----
 
@@ -269,7 +305,8 @@ export function addToEnd(tracks: Track | Track[]): void {
   const add = playable(tracks);
   if (!add.length) return;
   if (!state.queue.items.length) return load(Q.setQueue(add, 0), true);
-  add.forEach((t) => engine().add(sourceOf(t)));
+  const at = Q.autoStart(state.queue);
+  add.forEach((t, k) => engine().insert(sourceOf(t), at + k));
   set({ queue: Q.addToEnd(state.queue, add) });
 }
 
@@ -282,7 +319,7 @@ export function toggle(): void {
 
 export function next(): void {
   const i = Q.nextIndex(state.queue, state.repeat);
-  if (i < 0) return;
+  if (i < 0) return void fetchAutoplay(true);
   // a wrap goes back to the start, so it is a jump, not the playlist's next()
   const wrapped = i <= state.queue.index;
   set({ queue: Q.jumpTo(state.queue, i), position: 0 });
@@ -365,9 +402,10 @@ export function reset(): void {
       mutating--;
     }
   }
-  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: state.repeat };
+  state = { queue: Q.emptyQueue, playing: false, position: 0, duration: 0, buffering: false, sleep: S.off, repeat: state.repeat, autoplay: state.autoplay };
   pendingSeek = null;
   nextAt = 0;
+  history = [];
   applyLoop();
   saved.clear();
   listeners.forEach((l) => l());
@@ -387,7 +425,7 @@ function schedulePersist() {
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
     const q = state.queue;
-    const op = q.items.length ? AsyncStorage.setItem(QUEUE_KEY, JSON.stringify({ secret: modeSecret, queue: q, repeat: state.repeat })) : AsyncStorage.removeItem(QUEUE_KEY);
+    const op = q.items.length ? AsyncStorage.setItem(QUEUE_KEY, JSON.stringify({ secret: modeSecret, queue: q, repeat: state.repeat, autoplay: state.autoplay, history })) : AsyncStorage.removeItem(QUEUE_KEY);
     op.catch(() => {});
   }, 500);
 }
@@ -401,14 +439,15 @@ export async function bindMode(secret: boolean): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(QUEUE_KEY);
     if (!raw || state.queue.items.length) return;
-    const snap = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState; repeat?: unknown };
+    const snap = JSON.parse(raw) as { secret: boolean; queue: Q.QueueState; repeat?: unknown; autoplay?: unknown; history?: unknown };
     if (snap.secret !== secret) {
       await AsyncStorage.removeItem(QUEUE_KEY);
       return;
     }
     if (snap.queue?.items?.length) {
       load(snap.queue, false);
-      set({ repeat: Q.repeatFrom(snap.repeat) });
+      history = historyFrom(snap.history);
+      set({ repeat: Q.repeatFrom(snap.repeat), autoplay: snap.autoplay !== false });
     }
   } catch {}
 }

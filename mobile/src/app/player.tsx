@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Btn, RepeatButton, SleepTimer, Transport } from "@/components/player-ui";
+import { AutoplaySwitch, Btn, RepeatButton, SleepTimer, Transport } from "@/components/player-ui";
 import { artistNames, Cover, Message } from "@/components/ui";
 import { jumpTo, move, removeAt, usePlayer } from "@/player";
 import { current } from "@/player/queue";
@@ -37,29 +37,35 @@ export default function PlayerScreen() {
           <Transport />
           <RepeatButton />
           <SleepTimer episode={isEpisode(t)} />
+          <AutoplaySwitch />
           <Text style={styles.section}>Queue</Text>
         </View>
       }
       renderItem={({ item, index: i }) => {
         const isCurrent = i === index;
+        // autoplay tracks come last, under a divider
+        const firstAuto = item.auto && !items[i - 1]?.auto;
         return (
-          <View style={[styles.qrow, isCurrent && { backgroundColor: colors.accentDim }]}>
-            <Pressable style={{ flex: 1 }} onPress={() => jumpTo(i)}>
-              <Text style={[styles.qtitle, isCurrent && { color: colors.accent }]} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.qsub} numberOfLines={1}>
-                {artistNames(item)}
-              </Text>
-            </Pressable>
-            {!isCurrent ? (
-              <>
-                <Btn label="Up" onPress={() => move(i, i - 1)} disabled={i === 0 || i - 1 === index} />
-                <Btn label="Down" onPress={() => move(i, i + 1)} disabled={i === items.length - 1 || i + 1 === index} />
-              </>
-            ) : null}
-            <Btn label="Remove" onPress={() => removeAt(i)} />
-          </View>
+          <>
+            {firstAuto ? <Text style={[styles.section, { marginTop: 16, paddingHorizontal: 12 }]}>Autoplay</Text> : null}
+            <View style={[styles.qrow, isCurrent && { backgroundColor: colors.accentDim }]}>
+              <Pressable style={{ flex: 1 }} onPress={() => jumpTo(i)}>
+                <Text style={[styles.qtitle, isCurrent && { color: colors.accent }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={styles.qsub} numberOfLines={1}>
+                  {artistNames(item)}
+                </Text>
+              </Pressable>
+              {!isCurrent ? (
+                <>
+                  <Btn label="Up" onPress={() => move(i, i - 1)} disabled={i === 0 || i - 1 === index || Boolean(item.auto) !== Boolean(items[i - 1].auto)} />
+                  <Btn label="Down" onPress={() => move(i, i + 1)} disabled={i === items.length - 1 || i + 1 === index || Boolean(item.auto) !== Boolean(items[i + 1].auto)} />
+                </>
+              ) : null}
+              <Btn label="Remove" onPress={() => removeAt(i)} />
+            </View>
+          </>
         );
       }}
     />

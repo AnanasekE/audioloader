@@ -3,7 +3,9 @@ import type { Track } from "@/api/types";
 // The play queue as plain data and pure functions, so it can be tested
 // without audio. index is the position of the current track, or -1 when
 // the queue is empty.
-export type QueueState = { items: Track[]; index: number };
+// A track marked auto was added by autoplay; those stay at the end of the queue.
+export type QueueTrack = Track & { auto?: boolean };
+export type QueueState = { items: QueueTrack[]; index: number };
 
 export const emptyQueue: QueueState = { items: [], index: -1 };
 
@@ -25,10 +27,17 @@ export function setQueue(tracks: Track[], index: number): QueueState {
 // current track and after the nextAt tracks already put there since it
 // started, so several in a row play in the order added. Never past the end.
 export function playNextSlot(q: QueueState, nextAt: number): number {
-  return Math.min(q.index + 1 + Math.max(0, nextAt), q.items.length);
+  return Math.min(q.index + 1 + Math.max(0, nextAt), autoStart(q));
 }
 
 const asList = (t: Track | Track[]): Track[] => (Array.isArray(t) ? t : [t]);
+
+// autoStart is the index of the first autoplay track after the current one,
+// or the length of the queue: what the user adds goes in before it.
+export function autoStart(q: QueueState): number {
+  for (let i = q.index + 1; i < q.items.length; i++) if (q.items[i].auto) return i;
+  return q.items.length;
+}
 
 // playNext puts tracks (one or a batch, in order) after the current one and
 // after what "Play next" added before (nextAt).
@@ -45,7 +54,14 @@ export function addToEnd(q: QueueState, tracks: Track | Track[]): QueueState {
   const add = asList(tracks);
   if (!add.length) return q;
   if (!q.items.length) return { items: add, index: 0 };
-  return { items: [...q.items, ...add], index: q.index };
+  const items = q.items.slice();
+  items.splice(autoStart(q), 0, ...add);
+  return { items, index: q.index };
+}
+
+// appendAuto adds autoplay tracks at the very end.
+export function appendAuto(q: QueueState, tracks: QueueTrack[]): QueueState {
+  return tracks.length ? { items: [...q.items, ...tracks], index: q.index } : q;
 }
 
 // removeAt drops the track at i. Removing the current track leaves index on

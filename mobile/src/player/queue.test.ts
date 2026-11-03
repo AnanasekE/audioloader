@@ -145,3 +145,26 @@ describe("repeat", () => {
     expect(Q.loopMode("all", true)).toBe("all");
   });
 });
+
+describe("autoplay tracks stay last", () => {
+  const withAuto = () => Q.appendAuto(abcd(), [{ ...t("x"), auto: true }, { ...t("y"), auto: true }]);
+  it("autoStart finds the first autoplay track after the current one", () => {
+    expect(Q.autoStart(withAuto())).toBe(4);
+    expect(Q.autoStart(abcd())).toBe(4);
+    expect(Q.autoStart({ ...withAuto(), index: 4 })).toBe(5);
+  });
+  it("addToEnd and playNext go before them", () => {
+    expect(ids(Q.addToEnd(withAuto(), t("p")))).toBe("abcdpxy");
+    expect(ids(Q.playNext(withAuto(), t("p"), 9))).toBe("abcdpxy");
+    expect(ids(Q.playNext(withAuto(), t("p")))).toBe("abpcdxy");
+  });
+  it("with only autoplay tracks left, additions still go first", () => {
+    const q = Q.appendAuto(Q.setQueue([t("a")], 0), [{ ...t("x"), auto: true }]);
+    expect(ids(Q.addToEnd(q, t("p")))).toBe("apx");
+  });
+  it("appendAuto adds at the very end and ignores an empty list", () => {
+    expect(ids(withAuto())).toBe("abcdxy");
+    const q = abcd();
+    expect(Q.appendAuto(q, [])).toBe(q);
+  });
+});

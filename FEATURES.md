@@ -182,6 +182,7 @@
 - Expo app in `mobile/` (iOS and Android, runs in Expo Go over Tailscale): server address on first launch, tabs for tracks, artists, releases, playlists, podcasts and search, detail screens, paged lists
 - Queue (play now, play next, add to end, remove, reorder) with a mini player and a full-screen player, background audio and lock-screen / Control Center controls
 - Queue… on a release or playlist screen: Play next / Add to end of queue for the whole list (placeholders skipped); several Play nexts in a row play in the order added
+- Autoplay switch in the full-screen player (on by default, saved with the queue): when the queue ends, 10 similar tracks from `GET /api/v1/autoplay` are appended under an "Autoplay" divider and play on; added tracks go before them
 - Repeat button in the full-screen player: off, all or one (expo-audio's loop mode); the sleep timer's "end of this track" wins over repeat one; saved with the queue
 - Episodes resume at their saved position and save it every 15 s, on pause and at the end
 - Sleep timer in the full-screen player (first tap starts 30 minutes; 15–120 minutes or the end of the track/episode; fades over the last 10 s, then pauses), with a "23m" badge on the mini player. Background behaviour not verified on a device yet

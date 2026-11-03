@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { cancelSleep, extendSleep, next, previous, seekTo, skipBy, sleepAtEndOfTrack, startSleep, toggle, toggleRepeat, usePlayer } from "@/player";
+import { autoplayPossible, cancelSleep, extendSleep, next, previous, seekTo, skipBy, sleepAtEndOfTrack, startSleep, toggle, toggleAutoplay, toggleRepeat, usePlayer } from "@/player";
 import { current, hasNext } from "@/player/queue";
 import * as S from "@/player/sleepTimer";
 import { colors, font, radius } from "@/theme";
@@ -54,7 +54,7 @@ export function MiniPlayer() {
         </View>
         {S.isActive(p.sleep) ? <Text style={styles.miniSleep}>{S.badge(p.sleep, Date.now())}</Text> : null}
         <Btn label={p.playing ? "Pause" : "Play"} onPress={toggle} />
-        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat)} />
+        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat) && !autoplayPossible(p)} />
       </Pressable>
     </View>
   );
@@ -125,6 +125,16 @@ export function RepeatButton() {
   );
 }
 
+// AutoplaySwitch turns on keeping playing similar tracks when the queue runs out.
+export function AutoplaySwitch() {
+  const p = usePlayer();
+  return (
+    <Pressable style={[styles.sleepBtn, { marginTop: 12 }, p.autoplay && { backgroundColor: colors.accentDim }]} onPress={toggleAutoplay} accessibilityRole="switch" accessibilityState={{ checked: p.autoplay }}>
+      <Text style={[styles.btnText, p.autoplay && { color: colors.accent }]}>{`Autoplay: ${p.autoplay ? "on" : "off"}`}</Text>
+    </Pressable>
+  );
+}
+
 export function Transport() {
   const p = usePlayer();
   const t = current(p.queue);
@@ -141,7 +151,7 @@ export function Transport() {
         <Btn label="-15" onPress={() => void skipBy(-15)} />
         <Btn label={p.playing ? "Pause" : "Play"} onPress={toggle} big />
         <Btn label="+30" onPress={() => void skipBy(30)} />
-        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat)} />
+        <Btn label="Next" onPress={next} disabled={!hasNext(p.queue, p.repeat) && !autoplayPossible(p)} />
       </View>
     </View>
   );
