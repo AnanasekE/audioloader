@@ -27,5 +27,16 @@ A YouTube import (video or playlist) is auto-tagged, but it stays on the release
 
 ## UI
 
-- i can never know where to go to do any kind of action. need a UX redesign.
-- UX kinda sucks overall as there is no right click actions with current implementation. might need to rework the application into react. TODO this is an idea / feeling
+What is left of the UX audit (`docs/ux-audit.md`) after plan 37: the quick fixes and the context menus are done.
+
+- **Medium**
+  - Sort control on the Tracks page (title, artist, added), like the secret Tracks page.
+  - Filter box on the Releases and Artists card grids.
+  - A type filter on the Search page.
+  - On phones, make Playlists, Podcasts, Tagging and Downloads easier to find than "More".
+  - Link the rows on the Downloads page to their release and artist.
+- **Large**
+  - A start page (continue listening, recently added, the inbox count) instead of opening on Tracks.
+  - Edit releases, playlists and tracks in place or in a side panel instead of on separate pages.
+  - Drag and drop to reorder playlists and tracklists.
+  - Plan 35 (the React web app) stays on hold; revisit it only if these need more than templ and htmx can do.

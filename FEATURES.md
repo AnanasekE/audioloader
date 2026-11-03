@@ -106,7 +106,7 @@
 - Streaming with Range requests (seeking)
 - Duration detection: WAV, MP3, FLAC, Ogg Opus, MP4/M4A
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
-- A ⋯ menu next to Play and Shuffle on releases and playlists: Play next / Add to queue for the whole list (placeholders skipped), with a short "Added n tracks" note
+- Play, Shuffle, Play next and Add to queue for a whole release, playlist or artist (placeholders skipped), from its ⋯ menu, with a short "Added n tracks" note; on cards and rows the tracks are fetched from the JSON API
 - Autoplay: when the queue runs out, 10 similar tracks from the library (same artist, shared releases, release type and year, shared tags in secret mode; never recently played ones) are appended under an "Autoplay" divider and play on. A switch in the queue header, on by default, saved with the queue; things you add go before the autoplay tracks; `GET /api/v1/autoplay`
 - Repeat button next to shuffle: off, all (back to the start, reshuffled when shuffling) or one (the track plays again; Next still moves on); saved with the queue
 - Play next / Add to queue from a track's menu (several Play nexts in a row play in the order added); "Up next" list with remove and clear; queue survives a reload
@@ -166,6 +166,10 @@
 - Left sidebar with Library (Tracks, Releases, Artists, Playlists, Podcasts) and Queue (Inbox, Tagging, Downloads with counts), a top strip with the search, dense track rows with monospace numbers, status chips on the queue pages
 - Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, More; in secret mode Tracks, Tags, Creators) and a More sheet for Playlists, Podcasts, Tagging and Downloads
 - Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
+- Actions in the search box (`assets/js/commands.js`): matching commands are listed under "Actions" above the results, and `>` first lists only commands. Add / upload, go to each page, check followed artists now, shuffle, repeat, autoplay, sleep timer, dark / light theme, open or lock the vault, keyboard shortcuts. Enter or a click runs one
+- Context menus: right-click (long-press on touch, the Menu key or Shift+F10 on a focused row) on a track, release, artist or playlist opens its ⋯ menu at the pointer, or as a bottom sheet on phones; Shift+right-click keeps the browser's menu. One menu is open at a time; arrow keys move, Esc closes
+- Menus for releases (Play, Shuffle, Play next, Add to queue, Edit, Edit tracklist, Remove), artists (Play all, Play next, Add to queue, Edit / rename, Follow, Link to MusicBrainz) and playlists (Play, Shuffle, Play next, Add to queue, Edit, Delete), on cards, single rows and page headers
+- `?` opens a dialog with the keyboard shortcuts
 - Vault button in the sidebar and the phone top strip (when a vault is configured); in secret mode the same place has Lock
 - Icons next to every sidebar link, the Add button, the phone tab bar and the More sheet, one icon per page
 - Home-screen icon and web app manifest (Safari "Add to Home Screen", standalone, start page `/tracks`)
