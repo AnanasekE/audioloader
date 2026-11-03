@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"audioloader/internal/db"
 	"audioloader/internal/sources/secret"
 	"audioloader/internal/vault"
 )
@@ -142,7 +141,7 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handle(mux, "POST /api/tracks/exists", checkTracksExist)
 	handle(mux, "POST /api/artists/resolve", resolveArtists)
 	handleNormal(mux, "POST /api/releases", createReleaseJSON)
-	handleToken(mux, "POST /api/share", shareSecretPage)
+	handleToken(mux, "POST /api/share", share)
 
 	registerV1(mux)
 }
@@ -167,13 +166,13 @@ var SecretModeOnly []string
 // session: no cookie is read, and the handler runs as the secret viewer.
 var TokenOnly []string
 
-// handleToken registers a route for the share token. It answers 404 while
-// sharing is off, and 401 (after a second, like a wrong passphrase) without
-// the right token. It needs no cookie, and ignores one.
+// handleToken registers a route for the share token. It answers 404 while no
+// token is set, and 401 (after a second, like a wrong passphrase) without
+// the right token. It needs no cookie, and ignores one; h picks the viewer.
 func handleToken(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
 	TokenOnly = append(TokenOnly, pattern)
 	handle(mux, pattern, func(w http.ResponseWriter, r *http.Request) {
-		if !shareEnabled() {
+		if theShareToken == "" {
 			http.NotFound(w, r)
 			return
 		}
@@ -182,7 +181,6 @@ func handleToken(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
 			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
 			return
 		}
-		r = r.WithContext(db.WithViewer(r.Context(), db.Secret))
 		h(w, r)
 	})
 }

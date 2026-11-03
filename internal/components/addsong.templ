@@ -20,6 +20,7 @@ type SongCandidate struct {
 	OwnedTrackID, OwnedReleaseID string
 	OwnedHasFile                 bool
 	Disc, Position               int // the track's place on its release; 0 when listed on its own
+	Best                         bool // the sure match for an Apple Music link
 }
 
 // SongRelease is the header above the tracks of a release listed from a
@@ -171,6 +172,9 @@ templ SongCandidates(q string, rel *SongRelease, found []SongCandidate) {
 							onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
 						/>
 						<span class="min-w-0 flex-1">
+							if c.Best {
+								<span class="block text-xs font-medium uppercase tracking-wide text-accent">Best match</span>
+							}
 							<span class="block truncate">
 								if c.Position > 0 {
 									<span class="text-fg-muted">{ fmt.Sprintf("%d.%d ", c.Disc, c.Position) }</span>

@@ -18,6 +18,7 @@ const (
 	addSearch       addTarget = iota // text: MusicBrainz song search, then YouTube
 	addMusicBrainz                   // a musicbrainz.org link
 	addYouTube                       // a YouTube or YouTube Music video or playlist link
+	addAppleMusic                    // an Apple Music song or playlist link
 	addSecretSource                  // a link the secret source takes (secret mode only)
 	addRefused                       // answer 400 with the route's Message
 )
@@ -61,6 +62,9 @@ func classifyAddInput(v db.Viewer, q string) addRoute {
 	}
 	if host == "musicbrainz.org" || strings.HasSuffix(host, ".musicbrainz.org") {
 		return addRoute{Target: addMusicBrainz, Value: link}
+	}
+	if host == "music.apple.com" {
+		return addRoute{Target: addAppleMusic, Value: link}
 	}
 	if _, err := ytdlp.Parse(link); err == nil {
 		return addRoute{Target: addYouTube, Value: link}
@@ -111,6 +115,8 @@ func lookupAdd(w http.ResponseWriter, r *http.Request) {
 		listMusicBrainz(w, r, rt.Value)
 	case addSearch:
 		listMusicBrainz(w, r, rt.Value)
+	case addAppleMusic:
+		listAppleMusic(w, r, rt.Value)
 	case addYouTube:
 		previewYouTube(w, r, rt.Value)
 	case addSecretSource:

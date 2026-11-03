@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -70,6 +71,11 @@ func listMusicBrainz(w http.ResponseWriter, r *http.Request, q string) {
 // recordingCandidate is rec as one search result, on the release
 // tagging.PickRelease picks for it.
 func recordingCandidate(c *mb.Client, library []*audio.Track, rec mb.Recording) (components.SongCandidate, error) {
+	return candidateOn(c, library, rec, tagging.PickRelease(rec.Releases))
+}
+
+// candidateOn is rec as one search result, on rel (nil: no release).
+func candidateOn(c *mb.Client, library []*audio.Track, rec mb.Recording, rel *mb.Release) (components.SongCandidate, error) {
 	cand := components.SongCandidate{
 		RecordingID: rec.ID,
 		Title:       rec.Title,
@@ -77,7 +83,7 @@ func recordingCandidate(c *mb.Client, library []*audio.Track, rec mb.Recording) 
 		Length:      time.Duration(rec.Length) * time.Millisecond,
 		CoverURL:    "/assets/img/default_track.png",
 	}
-	if rel := tagging.PickRelease(rec.Releases); rel != nil {
+	if rel != nil {
 		cand.ReleaseID, cand.ReleaseTitle = rel.ID, rel.Title
 		cand.Year = releaseYear(rel.Date)
 		cand.CoverURL = c.CoverArtURL + "/release/" + rel.ID + "/front-250"
@@ -280,49 +286,10 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	c := mb.Default()
-	var song db.NewSong
-	var it db.InboxTrack
-	if releaseID != "" {
-		rel, err := c.GetRelease(r.Context(), releaseID)
-		if errors.Is(err, mb.ErrNotFound) {
-			http.Error(w, "that release isn't on MusicBrainz", http.StatusBadRequest)
-			return
-		}
-		if err != nil {
-			http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		found := false
-		for _, rs := range releaseSongs(rel) {
-			if !found && rs.Song.RecordingMBID == recordingID {
-				found, song, it = true, rs.Song, rs.Track
-			}
-		}
-		if !found {
-			http.Error(w, "that recording isn't on this release", http.StatusBadRequest)
-			return
-		}
-	} else {
-		rec, err := c.GetRecording(r.Context(), recordingID)
-		if errors.Is(err, mb.ErrNotFound) {
-			http.Error(w, "that recording isn't on MusicBrainz", http.StatusBadRequest)
-			return
-		}
-		if err != nil {
-			http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		it = songTrack(*rec)
-		song = db.NewSong{
-			RecordingMBID: rec.ID,
-			Title:         rec.Title,
-			ISRC:          it.ISRC,
-			LengthMs:      rec.Length,
-			SpotifyURL:    mb.SpotifyURL(rec.Relations, "track"),
-			Artists:       it.Artists,
-			CoverWorkID:   coverWorkID(*rec),
-		}
+	song, it, serr := songFor(r.Context(), recordingID, releaseID)
+	if serr != nil {
+		http.Error(w, serr.msg, serr.status)
+		return
 	}
 
 	library, err := db.ListTracks(db.Normal)
@@ -338,6 +305,51 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hxLocation(w, "/downloads")
+}
+
+// songError is a failure of songFor, with the status to answer.
+type songError struct {
+	status int
+	msg    string
+}
+
+// songFor reads what db.AddSong needs for a recording from MusicBrainz: on
+// releaseID's tracklist at the recording's place when given, else as a
+// single.
+func songFor(ctx context.Context, recordingID, releaseID string) (db.NewSong, db.InboxTrack, *songError) {
+	c := mb.Default()
+	if releaseID != "" {
+		rel, err := c.GetRelease(ctx, releaseID)
+		if errors.Is(err, mb.ErrNotFound) {
+			return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadRequest, "that release isn't on MusicBrainz"}
+		}
+		if err != nil {
+			return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadGateway, "couldn't read MusicBrainz: " + err.Error()}
+		}
+		for _, rs := range releaseSongs(rel) {
+			if rs.Song.RecordingMBID == recordingID {
+				return rs.Song, rs.Track, nil
+			}
+		}
+		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadRequest, "that recording isn't on this release"}
+	}
+	rec, err := c.GetRecording(ctx, recordingID)
+	if errors.Is(err, mb.ErrNotFound) {
+		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadRequest, "that recording isn't on MusicBrainz"}
+	}
+	if err != nil {
+		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadGateway, "couldn't read MusicBrainz: " + err.Error()}
+	}
+	it := songTrack(*rec)
+	return db.NewSong{
+		RecordingMBID: rec.ID,
+		Title:         rec.Title,
+		ISRC:          it.ISRC,
+		LengthMs:      rec.Length,
+		SpotifyURL:    mb.SpotifyURL(rec.Relations, "track"),
+		Artists:       it.Artists,
+		CoverWorkID:   coverWorkID(*rec),
+	}, it, nil
 }
 
 // maxAddAll caps how many tracks "Add all" queues at once.
