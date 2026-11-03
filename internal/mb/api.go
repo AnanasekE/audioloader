@@ -65,13 +65,28 @@ func (c *Client) SearchSongs(ctx context.Context, text string, limit int) ([]Rec
 	return res.Recordings, c.getJSON(ctx, "musicbrainz", c.mbURL("recording", q), &res)
 }
 
-// SearchArtists finds artists by name, best first.
+// SearchArtists finds artists by name, best first. It matches aliases and
+// sort names too, since MusicBrainz may list an artist under another script
+// (初音ミク for "Hatsune Miku").
 func (c *Client) SearchArtists(ctx context.Context, name string, limit int) ([]Artist, error) {
 	var res struct {
 		Artists []Artist `json:"artists"`
 	}
-	q := url.Values{"query": {"artist:" + Phrase(name)}, "limit": {strconv.Itoa(limit)}}
-	return res.Artists, c.getJSON(ctx, "musicbrainz", c.mbURL("artist", q), &res)
+	p := Phrase(name)
+	q := url.Values{"query": {"artist:" + p + " OR alias:" + p + " OR sortname:" + p}, "limit": {strconv.Itoa(limit)}}
+	err := c.getJSON(ctx, "musicbrainz", c.mbURL("artist", q), &res)
+	for i, a := range res.Artists {
+		if strings.EqualFold(a.Name, name) {
+			continue
+		}
+		for _, al := range a.Aliases {
+			if strings.EqualFold(al.Name, name) {
+				res.Artists[i].MatchedAlias = al.Name
+				break
+			}
+		}
+	}
+	return res.Artists, err
 }
 
 // BrowseReleaseGroups returns one page (up to 100) of an artist's release

@@ -307,7 +307,7 @@ func linkArtist(w http.ResponseWriter, r *http.Request) {
 	mbid := strings.ToLower(validMBID(r.FormValue("mbid")))
 	if manual := r.FormValue("mbid_manual"); strings.TrimSpace(manual) != "" {
 		if mbid = parseArtistMBID(manual); mbid == "" {
-			http.Error(w, "that isn't a MusicBrainz artist ID or URL", http.StatusBadRequest)
+			http.Error(w, "That is not a MusicBrainz artist link.", http.StatusBadRequest)
 			return
 		}
 	}

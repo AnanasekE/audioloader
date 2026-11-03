@@ -18,6 +18,16 @@ type Artist struct {
 	Score          int      `json:"score"` // search results only
 	Area           Area     `json:"area"`
 	LifeSpan       LifeSpan `json:"life-span"`
+	Aliases        []Alias  `json:"aliases"`
+	// MatchedAlias is the alias the search phrase hit when the primary name
+	// differs ("Hatsune Miku" for 初音ミク); set by SearchArtists.
+	MatchedAlias string `json:"-"`
+}
+
+// Alias is another name an artist is known by.
+type Alias struct {
+	Name     string `json:"name"`
+	SortName string `json:"sort-name"`
 }
 
 // Area is where an artist is from, e.g. a country or a city.

@@ -411,6 +411,9 @@ templ artistCandidate(c mb.Artist) {
 		{ children... }
 		<div class="min-w-0 flex-1">
 			<a class="font-medium" href={ templ.SafeURL("https://musicbrainz.org/artist/" + c.ID) } target="_blank" rel="noopener">{ c.Name }</a>
+			if c.MatchedAlias != "" {
+				<span class="text-fg-muted">{ " (alias: " + c.MatchedAlias + ")" }</span>
+			}
 			if d := candidateDetails(c); d != "" {
 				<span class="text-fg-muted">{ " " + d }</span>
 			}
@@ -531,7 +534,7 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 					class="btn shrink-0"
 					hx-post={ "/ui/artists/" + a.ID.String() + "/link" }
 					hx-vals={ templ.JSONString(map[string]string{"mbid": c.ID, "back": back}) }
-				>Use this</button>
+				>Link to this artist</button>
 			}
 		}
 		if searchErr != "" {
@@ -541,11 +544,12 @@ templ ArtistLinkCandidates(a *audio.Artist, candidates []mb.Artist, searchErr st
 		}
 		<form class="flex gap-2" hx-post={ "/ui/artists/" + a.ID.String() + "/link" }>
 			<input type="hidden" name="back" value={ back }/>
-			<label class="sr-only">
-				MusicBrainz artist ID or URL
-				<input class="input flex-1" type="text" name="mbid_manual" placeholder="Or paste https://musicbrainz.org/artist/…" required/>
-			</label>
-			<button class="btn shrink-0" type="submit">Use</button>
+			<div class="flex-1">
+				@field("Or paste a MusicBrainz artist link or ID", "") {
+					<input class="input" type="text" name="mbid_manual" placeholder="https://musicbrainz.org/artist/…" required/>
+				}
+			</div>
+			<button class="btn shrink-0 self-end" type="submit">Link</button>
 		</form>
 		<div class="flex flex-wrap items-center gap-4">
 			<button

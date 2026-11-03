@@ -91,7 +91,7 @@ func followArtist(w http.ResponseWriter, r *http.Request) {
 	if manual := strings.TrimSpace(r.PostForm.Get("mbid_manual")); manual != "" {
 		mbid = parseArtistMBID(manual)
 		if mbid == "" {
-			http.Error(w, "that isn't a MusicBrainz artist ID or URL", http.StatusBadRequest)
+			http.Error(w, "That is not a MusicBrainz artist link.", http.StatusBadRequest)
 			return
 		}
 	}

@@ -108,6 +108,27 @@ func TestLinkArtist(t *testing.T) {
 	}
 }
 
+func TestLinkArtistFromPastedURL(t *testing.T) {
+	dbtest.New(t)
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	h := WithViewer(mux)
+
+	a, _ := db.AddArtist(db.All, "Hatsune Miku")
+	const mbid = "130d679a-9a92-4373-8348-0800b6b93a30"
+
+	rec := postForm(h, "/ui/artists/"+a.ID.String()+"/link", "mbid_manual=https://example.com/artist/"+mbid)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "That is not a MusicBrainz artist link.") {
+		t.Fatalf("foreign URL = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := postForm(h, "/ui/artists/"+a.ID.String()+"/link", "mbid_manual=https://musicbrainz.org/artist/"+mbid); rec.Code != http.StatusNoContent {
+		t.Fatalf("link = %d %s", rec.Code, rec.Body.String())
+	}
+	if got, _ := db.GetArtist(db.All, a.ID.String()); got.MBID != mbid {
+		t.Fatalf("mbid = %q", got.MBID)
+	}
+}
+
 func TestAddArtistFromMusicBrainz(t *testing.T) {
 	dbtest.New(t)
 	const (
