@@ -16,7 +16,7 @@ templ ShowsPage(shows []*audio.Show, continueListening []*audio.Track) {
 		@ContinueListening(continueListening)
 		if len(shows) == 0 {
 			@emptyState() {
-				No podcasts yet. Upload an episode to start one.
+				No podcasts yet. <a href="/add#episode">Upload an episode</a> to start one.
 			}
 		} else {
 			@sectionLabel("Shows")
@@ -53,10 +53,12 @@ templ ContinueListening(tracks []*audio.Track) {
 
 templ ShowPage(s *audio.Show) {
 	@layout(s.Title, PageShows) {
-		@mediaHeader(s.ImgURL, "Podcast", s.Title, showAuthor(s.Author), showCounts(s))
+		@mediaHeader(s.ImgURL, "Podcast", s.Title, showAuthor(s.Author), showCounts(s)) {
+			<a class="btn" href="/add#episode">Upload episode</a>
+		}
 		if len(s.Episodes) == 0 {
 			@emptyState() {
-				No episodes yet.
+				No episodes yet. <a href="/add#episode">Upload one</a>.
 			}
 		} else {
 			// not a [data-track-list]: an episode plays on its own, it doesn't queue the rest

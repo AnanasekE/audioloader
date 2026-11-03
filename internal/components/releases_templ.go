@@ -107,7 +107,7 @@ func ReleasesPage(releases []*audio.Release, artists []*audio.Artist, filter str
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "No releases yet.")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "No releases yet. Make one with New release, or <a href=\"/add\">add a song</a>.")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

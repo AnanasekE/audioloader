@@ -196,7 +196,7 @@ func TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "Nothing to review.")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "Nothing to review. Auto-tag library checks the tracks that are still untagged.")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

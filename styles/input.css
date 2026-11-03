@@ -501,7 +501,7 @@
 	}
 
 	.media-head {
-		@apply mb-4 flex flex-wrap items-end gap-4;
+		@apply mb-4 flex flex-wrap items-end gap-4 max-[719px]:items-start;
 	}
 	.media-head .cover,
 	.media-head .avatar {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 
 	"audioloader/internal/audio"
 	"audioloader/internal/db"
@@ -223,7 +224,7 @@ func releaseCountLabel(n int) string {
 templ ArtistList(artists []*audio.Artist) {
 	if len(artists) == 0 {
 		@emptyState() {
-			No artists yet.
+			No { strings.ToLower(artistsWord(ctx)) } yet. Add one with the button above, or <a href="/add">add a song</a>.
 		}
 	} else {
 		@cardGrid() {
@@ -265,7 +266,7 @@ templ ArtistPage(a *audio.Artist, releases []*audio.Release, tracks []*audio.Tra
 		}
 		if len(releases) == 0 && len(tracks) == 0 && len(covers) == 0 {
 			@emptyState() {
-				Nothing by this artist yet.
+				Nothing by this artist yet. <a href={ templ.SafeURL("/upload/batch?artist=" + a.ID.String()) }>Upload tracks</a>, or <a href={ templ.SafeURL("/add?q=" + url.QueryEscape(a.Name)) }>search for their songs</a>.
 			}
 		}
 		for _, typ := range audio.ReleaseTypes {

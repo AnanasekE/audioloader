@@ -19,7 +19,7 @@ templ ReleasesPage(releases []*audio.Release, artists []*audio.Artist, filter st
 		}
 		if len(releases) == 0 {
 			@emptyState() {
-				No releases yet.
+				No releases yet. Make one with New release, or <a href="/add">add a song</a>.
 			}
 		}
 		// one shelf per type: singles are never mixed in with albums

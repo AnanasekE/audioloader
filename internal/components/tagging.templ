@@ -54,7 +54,7 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 		}
 		if len(reviews) == 0 {
 			@emptyState() {
-				Nothing to review.
+				Nothing to review. Auto-tag library checks the tracks that are still untagged.
 			}
 		} else {
 			<form class="mb-4 flex flex-wrap items-center gap-2" hx-post="/ui/tagging/apply-all">

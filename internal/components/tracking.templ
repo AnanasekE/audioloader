@@ -154,7 +154,7 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 		<div id="inbox-list">
 			if tab == "new" && len(releases) > 1 {
 				<div class="mb-3 flex justify-end">
-					<button class="btn" hx-post={ "/ui/inbox/confirm-all?" + filter.Query() } hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>Confirm all</button>
+					<button class="btn" hx-post={ "/ui/inbox/confirm-all?" + filter.Query() } hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>{ fmt.Sprintf("Confirm all %d", len(releases)) }</button>
 				</div>
 			}
 			if len(follows) == 0 {
@@ -176,13 +176,13 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 				for _, g := range groupInbox(releases) {
 					<details class="inbox-group" data-artist={ g.ArtistID } open>
 						<summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 py-1">
-							<span class="section-label">{ g.Name } <span class="font-normal">({ fmt.Sprint(len(g.Releases)) })</span></span>
+							<span class="section-label"><a class="text-inherit hover:underline" href={ templ.SafeURL("/artists/" + g.ArtistID) }>{ g.Name }</a> <span class="font-normal">({ fmt.Sprint(len(g.Releases)) })</span></span>
 							if tab == "new" && len(g.Releases) > 1 {
 								<button
 									class="btn"
 									hx-post={ "/ui/inbox/confirm-all?artist=" + g.ArtistID + "&" + filter.Query() }
 									hx-confirm={ fmt.Sprintf("Add all %d releases by %s and download their missing tracks?", len(g.Releases), g.Name) }
-								>Confirm all</button>
+								>{ fmt.Sprintf("Confirm these %d", len(g.Releases)) }</button>
 							}
 						</summary>
 						<div class="mt-1">
