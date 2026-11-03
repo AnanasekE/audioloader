@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Suggestions endpoint
+- [x] 1. Suggestions endpoint
 - [ ] 2. Autoplay in the web player
 - [ ] 3. Mobile app
 

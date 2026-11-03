@@ -253,3 +253,33 @@ func TestV1SavePositionForm(t *testing.T) {
 		t.Errorf("bad form = %d", rec.Code)
 	}
 }
+
+func TestV1Autoplay(t *testing.T) {
+	s := newV1(t, true)
+	ids := modeLibrary(t)
+	list := s.json("/api/v1/autoplay?seed=" + ids["public track"] + "&exclude=" + ids["public track 2"] + "&n=10")
+	its := items(t, list)
+	if len(its) == 0 || list["total"] != float64(len(its)) {
+		t.Fatalf("got %v", list)
+	}
+	wantKeys(t, "suggestion", its[0], "artists duration finished id imageUrl kind position showId streamUrl title")
+	got := strings.Join(titles(its, "title"), ",")
+	// the same artist first; the seed, the excluded track and everything of the other mode are left out
+	if !strings.HasPrefix(got, "ZZPUBLIC Cover") || strings.Contains(got, "Song 1") || strings.Contains(got, "Song 2") || strings.Contains(got, "ZZSECRET") {
+		t.Errorf("normal mode got %s", got)
+	}
+
+	if n := len(items(t, s.json("/api/v1/autoplay?n=2"))); n != 2 {
+		t.Errorf("n=2 gave %d tracks", n)
+	}
+
+	s.secret = true
+	got = strings.Join(titles(items(t, s.json("/api/v1/autoplay?seed="+ids["secret track"])), "title"), ",")
+	if got == "" || strings.Contains(got, "ZZPUBLIC") || strings.Contains(got, "ZZSECRET Song") {
+		t.Errorf("secret mode got %s", got)
+	}
+	// an episode as the seed: nothing
+	if its := items(t, s.json("/api/v1/autoplay?seed="+ids["secret episode"])); len(its) != 0 {
+		t.Errorf("episode seed gave %v", its)
+	}
+}

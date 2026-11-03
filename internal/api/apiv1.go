@@ -27,6 +27,7 @@ func registerV1(mux *http.ServeMux) {
 	handle(mux, "GET /api/v1/tracks", getTracksJSON)
 	handle(mux, "GET /api/v1/tracks/{track_id}", getTrackJSON)
 	handle(mux, "GET /api/v1/search", getSearchJSON)
+	handle(mux, "GET /api/v1/autoplay", getAutoplayJSON)
 	handle(mux, "GET /api/v1/artists", getArtistsJSON)
 	handle(mux, "GET /api/v1/artists/{artist_id}", getArtistJSON)
 	handleNormal(mux, "GET /api/v1/releases", getReleasesJSON)

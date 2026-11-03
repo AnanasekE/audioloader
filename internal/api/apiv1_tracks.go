@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"audioloader/internal/audio"
@@ -139,4 +140,22 @@ func getSearchJSON(w http.ResponseWriter, r *http.Request) {
 		Playlists: playlistsJSON(v, playlists[:min(len(playlists), searchCap)]),
 		Shows:     showsJSON(v, res.Shows),
 	})
+}
+
+// getAutoplayJSON suggests tracks like the ?seed= ones (the tracks just
+// played, the current one first), skipping the ?exclude= ones: the tracks
+// played recently. ?n= is how many, 10 by default and at most 50.
+func getAutoplayJSON(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	n := 10
+	if v, err := strconv.Atoi(q.Get("n")); err == nil && v > 0 {
+		n = min(v, 50)
+	}
+	// the exclude list can be long (the last 50 played), so it is not capped here
+	tracks, err := db.AutoplaySuggestions(viewer(r), q["seed"], q["exclude"], n)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, listOf(tracksJSON(viewer(r), tracks), n, 0))
 }

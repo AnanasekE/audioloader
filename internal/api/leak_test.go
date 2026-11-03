@@ -171,6 +171,8 @@ func TestNothingLeaksAcrossModes(t *testing.T) {
 		"/add?q=zz", "/add?q=https%3A%2F%2Fexample.com%2Fx", "/upload?q=zz", "/upload/youtube?url=https%3A%2F%2Fyoutu.be%2Fx",
 		"/api/v1/search?q=zz", "/api/v1/search?q=secret", "/api/v1/search?q=public", "/api/v1/search?q=shared", "/api/v1/search?q=artist",
 		"/api/v1/tracks?sort=creator", "/api/v1/tracks?sort=tag", "/api/v1/tracks?q=zz", "/api/v1/tracks?limit=1&offset=1",
+		"/api/v1/autoplay?n=50", "/api/v1/autoplay?seed=" + ids["public track"] + "&exclude=" + ids["public track 2"],
+		"/api/v1/autoplay?seed=" + ids["secret track"] + "&seed=" + ids["public track"] + "&n=50", "/api/v1/autoplay?seed=" + ids["secret episode"],
 	}
 	for _, k := range []string{"public track", "secret track", "shared secret track"} {
 		extra = append(extra, "/ui/playlists/picker?track_id="+ids[k])
