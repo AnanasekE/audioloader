@@ -33,13 +33,6 @@ Bring an Apple Music library into audioloader, as placeholders on their MusicBra
 - **Share a song:** a song shared from Apple Music (its `music.apple.com` link, pasted into the Add box or sent through the share Shortcut) is added like a song search result.
 - **Playlists:** import a playlist by its link, adding each song and, optionally, creating the playlist in audioloader.
 
-## Unable to find / add hatsune miku from link to musicbrainz button
-
-- Real url https://musicbrainz.org/artist/130d679a-9a92-4373-8348-0800b6b93a30
-- unable to find user.
-- unclear what is use button under both found records.
-- unable to set exact link manually.
-
 ## missing loop / loop 1 track feature.
 
 - missing looping feature that allows to loop the current song/album
