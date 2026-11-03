@@ -51,6 +51,7 @@ type AppleImportTrack struct {
 	MatchTitle   string
 	MatchArtist  string
 	ReleaseTitle string
+	TrackID      string // the library's track, once the song is owned or added
 	Score        float64
 	State        string
 }
@@ -144,7 +145,7 @@ func StartAppleImport(id int64, name string, trackCount int, tracks []AppleImpor
 func AppleImportTracks(id int64) ([]*AppleImportTrack, error) {
 	rows, err := DB.Query(`
 		SELECT import_id, position, title, artist, album, duration_ms, recording_id, release_id,
-			match_title, match_artist, release_title, score, state
+			match_title, match_artist, release_title, track_id, score, state
 		FROM apple_import_tracks WHERE import_id = ? ORDER BY position;`, id)
 	if err != nil {
 		return nil, err
@@ -154,7 +155,7 @@ func AppleImportTracks(id int64) ([]*AppleImportTrack, error) {
 	for rows.Next() {
 		var t AppleImportTrack
 		if err := rows.Scan(&t.ImportID, &t.Position, &t.Title, &t.Artist, &t.Album, &t.DurationMs, &t.RecordingID, &t.ReleaseID,
-			&t.MatchTitle, &t.MatchArtist, &t.ReleaseTitle, &t.Score, &t.State); err != nil {
+			&t.MatchTitle, &t.MatchArtist, &t.ReleaseTitle, &t.TrackID, &t.Score, &t.State); err != nil {
 			return nil, err
 		}
 		out = append(out, &t)
@@ -167,9 +168,9 @@ func AppleImportTracks(id int64) ([]*AppleImportTrack, error) {
 func SetAppleTrackMatch(t AppleImportTrack) error {
 	return expectRow(DB.Exec(`
 		UPDATE apple_import_tracks SET recording_id = ?, release_id = ?, match_title = ?, match_artist = ?,
-			release_title = ?, score = ?, state = ?
+			release_title = ?, track_id = ?, score = ?, state = ?
 		WHERE import_id = ? AND position = ?;`,
-		t.RecordingID, t.ReleaseID, t.MatchTitle, t.MatchArtist, t.ReleaseTitle, t.Score, t.State, t.ImportID, t.Position))
+		t.RecordingID, t.ReleaseID, t.MatchTitle, t.MatchArtist, t.ReleaseTitle, t.TrackID, t.Score, t.State, t.ImportID, t.Position))
 }
 
 // SetAppleTrackState sets only the state of a song.

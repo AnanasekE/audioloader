@@ -338,6 +338,7 @@ var migrations = []func(tx *sql.Tx) error{
 				match_title TEXT NOT NULL DEFAULT '', -- the matched recording, to show
 				match_artist TEXT NOT NULL DEFAULT '',
 				release_title TEXT NOT NULL DEFAULT '',
+				track_id TEXT NOT NULL DEFAULT '', -- the library's track once it has the song
 				score REAL NOT NULL DEFAULT 0,
 				state TEXT NOT NULL DEFAULT 'pending', -- pending, matched, unsure, not_found, added, owned
 				PRIMARY KEY (import_id, position)

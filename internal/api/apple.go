@@ -49,7 +49,12 @@ func appleError(err error) *songError {
 // listAppleMusic is the Add box for an Apple Music link: a song is shown as
 // the MusicBrainz recordings it may be, the sure one first.
 func listAppleMusic(w http.ResponseWriter, r *http.Request, link string) {
-	if kind, _, _, ok := applemusic.ParseLink(link); !ok || kind != "song" {
+	kind, _, _, ok := applemusic.ParseLink(link)
+	if ok && kind == "playlist" {
+		startAppleImport(w, link)
+		return
+	}
+	if !ok || kind != "song" {
 		http.Error(w, msgAppleLink, http.StatusBadRequest)
 		return
 	}
@@ -122,7 +127,7 @@ func shareAppleSong(w http.ResponseWriter, r *http.Request, link string) {
 		serverError(w, err)
 		return
 	}
-	if err := queueSong(library, song, it); errors.Is(err, errAlreadyOwned) {
+	if _, err := queueSong(library, song, it); errors.Is(err, errAlreadyOwned) {
 		http.Error(w, "Already in your library: "+song.Title, http.StatusConflict)
 		return
 	} else if err != nil {

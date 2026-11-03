@@ -129,22 +129,23 @@ func matchTrack(ctx context.Context, mbc *mb.Client, library []*audio.Track, t *
 		Duration: time.Duration(t.DurationMs) * time.Millisecond,
 	}
 	out := *t
-	owned := func(recordingID string) bool {
+	// owned is the library's track for the song, "" if it has none
+	owned := func(recordingID string) string {
 		it := db.InboxTrack{Title: song.Title, RecordingMBID: recordingID, LengthMs: t.DurationMs}
 		for _, n := range artistNames(song.Artist) {
 			it.Artists = append(it.Artists, db.MatchArtist{Name: n})
 		}
-		if db.OwnedTrack(library, it) != "" {
-			return true
+		if id := db.OwnedTrack(library, it); id != "" {
+			return id
 		}
 		if recordingID == "" {
-			return false
+			return ""
 		}
-		id, _, err := db.QueuedSong(recordingID)
-		return err == nil && id != ""
+		id, _, _ := db.QueuedSong(recordingID)
+		return id
 	}
-	if owned("") {
-		out.State = db.AppleSongOwned
+	if id := owned(""); id != "" {
+		out.State, out.TrackID = db.AppleSongOwned, id
 		return db.SetAppleTrackMatch(out)
 	}
 	cands, err := Find(ctx, mbc, song)
@@ -163,13 +164,12 @@ func matchTrack(ctx context.Context, mbc *mb.Client, library []*audio.Track, t *
 	if top.Release != nil {
 		out.ReleaseID, out.ReleaseTitle = top.Release.ID, top.Release.Title
 	}
-	switch {
-	case top.Confident && owned(top.Recording.ID):
-		out.State = db.AppleSongOwned
-	case top.Confident:
+	out.State = db.AppleSongUnsure
+	if top.Confident {
 		out.State = db.AppleSongMatched
-	default:
-		out.State = db.AppleSongUnsure
+		if id := owned(top.Recording.ID); id != "" {
+			out.State, out.TrackID = db.AppleSongOwned, id
+		}
 	}
 	return db.SetAppleTrackMatch(out)
 }

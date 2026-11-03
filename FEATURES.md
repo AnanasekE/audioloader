@@ -86,6 +86,8 @@
   | MusicBrainz release or recording link | normal | the track list of that release or recording |
   | other MusicBrainz link | normal | "Paste a release or recording link." |
   | YouTube or YouTube Music video or playlist link | normal | the import preview (Import from YouTube) |
+  | Apple Music song link | normal | the MusicBrainz recordings it may be, the sure one marked "Best match" |
+  | Apple Music playlist link | normal | an import (see Apple Music import) |
   | a link of the secret source | secret | Download from URL's check |
   | any other link (in normal mode that includes the secret source) | any | "Audioloader can't add from that site." |
   | text | normal | MusicBrainz song search, then YouTube |
@@ -93,6 +95,7 @@
   Hosts match in any case, with `www.` or `m.`, with or without `https://`.
 - Song search: "Artist - Title" or free words. MusicBrainz's top 5 recordings show length, release and year, and the cover; "Add" puts a placeholder on its real release (reused if the library has it, else created with its artists and IDs) and queues the download in the usual source order. A song already in the library links to it, a queued one links to Downloads. "None of these", or no results, shows the top 5 YouTube results: "Use this" opens a form with the title and artist guessed and editable, and imports the video as a single
 - Add from a MusicBrainz link: paste a release or recording link into the Add box to list exactly its tracks (disc and position shown, owned ones marked); "Add" per track puts it on that release, "Add all (n)" queues every track the library doesn't have (at most 100). Track and release-group links are refused; a bare ID is still a text search
+- Apple Music import (no Apple account or token; public pages only): paste a song link (`music.apple.com/<storefront>/song/...`, or an album link with `?i=<song>`) and its MusicBrainz candidates are listed, the sure one first as "Best match" (title score 0.9 or more, an artist credited, length within 3 s); "Add" is the usual one. Through the share Shortcut a song with a sure match is added right away; otherwise the answer is "Open the Add page to pick." with the link. Paste a playlist link and an import starts: a background job reads the page and matches every song on MusicBrainz (about one second each), and `/add/apple/<id>` shows the progress and then Matched (ticked), Unsure (unticked, with the best candidate and "Change" to pick another) and Not found ("Search" fills the Add box); songs the library has say "In your library". "Add selected" puts each song on its MusicBrainz release as a placeholder with a queued download, and "Also create playlist" makes (or, run again, completes) the audioloader playlist in Apple's order. The latest 5 imports are listed on the Add page. A public page lists only what Apple embeds: a playlist longer than that says "Apple Music shows the first N of M songs on its public page." An album link without a song is refused
 - Downloaded files go through the usual fingerprint and duration checks; a file already in the library merges the placeholder into it
 
 ### Playback
