@@ -39,6 +39,8 @@
 	let pos = 0;
 	let shuffle = false;
 	let repeat = "off"; // "off", "all" or "one"
+	// how many tracks "Play next" has put after the current one since it started
+	let nextAt = 0;
 	// sleep timer (sleep-timer.js); fadeBase is the volume to go back to while a fade runs
 	let timer = window.sleepTimer.create(null);
 	let fadeBase = null;
@@ -88,6 +90,7 @@
 	const isEpisode = (t) => t?.kind === "episode";
 
 	function load(track, { time = 0, autoplay = true, restoring = false } = {}) {
+		nextAt = 0;
 		if (current && current !== track) savePosition();
 		show(track);
 		audio.src = track.src;
@@ -147,18 +150,23 @@
 		load(queue[order[pos]]);
 	}
 
-	function enqueue(track) {
-		if (!current) return playList([track]);
-		queue.push(track);
-		order.push(queue.length - 1);
+	// enqueue and playNext take a track or an array of them
+	function enqueue(tracks) {
+		tracks = [].concat(tracks);
+		if (!tracks.length) return;
+		if (!current) return playList(tracks);
+		order.push(...tracks.map((t) => queue.push(t) - 1));
 		renderQueue();
 		save();
 	}
 
-	function playNext(track) {
-		if (!current) return playList([track]);
-		queue.push(track);
-		order.splice(pos + 1, 0, queue.length - 1);
+	function playNext(tracks) {
+		tracks = [].concat(tracks);
+		if (!tracks.length) return;
+		if (!current) return playList(tracks);
+		const at = window.playerState.playNextSlot(pos, nextAt, order.length);
+		order.splice(at, 0, ...tracks.map((t) => queue.push(t) - 1));
+		nextAt += tracks.length;
 		renderQueue();
 		save();
 	}
@@ -224,6 +232,7 @@
 	function removeUpcoming(p) {
 		if (p <= pos) return;
 		order.splice(p, 1);
+		if (p <= pos + nextAt) nextAt--;
 		renderQueue();
 		save();
 	}
@@ -438,6 +447,7 @@
 		btn.addEventListener("click", () => {
 			// keep the current track, drop what's after it
 			order = order.slice(0, pos + 1);
+			nextAt = 0;
 			renderQueue();
 			save();
 		}),

@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Play next keeps order
+- [x] 1. Play next keeps order
 - [ ] 2. Queue a release or a playlist (web)
 - [ ] 3. Mobile app
 

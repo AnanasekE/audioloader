@@ -31,6 +31,14 @@ window.playerState = {
 		return repeat === "all" && length > 0 ? 0 : -1;
 	},
 
+	// playNextSlot returns the play position where "Play next" inserts: right
+	// after the current track and after the nextAt tracks already put there
+	// since it started, so several in a row play in the order they were added.
+	// It never goes past the end of the order.
+	playNextSlot(pos, nextAt, length) {
+		return Math.min(pos + 1 + Math.max(0, nextAt), length);
+	},
+
 	// keepOutOfFirst returns order with `last` (the track that just played
 	// out) not in the first slot, by swapping it with the second one.
 	keepOutOfFirst(order, last) {

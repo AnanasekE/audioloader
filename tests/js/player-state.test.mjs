@@ -102,6 +102,17 @@ test("keepOutOfFirst moves the track that just played off the first slot", () =>
 	assert.deepEqual(k([0], 0), [0]);
 });
 
+test("playNextSlot keeps Play next in the order added", () => {
+	const s = window.playerState.playNextSlot;
+	assert.equal(s(2, 0, 10), 3);
+	assert.equal(s(2, 1, 10), 4);
+	assert.equal(s(2, 3, 10), 6);
+	// the queue got shorter since: never past the end
+	assert.equal(s(2, 5, 5), 5);
+	assert.equal(s(0, 0, 1), 1);
+	assert.equal(s(0, -2, 4), 1);
+});
+
 test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);

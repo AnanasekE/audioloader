@@ -104,7 +104,7 @@
 - Duration detection: WAV, MP3, FLAC, Ogg Opus, MP4/M4A
 - Queue: playing a track in a list queues the rest; next/previous, shuffle, Play and Shuffle on releases and playlists
 - Repeat button next to shuffle: off, all (back to the start, reshuffled when shuffling) or one (the track plays again; Next still moves on); saved with the queue
-- Play next / Add to queue from a track's menu; "Up next" list with remove and clear; queue survives a reload
+- Play next / Add to queue from a track's menu (several Play nexts in a row play in the order added); "Up next" list with remove and clear; queue survives a reload
 - On wide screens the queue is always shown on the right: now playing, up next (click to play, ✕ to remove) and chapters
 - Volume slider and mute (desktop), remembered across reloads
 
