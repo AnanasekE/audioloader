@@ -70,6 +70,8 @@ templ player() {
 			</div>
 			<div class="flex shrink-0 items-center gap-1 min-[720px]:order-1">
 				<button id="player-shuffle" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">@icon("shuffle")</button>
+				// repeat, desktop spot: next to shuffle
+				@repeatButton("max-[720px]:hidden")
 				<button id="player-prev" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden" aria-label="Previous track">@iconClass("skip-back", "size-4")</button>
 				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">
 					<span data-icon-play>@iconClass("play", "size-5")</span>
@@ -87,6 +89,8 @@ templ player() {
 			</div>
 			// sleep timer, phone spot: in the top row, between next and the queue
 			@sleepTimer("min-[720px]:hidden", "right-0")
+			// repeat, phone spot: after the sleep timer
+			@repeatButton("min-[720px]:hidden")
 			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">@iconClass("list", "size-5")</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
@@ -125,6 +129,15 @@ templ player() {
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
+}
+
+// repeatButton cycles off, all, one. It is drawn twice, one per spot, and
+// player.js keeps both in step through data-repeat.
+templ repeatButton(class string) {
+	<button data-repeat type="button" class={ "flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent", class } aria-label="Repeat: off" aria-pressed="false">
+		<span data-repeat-icon="all">@icon("repeat")</span>
+		<span data-repeat-icon="one" hidden>@icon("repeat-1")</span>
+	</button>
 }
 
 // sleepTimer is the moon button and its menu. It is drawn twice, one per spot
@@ -488,6 +501,17 @@ templ iconClass(name string, class string) {
 				<path d="M21 16v5h-5"></path>
 				<path d="M15 15l6 6"></path>
 				<path d="M4 4l5 5"></path>
+			case "repeat":
+				<path d="M17 2l4 4-4 4"></path>
+				<path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+				<path d="M7 22l-4-4 4-4"></path>
+				<path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+			case "repeat-1":
+				<path d="M17 2l4 4-4 4"></path>
+				<path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+				<path d="M7 22l-4-4 4-4"></path>
+				<path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+				<path d="M11 10h1v4"></path>
 			case "list":
 				<path d="M4 6h16M4 12h16M4 18h16"></path>
 			case "x":

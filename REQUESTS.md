@@ -40,10 +40,6 @@ Bring an Apple Music library into audioloader, as placeholders on their MusicBra
 - unclear what is use button under both found records.
 - unable to set exact link manually.
 
-## missing loop / loop 1 track feature.
-
-- missing looping feature that allows to loop the current song/album
-
 ## queue missing features
 
 - unable to add whole album to queue.
