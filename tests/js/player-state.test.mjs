@@ -201,3 +201,41 @@ test("nothing left, nothing resumes", () => {
 	assert.equal(window.playerState.forMode(saved("normal", [t("s", true)]), "normal"), null);
 	assert.equal(window.playerState.forMode(null, "normal"), null);
 });
+
+test("moveItem moves an item and leaves the list alone", () => {
+	const list = ["a", "b", "c", "d"];
+	assert.deepEqual(window.playerState.moveItem(list, 0, 2), ["b", "c", "a", "d"]);
+	assert.deepEqual(window.playerState.moveItem(list, 3, 1), ["a", "d", "b", "c"]);
+	assert.deepEqual(window.playerState.moveItem(list, 1, 1), list);
+	assert.deepEqual(window.playerState.moveItem(list, 1, 9), list);
+	assert.deepEqual(list, ["a", "b", "c", "d"]);
+});
+
+test("posAfterMove keeps the current track current", () => {
+	const order = ["a", "b", "c", "d", "e"];
+	for (const pos of [0, 1, 2, 3, 4]) {
+		for (let from = 0; from < order.length; from++) {
+			for (let to = 0; to < order.length; to++) {
+				const moved = window.playerState.moveItem(order, from, to);
+				assert.equal(moved[window.playerState.posAfterMove(pos, from, to)], order[pos], `pos ${pos}, ${from} -> ${to}`);
+			}
+		}
+	}
+});
+
+test("dropIndex follows the middle of the dragged row", () => {
+	const mids = [10, 30, 50, 70];
+	assert.equal(window.playerState.dropIndex(mids, 1, 30), 1);
+	assert.equal(window.playerState.dropIndex(mids, 1, 55), 2);
+	assert.equal(window.playerState.dropIndex(mids, 1, 100), 3);
+	assert.equal(window.playerState.dropIndex(mids, 2, 5), 0);
+	assert.equal(window.playerState.dropIndex(mids, 2, 29), 1);
+});
+
+test("swipeAction removes past 40% to the left", () => {
+	assert.equal(window.playerState.swipeAction(-100, 300), "none");
+	assert.equal(window.playerState.swipeAction(-120, 300), "remove");
+	assert.equal(window.playerState.swipeAction(-300, 300), "remove");
+	assert.equal(window.playerState.swipeAction(200, 300), "none");
+	assert.equal(window.playerState.swipeAction(-50, 0), "none");
+});

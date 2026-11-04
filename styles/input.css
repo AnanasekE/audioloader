@@ -754,3 +754,17 @@
 	height: 0;
 	border: 0;
 }
+
+/* rows of the queue lists (player.js): the one being dragged lifts, the rest slide aside */
+[data-row] {
+	transition: transform 150ms ease-out;
+}
+[data-row][data-dragging] {
+	position: relative;
+	z-index: 1;
+	transition: none;
+}
+[data-row][data-dragging] > [data-row-body] {
+	background: var(--panel-2);
+	box-shadow: var(--shadow-pop);
+}

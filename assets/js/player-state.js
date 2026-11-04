@@ -134,6 +134,42 @@ window.playerState = {
 		return a;
 	},
 
+	// moveItem returns list with the item at from moved to index to (the
+	// index it has afterwards); out of range it returns a copy as it was.
+	moveItem(list, from, to) {
+		const a = list.slice();
+		if (from < 0 || from >= a.length || to < 0 || to >= a.length) return a;
+		a.splice(to, 0, ...a.splice(from, 1));
+		return a;
+	},
+
+	// posAfterMove returns where the play position pos ends up when the item
+	// at from moves to to: the current track stays the current track.
+	posAfterMove(pos, from, to) {
+		if (from === pos) return to;
+		if (from < pos && to >= pos) return pos - 1;
+		if (from > pos && to <= pos) return pos + 1;
+		return pos;
+	},
+
+	// dropIndex returns where a row dragged from index `from` lands when its
+	// middle is at y, given the middles of all the rows before the drag
+	// (mids): it passes a row once it is past that row's middle.
+	dropIndex(mids, from, y) {
+		let to = from;
+		mids.forEach((m, i) => {
+			if (i < from && y < m) to--;
+			else if (i > from && y > m) to++;
+		});
+		return to;
+	},
+
+	// swipeAction says what letting go of a row swiped dx px sideways (left is
+	// negative) does: "remove" past 40% of its width, else "none" (it snaps back).
+	swipeAction(dx, width) {
+		return width > 0 && -dx >= width * 0.4 ? "remove" : "none";
+	},
+
 	// audioSettings returns the volume and mute to restore from a saved state;
 	// a missing or bad field gives null, meaning "leave as it is".
 	audioSettings(state) {

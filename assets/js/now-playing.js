@@ -154,6 +154,11 @@
 		dialog.querySelector("[data-np-controls]").hidden = on;
 		const q = dialog.querySelector("[data-np-queue-view]");
 		q.hidden = !on;
+		// the history above stays out of view until scrolled up to
+		if (on) {
+			const scroll = q.querySelector("[data-np-scroll]");
+			scroll.scrollTop = q.querySelector("[data-np-upnext]").offsetTop;
+		}
 	}
 	queueToggle.addEventListener("click", () => showQueue(queueToggle.getAttribute("aria-pressed") !== "true"));
 

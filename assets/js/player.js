@@ -21,7 +21,6 @@
 	const seek = document.getElementById("player-seek");
 	const timeEl = document.getElementById("player-time");
 	const remainingEl = document.getElementById("player-remaining");
-	const shuffleBtn = document.getElementById("player-shuffle");
 	const episodeControls = document.getElementById("player-episode-controls");
 	const speed = document.getElementById("player-speed");
 	const chapterLabel = document.getElementById("player-chapter");
@@ -286,9 +285,13 @@
 				order = window.playerState.autoLast(order, queue, pos);
 			}
 		}
-		shuffleBtn.setAttribute("aria-pressed", String(shuffle));
+		syncShuffle();
 		renderQueue();
 		save();
+	}
+
+	function syncShuffle() {
+		all("data-shuffle").forEach((b) => b.setAttribute("aria-pressed", String(shuffle)));
 	}
 
 	// removeUpcoming drops the track at play position p from the queue
@@ -308,10 +311,53 @@
 		load(queue[order[pos]]);
 	}
 
+	// moveUpcoming moves the k-th upcoming track to the place of the `to`-th
+	function moveUpcoming(from, to) {
+		const p = window.playerState;
+		order = p.moveItem(order, pos + 1 + from, pos + 1 + to);
+		pos = p.posAfterMove(pos, pos + 1 + from, pos + 1 + to);
+		// autoplay tracks stay behind the others, wherever the row was dropped
+		order = p.autoLast(order, queue, pos);
+		nextAt = 0;
+		renderQueue();
+		save();
+	}
+
+	// playBack plays the track at play position p, before the current one
+	function playBack(p) {
+		if (p >= pos || p < 0) return;
+		pos = p;
+		load(queue[order[pos]]);
+	}
+
+	const rowTemplate = document.getElementById("player-queue-row");
+
+	// queueRow builds a row of a queue list from its template. In the sheet
+	// (rich) it has the cover and the artists, and its remove button is for
+	// screen readers and the keyboard; swiping is how a finger removes it.
+	function queueRow(t, rich) {
+		const li = rowTemplate.content.firstElementChild.cloneNode(true);
+		const cover = li.querySelector("[data-row-cover]");
+		cover.hidden = !rich;
+		if (rich) cover.src = t.img;
+		const artistsEl = li.querySelector("[data-row-artists]");
+		artistsEl.hidden = !rich;
+		artistsEl.textContent = t.artists;
+		li.querySelector("[data-row-title]").textContent = t.title;
+		const play = li.querySelector("[data-row-play]");
+		play.title = `${t.title} · ${t.artists}`;
+		const rm = li.querySelector("[data-row-rm]");
+		rm.append(document.getElementById("player-x-icon").content.cloneNode(true));
+		rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
+		if (rich) rm.className += " sr-only focus:not-sr-only";
+		return li;
+	}
+
 	function renderQueue() {
 		const upcoming = order.slice(pos + 1);
 		all("data-queue-empty").forEach((el) => (el.hidden = upcoming.length > 0));
 		all("data-queue-list").forEach((list) => {
+			const swipe = list.hasAttribute("data-queue-swipe");
 			list.replaceChildren();
 			upcoming.forEach((qi, k) => {
 				const t = queue[qi];
@@ -322,27 +368,119 @@
 					div.textContent = "Autoplay";
 					list.append(div);
 				}
-				const li = document.createElement("li");
-				li.className = "flex items-center gap-2";
-				const name = document.createElement("button");
-				name.type = "button";
-				name.className = "min-w-0 flex-1 truncate py-1 text-left hover:text-accent";
-				name.textContent = t.title;
-				name.title = `${t.title} · ${t.artists}`;
-				name.addEventListener("click", () => playAt(pos + 1 + k));
-				const rm = document.createElement("button");
-				rm.type = "button";
-				rm.className = "text-xs text-fg-muted hover:text-fg";
-				rm.append(document.getElementById("player-x-icon").content.cloneNode(true));
-				rm.setAttribute("aria-label", `Remove ${t.title} from the queue`);
-				rm.addEventListener("click", () => removeUpcoming(pos + 1 + k));
-				li.append(name, rm);
+				const li = queueRow(t, swipe);
+				li.querySelector("[data-row-play]").addEventListener("click", () => playAt(pos + 1 + k));
+				li.querySelector("[data-row-rm]").addEventListener("click", () => removeUpcoming(pos + 1 + k));
+				li.querySelector("[data-row-handle]").addEventListener("pointerdown", (e) => dragRow(e, list, li, k));
+				if (swipe) swipeRow(li, () => removeUpcoming(pos + 1 + k));
+				list.append(li);
+			});
+		});
+		// what played before the current track, oldest first; a tap plays it again
+		const played = order.slice(0, pos);
+		all("data-history-box").forEach((el) => (el.hidden = played.length === 0));
+		all("data-history-list").forEach((list) => {
+			list.replaceChildren();
+			played.forEach((qi, p) => {
+				const li = queueRow(queue[qi], true);
+				li.querySelectorAll("[data-row-rm], [data-row-handle]").forEach((el) => el.remove());
+				li.querySelector("[data-row-play]").addEventListener("click", () => playBack(p));
 				list.append(li);
 			});
 		});
 		const noNext = window.playerState.nextPos(pos, order.length, repeat) < 0 && !canAutoplay();
 		[document.getElementById("player-prev"), ...all("data-np-prev")].forEach((b) => (b.disabled = !current));
 		[document.getElementById("player-next"), ...all("data-np-next")].forEach((b) => (b.disabled = noNext));
+	}
+
+	// dragRow moves a row by its handle: the row follows the pointer and the
+	// rows it passes make room; letting go moves the track there
+	function dragRow(e, list, li, from) {
+		e.preventDefault();
+		const handle = e.currentTarget;
+		handle.setPointerCapture(e.pointerId);
+		const rows = [...list.querySelectorAll("[data-row]")];
+		const mids = rows.map((r) => {
+			const b = r.getBoundingClientRect();
+			return b.top + b.height / 2;
+		});
+		const height = li.getBoundingClientRect().height;
+		const y0 = e.clientY;
+		let to = from;
+		li.dataset.dragging = "";
+		const move = (ev) => {
+			const dy = ev.clientY - y0;
+			li.style.transform = `translateY(${dy}px)`;
+			to = window.playerState.dropIndex(mids, from, mids[from] + dy);
+			rows.forEach((r, i) => {
+				if (r === li) return;
+				const down = from < to && i > from && i <= to;
+				const up = to < from && i >= to && i < from;
+				r.style.transform = down ? `translateY(${-height}px)` : up ? `translateY(${height}px)` : "";
+			});
+		};
+		const end = (ev) => {
+			handle.removeEventListener("pointermove", move);
+			handle.removeEventListener("pointerup", end);
+			handle.removeEventListener("pointercancel", end);
+			rows.forEach((r) => (r.style.transform = ""));
+			delete li.dataset.dragging;
+			if (ev.type === "pointerup" && to !== from) moveUpcoming(from, to);
+		};
+		handle.addEventListener("pointermove", move);
+		handle.addEventListener("pointerup", end);
+		handle.addEventListener("pointercancel", end);
+	}
+
+	// swipeRow lets a row be swiped left to remove: past 40% of its width and
+	// let go, it goes (remove runs); less and it snaps back. A vertical move
+	// is left to the browser, which scrolls the list.
+	function swipeRow(li, remove) {
+		const body = li.querySelector("[data-row-body]");
+		const strip = li.querySelector("[data-row-remove]");
+		let swipe = null;
+		let swiped = false;
+		body.addEventListener("pointerdown", (e) => {
+			if (e.target.closest("[data-row-handle], [data-row-rm]")) return;
+			swipe = { x0: e.clientX, y0: e.clientY, dx: 0, active: false };
+		});
+		body.addEventListener("pointermove", (e) => {
+			if (!swipe) return;
+			const dx = e.clientX - swipe.x0;
+			if (!swipe.active) {
+				if (Math.abs(dx) < 8) return;
+				if (Math.abs(e.clientY - swipe.y0) > Math.abs(dx)) return void (swipe = null);
+				swipe.active = true;
+				body.setPointerCapture(e.pointerId);
+				body.style.transition = "";
+				strip.hidden = false;
+			}
+			swipe.dx = Math.min(0, dx);
+			body.style.transform = `translateX(${swipe.dx}px)`;
+			strip.style.width = `${-swipe.dx}px`;
+		});
+		const end = (e) => {
+			if (!swipe) return;
+			const { dx, active } = swipe;
+			swipe = null;
+			if (!active) return;
+			// the click that follows letting go must not play the row
+			swiped = true;
+			setTimeout(() => (swiped = false), 0);
+			body.style.transition = "transform 150ms ease-out";
+			if (e.type === "pointerup" && window.playerState.swipeAction(dx, body.offsetWidth) === "remove") {
+				body.style.transform = "translateX(-100%)";
+				strip.style.width = "100%";
+				setTimeout(remove, 150);
+			} else {
+				body.style.transform = "";
+				strip.style.width = "0";
+				setTimeout(() => (strip.hidden = true), 150);
+			}
+		};
+		body.addEventListener("pointerup", end);
+		body.addEventListener("pointercancel", end);
+		body.addEventListener("click", (e) => swiped && (e.stopPropagation(), e.preventDefault()), true);
 	}
 
 	// renderNow fills the "now playing" part of the side panel
@@ -419,6 +557,8 @@
 		all("data-chapter-box").forEach((el) => (el.hidden = chapters.length === 0));
 		chapterLabel.hidden = chapters.length === 0;
 		all("data-np-chapter").forEach((el) => (el.hidden = chapters.length === 0));
+		// in the sheet the chapters take the place of the queue while there are some
+		all("data-np-upnext").forEach((el) => (el.hidden = chapters.length > 0));
 		all("data-chapter-list").forEach((list) => {
 			list.replaceChildren();
 			chapters.forEach((c) => {
@@ -571,7 +711,7 @@
 
 	[document.getElementById("player-prev"), ...all("data-np-prev")].forEach((b) => b.addEventListener("click", prev));
 	[document.getElementById("player-next"), ...all("data-np-next")].forEach((b) => b.addEventListener("click", next));
-	shuffleBtn.addEventListener("click", toggleShuffle);
+	all("data-shuffle").forEach((b) => b.addEventListener("click", toggleShuffle));
 	all("data-repeat").forEach((b) => b.addEventListener("click", () => (toggleRepeat(), renderQueue())));
 	all("data-autoplay").forEach((b) => b.addEventListener("click", toggleAutoplay));
 	all("data-queue-clear").forEach((btn) =>
@@ -904,7 +1044,7 @@
 			pos = 0;
 		}
 		shuffle = Boolean(state.shuffle);
-		shuffleBtn.setAttribute("aria-pressed", String(shuffle));
+		syncShuffle();
 		repeat = window.playerState.repeatFrom(state);
 		syncRepeat();
 		history = window.playerState.historyFrom(state);

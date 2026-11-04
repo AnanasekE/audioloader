@@ -78,7 +78,7 @@ templ player() {
 				<span id="player-chapter" class="block truncate text-xs text-fg-subtle max-[720px]:hidden" hidden></span>
 			</div>
 			<div class="flex shrink-0 items-center gap-1 min-[720px]:order-1">
-				<button id="player-shuffle" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">@icon("shuffle")</button>
+				<button id="player-shuffle" data-shuffle type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">@icon("shuffle")</button>
 				// repeat, desktop spot: next to shuffle
 				@repeatButton("max-[720px]:hidden")
 				<button id="player-prev" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden" aria-label="Previous track">@iconClass("skip-back", "size-4")</button>
@@ -136,6 +136,22 @@ templ player() {
 			<div class="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-fg/10 min-[720px]:hidden"><div data-mini-progress class="h-full w-0 rounded-full bg-fg/60"></div></div>
 			// player.js builds the queue remove buttons from this
 			<template id="player-x-icon">@iconClass("x", "size-3.5")</template>
+			// ...and the rows of the queue lists. The sheet's rows swipe left to remove
+			// (data-row-remove is the red strip that shows behind) and drag by the handle.
+			<template id="player-queue-row">
+				<li data-row class="relative">
+					<div data-row-remove class="absolute inset-y-0 right-0 flex items-center justify-end rounded-md bg-st-failed pr-4 text-sm font-semibold text-white" hidden>Remove</div>
+					<div data-row-body class="relative flex touch-pan-y items-center gap-2 rounded-md select-none">
+						<img data-row-cover class="pixelated size-10 shrink-0 rounded-md bg-panel-2 object-cover" alt="" hidden/>
+						<button data-row-play type="button" class="min-w-0 flex-1 py-1 text-left hover:text-accent">
+							<span data-row-title class="block truncate"></span>
+							<span data-row-artists class="block truncate text-xs text-fg-muted" hidden></span>
+						</button>
+						<button data-row-rm type="button" class="text-xs text-fg-muted hover:text-fg"></button>
+						<button data-row-handle type="button" class="flex size-9 shrink-0 cursor-grab touch-none items-center justify-center text-fg-muted hover:text-fg" aria-label="Drag to move">@iconClass("list", "size-4")</button>
+					</div>
+				</li>
+			</template>
 			// short feedback when tracks are queued (player.js); hidden when empty
 			<div data-queue-toast role="status" aria-live="polite" class="pop absolute right-3 bottom-full mb-2 px-3 py-2 text-sm empty:hidden"></div>
 			<audio id="player-audio" preload="metadata"></audio>
@@ -155,19 +171,40 @@ templ nowPlaying() {
 			<div data-np-art-view class="flex min-h-0 flex-1 items-center justify-center">
 				<img data-np-cover data-paused class="pixelated size-[min(calc(100vw-2rem),45dvh)] rounded-xl bg-panel-2 object-cover shadow-[0_20px_50px_rgba(0,0,0,0.45)]" alt=""/>
 			</div>
-			<div data-np-queue-view class="flex min-h-0 flex-1 flex-col overflow-y-auto" hidden>
-				<div class="mb-1 flex items-center justify-between">
-					<strong>Playing Next</strong>
-					<span class="flex items-center gap-3">
-						@autoplaySwitch()
-						<button data-queue-clear type="button" class="text-xs text-fg-muted underline hover:text-fg">Clear</button>
-					</span>
+			<div data-np-queue-view class="flex min-h-0 flex-1 flex-col" hidden>
+				<div data-now class="flex items-center gap-3 pb-3" hidden>
+					<img data-now-cover class="pixelated size-14 shrink-0 rounded-md bg-panel-2 object-cover" alt=""/>
+					<div class="min-w-0">
+						<strong data-now-title class="block truncate"></strong>
+						<span data-now-artists class="block truncate text-sm text-white/70"></span>
+					</div>
 				</div>
-				<ol data-queue-list></ol>
-				<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
-				<div data-chapter-box class="mt-3 border-t border-line pt-2" hidden>
-					<strong>Chapters</strong>
-					<ol data-chapter-list></ol>
+				<div class="flex gap-2 pb-2">
+					<button data-shuffle type="button" class={ queuePill } aria-pressed="false">@icon("shuffle") Shuffle</button>
+					<button data-repeat type="button" class={ queuePill } aria-label="Repeat: off" aria-pressed="false">
+						<span data-repeat-icon="all">@icon("repeat")</span>
+						<span data-repeat-icon="one" hidden>@icon("repeat-1")</span>
+						Repeat
+					</button>
+					<button data-autoplay type="button" role="switch" aria-checked="true" class={ queuePill } title="Keep playing similar tracks when the queue ends">@icon("tracks") Autoplay</button>
+				</div>
+				<div data-np-scroll class="relative min-h-0 flex-1 overflow-y-auto">
+					<div data-history-box hidden>
+						<strong class="block py-2 text-xs font-semibold tracking-[0.06em] text-fg-subtle uppercase">History</strong>
+						<ol data-history-list></ol>
+					</div>
+					<div data-np-upnext class="min-h-full">
+						<div class="flex items-center justify-between py-2">
+							<strong>Playing Next</strong>
+							<button data-queue-clear type="button" class="text-sm text-fg-muted underline hover:text-fg">Clear</button>
+						</div>
+						<ol data-queue-list data-queue-swipe></ol>
+						<p data-queue-empty class="py-1 text-fg-muted">Nothing queued.</p>
+					</div>
+					<div data-chapter-box class="pt-2" hidden>
+						<strong class="block py-2">Chapters</strong>
+						<ol data-chapter-list></ol>
+					</div>
 				</div>
 			</div>
 			<div data-np-controls class="shrink-0">
@@ -210,6 +247,9 @@ templ nowPlaying() {
 		</div>
 	</dialog>
 }
+
+// queuePill is the look of the Shuffle, Repeat and Autoplay toggles in the sheet's queue view.
+const queuePill = "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-white/10 text-sm font-medium text-white aria-checked:bg-white aria-checked:text-black aria-pressed:bg-white aria-pressed:text-black"
 
 // autoplaySwitch turns autoplay on and off in a queue header. It is drawn in
 // the popover and in the side panel; player.js keeps both in step (data-autoplay).
