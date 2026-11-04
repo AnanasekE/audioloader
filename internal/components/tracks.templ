@@ -286,6 +286,42 @@ func trackNo(n int) string {
 	return fmt.Sprintf("%02d", n)
 }
 
+// NowPlayingMeta is the title, artists and ⋯ menu of the phone Now Playing
+// sheet. The hidden play button is what the menu's queue actions read the
+// track from, as in a track row. The title links to the release (or the show).
+templ NowPlayingMeta(t *audio.Track) {
+	<div class="flex items-center gap-2" data-track-row data-menu-host>
+		<button type="button" class="hidden" tabindex="-1" aria-hidden="true" data-bare { playAttrs(t)... }></button>
+		<div class="min-w-0 flex-1">
+			<strong class="block truncate text-xl font-bold">
+				if u := nowPlayingURL(t); u != "" {
+					<a class="text-white" href={ u }>{ t.Title }</a>
+				} else {
+					{ t.Title }
+				}
+			</strong>
+			<span class="block truncate text-lg text-white/70 [&_a]:text-white/70">
+				@artistLinks(t.Artists)
+			</span>
+		</div>
+		@trackMenu(t)
+	</div>
+}
+
+// nowPlayingURL is the page the title of the Now Playing sheet links to.
+func nowPlayingURL(t *audio.Track) templ.SafeURL {
+	if r := mainRelease(t); r != nil {
+		return templ.SafeURL("/releases/" + r.ID.String())
+	}
+	if r := firstSingle(t); r != nil {
+		return templ.SafeURL("/releases/" + r.ID.String())
+	}
+	if t.IsEpisode() && t.ShowID != "" {
+		return templ.SafeURL("/shows/" + t.ShowID)
+	}
+	return ""
+}
+
 // trackAlbumCell is the album column: the main release, or the single.
 templ trackAlbumCell(t *audio.Track) {
 	if main, single := mainRelease(t), firstSingle(t); main != nil {

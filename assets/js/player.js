@@ -25,6 +25,9 @@
 	const episodeControls = document.getElementById("player-episode-controls");
 	const speed = document.getElementById("player-speed");
 	const chapterLabel = document.getElementById("player-chapter");
+	// the sheet has its own copies of the seek bar, volume bar and speed menu
+	const seeks = [seek, ...document.querySelectorAll("[data-np-seek]")];
+	const speeds = [speed, ...document.querySelectorAll("[data-np-speed]")];
 	// the queue shows in the popover and in the side panel (layout.templ); both
 	// are filled from the same state, found by these attributes
 	const all = (attr) => document.querySelectorAll(`[${attr}]`);
@@ -82,6 +85,7 @@
 		root.hidden = false;
 		cover.src = track.img;
 		renderNow();
+		window.nowPlaying?.setTrack(track);
 		title.textContent = track.title;
 		artists.textContent = track.coverOf ? `${track.artists} · cover of ${track.coverOf}` : track.artists;
 		if ("mediaSession" in navigator) {
@@ -125,6 +129,7 @@
 		audio.load();
 		markRows();
 		renderNow();
+		window.nowPlaying?.setTrack(null);
 		renderQueue();
 		save();
 	}
@@ -335,8 +340,9 @@
 				list.append(li);
 			});
 		});
-		document.getElementById("player-prev").disabled = !current;
-		document.getElementById("player-next").disabled = window.playerState.nextPos(pos, order.length, repeat) < 0 && !canAutoplay();
+		const noNext = window.playerState.nextPos(pos, order.length, repeat) < 0 && !canAutoplay();
+		[document.getElementById("player-prev"), ...all("data-np-prev")].forEach((b) => (b.disabled = !current));
+		[document.getElementById("player-next"), ...all("data-np-next")].forEach((b) => (b.disabled = noNext));
 	}
 
 	// renderNow fills the "now playing" part of the side panel
@@ -381,6 +387,7 @@
 	function setupEpisode(track) {
 		const episode = isEpisode(track);
 		episodeControls.hidden = !episode;
+		all("data-np-episode").forEach((el) => (el.hidden = !episode));
 		all("data-sleep-track").forEach((b) => (b.textContent = episode ? "End of this episode" : "End of this track"));
 		syncSleep();
 		chapters = [];
@@ -392,7 +399,7 @@
 			} catch {}
 			loadChapters(track);
 		}
-		speed.value = String(rate);
+		speeds.forEach((el) => (el.value = String(rate)));
 		audio.playbackRate = rate;
 		audio.preservesPitch = true;
 	}
@@ -411,6 +418,7 @@
 	function renderChapters() {
 		all("data-chapter-box").forEach((el) => (el.hidden = chapters.length === 0));
 		chapterLabel.hidden = chapters.length === 0;
+		all("data-np-chapter").forEach((el) => (el.hidden = chapters.length === 0));
 		all("data-chapter-list").forEach((list) => {
 			list.replaceChildren();
 			chapters.forEach((c) => {
@@ -435,6 +443,7 @@
 		let i = 0;
 		while (i + 1 < chapters.length && chapters[i + 1].start <= audio.currentTime) i++;
 		chapterLabel.textContent = chapters[i].title;
+		all("data-np-chapter").forEach((el) => (el.textContent = chapters[i].title));
 		all("data-chapter-list").forEach((list) => list.querySelectorAll("button").forEach((b, j) => b.classList.toggle("font-semibold", j === i)));
 	}
 
@@ -453,14 +462,17 @@
 		else fetch(url, { method: "POST", body, keepalive: true }).catch(() => {});
 	}
 
-	document.getElementById("player-back").addEventListener("click", () => (audio.currentTime = Math.max(0, audio.currentTime - 15)));
-	document.getElementById("player-forward").addEventListener("click", () => (audio.currentTime += 30));
-	speed.addEventListener("change", () => {
-		audio.playbackRate = Number(speed.value);
-		try {
-			localStorage.setItem(speedKey(current), speed.value);
-		} catch {}
-	});
+	[document.getElementById("player-back"), ...all("data-np-back")].forEach((b) => b.addEventListener("click", () => (audio.currentTime = Math.max(0, audio.currentTime - 15))));
+	[document.getElementById("player-forward"), ...all("data-np-forward")].forEach((b) => b.addEventListener("click", () => (audio.currentTime += 30)));
+	speeds.forEach((el) =>
+		el.addEventListener("change", () => {
+			speeds.forEach((other) => (other.value = el.value));
+			audio.playbackRate = Number(el.value);
+			try {
+				localStorage.setItem(speedKey(current), el.value);
+			} catch {}
+		}),
+	);
 
 	// toast shows a line above the player for a moment
 	let toastTimer;
@@ -557,8 +569,8 @@
 		}
 	});
 
-	document.getElementById("player-prev").addEventListener("click", prev);
-	document.getElementById("player-next").addEventListener("click", next);
+	[document.getElementById("player-prev"), ...all("data-np-prev")].forEach((b) => b.addEventListener("click", prev));
+	[document.getElementById("player-next"), ...all("data-np-next")].forEach((b) => b.addEventListener("click", next));
 	shuffleBtn.addEventListener("click", toggleShuffle);
 	all("data-repeat").forEach((b) => b.addEventListener("click", () => (toggleRepeat(), renderQueue())));
 	all("data-autoplay").forEach((b) => b.addEventListener("click", toggleAutoplay));
@@ -664,16 +676,20 @@
 
 	// --- volume and mute ---------------------------------------------------
 
-	const volumeEl = document.getElementById("player-volume");
+	const volumeEls = [document.getElementById("player-volume"), ...all("data-np-volume")];
 	const muteBtn = document.getElementById("player-mute");
 	const { volumeFromSlider, sliderFromVolume } = window.playerState;
 
 	function syncVolume() {
 		const silent = audio.muted || audio.volume === 0;
-		volumeEl.value = String(audio.muted ? 0 : sliderFromVolume(audio.volume));
+		const level = audio.muted ? 0 : sliderFromVolume(audio.volume);
+		volumeEls.forEach((el) => {
+			el.value = String(level);
+			el.style.setProperty("--p", `${level * 100}%`);
+		});
 		muteBtn.setAttribute("aria-label", silent ? "Unmute" : "Mute");
-		const level = silent ? "x" : audio.volume < 0.5 ? "1" : "2";
-		muteBtn.querySelectorAll("[data-vol-icon]").forEach((el) => (el.hidden = el.dataset.volIcon !== level));
+		const icon = silent ? "x" : audio.volume < 0.5 ? "1" : "2";
+		muteBtn.querySelectorAll("[data-vol-icon]").forEach((el) => (el.hidden = el.dataset.volIcon !== icon));
 	}
 
 	function toggleMute() {
@@ -693,7 +709,7 @@
 		if (audio.volume > 0) audio.muted = false;
 	}
 
-	volumeEl.addEventListener("input", () => setVolume(volumeFromSlider(volumeEl.value)));
+	volumeEls.forEach((el) => el.addEventListener("input", () => setVolume(volumeFromSlider(el.value))));
 	muteBtn.addEventListener("click", toggleMute);
 	// m toggles mute; arrow keys stay free so the page scrolls
 	document.addEventListener("keydown", (e) => {
@@ -707,21 +723,28 @@
 	});
 
 	let seeking = false;
+	let seekTo = 0;
 
 	function syncTime() {
 		const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
-		seek.max = String(dur);
-		if (!seeking) seek.value = String(audio.currentTime);
-		const shown = seeking ? Number(seek.value) : audio.currentTime;
+		const shown = seeking ? seekTo : audio.currentTime;
+		seeks.forEach((el) => {
+			el.max = String(dur);
+			el.value = String(shown);
+			el.style.setProperty("--p", dur ? `${Math.min(100, (shown / dur) * 100)}%` : "0%");
+		});
 		all("data-mini-progress").forEach((el) => (el.style.width = dur ? `${Math.min(100, (shown / dur) * 100)}%` : "0"));
-		timeEl.textContent = clock(shown);
-		remainingEl.textContent = "-" + clock(dur - shown);
+		[timeEl, ...all("data-np-time")].forEach((el) => (el.textContent = clock(shown)));
+		[remainingEl, ...all("data-np-remaining")].forEach((el) => (el.textContent = "-" + clock(dur - shown)));
 	}
 
 	function syncPlay() {
 		const playing = !audio.paused;
-		setPlayIcon(playBtn, playing);
-		playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+		playBtns.forEach((b) => {
+			setPlayIcon(b, playing);
+			b.setAttribute("aria-label", playing ? "Pause" : "Play");
+		});
+		window.nowPlaying?.setPlaying(playing);
 	}
 
 	function togglePlay() {
@@ -730,18 +753,22 @@
 		else audio.pause();
 	}
 
-	playBtn.addEventListener("click", togglePlay);
+	const playBtns = [playBtn, ...all("data-np-play")];
+	playBtns.forEach((b) => b.addEventListener("click", togglePlay));
 	// on phones a tap on the mini player, but not on its buttons, opens the Now Playing sheet
 	root.addEventListener("click", (e) => {
 		if (e.target.closest("button, summary, details, a, input, select") || !matchMedia("(max-width: 720px)").matches) return;
-		document.getElementById("now-playing")?.showModal();
+		window.nowPlaying?.open();
 	});
-	seek.addEventListener("input", () => {
-		seeking = true;
-		audio.currentTime = Number(seek.value);
-		syncTime();
-		seeking = false;
-	});
+	seeks.forEach((el) =>
+		el.addEventListener("input", () => {
+			seeking = true;
+			seekTo = Number(el.value);
+			audio.currentTime = seekTo;
+			syncTime();
+			seeking = false;
+		}),
+	);
 	audio.addEventListener("loadedmetadata", syncTime);
 	audio.addEventListener("durationchange", syncTime);
 	audio.addEventListener("timeupdate", syncTime);

@@ -51,6 +51,25 @@ func getTrack(w http.ResponseWriter, r *http.Request) {
 	render(w, r, components.Track(track))
 }
 
+// getNowPlayingMeta is the title, artists and menu of the phone Now Playing
+// sheet for one track; now-playing.js loads it for the track that plays.
+func getNowPlayingMeta(w http.ResponseWriter, r *http.Request) {
+	id, ok := trackID(w, r)
+	if !ok {
+		return
+	}
+	track, err := db.GetTrack(viewer(r), id.String())
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.NowPlayingMeta(track))
+}
+
 func getTrackEditPage(w http.ResponseWriter, r *http.Request) {
 	id, ok := trackID(w, r)
 	if !ok {

@@ -92,3 +92,24 @@ func TestTracksPageSort(t *testing.T) {
 		}
 	}
 }
+
+func TestNowPlayingMeta(t *testing.T) {
+	a := newModeApp(t)
+	body := a.do(false, "GET", "/ui/tracks/"+a.ID["public track"]+"/playing", nil).Body.String()
+	// title, an artist link, and the menu with the hidden play button it reads the track from
+	for _, want := range []string{"ZZPUBLIC Song", `href="/artists/`, "data-menu", "data-queue=\"next\"", `data-id="` + a.ID["public track"]} {
+		if !strings.Contains(body, want) {
+			t.Errorf("missing %q in:\n%s", want, body)
+		}
+	}
+	// a secret track is not there in normal mode, but is in secret mode
+	if rec := a.do(false, "GET", "/ui/tracks/"+a.ID["secret track"]+"/playing", nil); rec.Code != 404 {
+		t.Errorf("secret track in normal mode = %d", rec.Code)
+	}
+	if rec := a.do(true, "GET", "/ui/tracks/"+a.ID["secret track"]+"/playing", nil); rec.Code != 200 {
+		t.Errorf("secret track in secret mode = %d", rec.Code)
+	}
+	if rec := a.do(false, "GET", "/ui/tracks/00000000-0000-0000-0000-000000000000/playing", nil); rec.Code != 404 {
+		t.Errorf("unknown track = %d", rec.Code)
+	}
+}
