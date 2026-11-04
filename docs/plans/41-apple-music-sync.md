@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. Followed playlists in the database
-- [ ] 2. The check job and its timer
+- [x] 2. The check job and its timer
 - [ ] 3. "Keep in sync" and the followed list
 - [ ] 4. Songs to pick in the Inbox
 

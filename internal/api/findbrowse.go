@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"audioloader/internal/addsong"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/mb"
@@ -194,7 +195,7 @@ func getFindReleaseGroup(w http.ResponseWriter, r *http.Request) {
 
 // findReleasePage is rel's tracklist with the library's tracks marked.
 func findReleasePage(c *mb.Client, rel *mb.Release, groupID string) (*components.FindReleasePage, error) {
-	songs := releaseSongs(rel)
+	songs := addsong.ReleaseSongs(rel)
 	ids := make([]string, len(songs))
 	for i, s := range songs {
 		ids[i] = s.Song.RecordingMBID

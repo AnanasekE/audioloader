@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"audioloader/internal/addsong"
 	"audioloader/internal/audio"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/downloads"
-	"audioloader/internal/jobs"
 	"audioloader/internal/mb"
 	"audioloader/internal/sources/ytdlp"
 	"audioloader/internal/tagging"
@@ -78,7 +78,7 @@ func recordingCandidate(c *mb.Client, library []*audio.Track, rec mb.Recording) 
 func candidateOn(c *mb.Client, library []*audio.Track, rec mb.Recording, rel *mb.Release) (components.SongCandidate, error) {
 	cand := candidateBase(c, rec, rel)
 	var err error
-	cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, songTrack(rec))
+	cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = addsong.Owned(library, addsong.SongTrack(rec))
 	return cand, err
 }
 
@@ -156,7 +156,7 @@ func renderRelease(w http.ResponseWriter, r *http.Request, rel *mb.Release) {
 		serverError(w, err)
 		return
 	}
-	songs := releaseSongs(rel)
+	songs := addsong.ReleaseSongs(rel)
 	head := &components.SongRelease{
 		ID:       rel.ID,
 		Title:    rel.Title,
@@ -177,7 +177,7 @@ func renderRelease(w http.ResponseWriter, r *http.Request, rel *mb.Release) {
 			Disc:        s.Disc,
 			Position:    s.Position,
 		}
-		cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, s.Track)
+		cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = addsong.Owned(library, s.Track)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -188,93 +188,6 @@ func renderRelease(w http.ResponseWriter, r *http.Request, rel *mb.Release) {
 		found = append(found, cand)
 	}
 	render(w, r, components.SongCandidates("", head, found))
-}
-
-// releaseSong is one track of a MusicBrainz release, ready to add to the
-// library on that release.
-type releaseSong struct {
-	Song           db.NewSong
-	Track          db.InboxTrack // what the library's ownership rule compares
-	Artists        string
-	Disc, Position int
-}
-
-// releaseSongs lists rel's tracks in disc and position order.
-func releaseSongs(rel *mb.Release) []releaseSong {
-	var out []releaseSong
-	for _, m := range rel.Media {
-		for _, t := range m.Tracks {
-			it := songTrack(t.Recording)
-			it.Title, it.LengthMs = t.Title, firstPositive(t.Length, t.Recording.Length)
-			out = append(out, releaseSong{
-				Track:    it,
-				Artists:  t.Recording.ArtistCredit.String(),
-				Disc:     max(m.Position, 1),
-				Position: t.Position,
-				Song: db.NewSong{
-					RecordingMBID: t.Recording.ID,
-					Title:         it.Title,
-					ISRC:          it.ISRC,
-					LengthMs:      it.LengthMs,
-					SpotifyURL:    mb.SpotifyURL(t.Recording.Relations, "track"),
-					Artists:       it.Artists,
-					CoverWorkID:   coverWorkID(t.Recording),
-					Release: &db.NewSongRelease{
-						MBID:             rel.ID,
-						ReleaseGroupMBID: rel.ReleaseGroup.ID,
-						Title:            rel.Title,
-						Type:             tagging.ReleaseType(rel.ReleaseGroup),
-						Date:             rel.Date,
-						SpotifyURL:       mb.SpotifyURL(rel.Relations, "album"),
-						Artists:          tagging.MatchArtists(rel.ArtistCredit),
-						Disc:             max(m.Position, 1),
-						Position:         t.Position,
-					},
-				},
-			})
-		}
-	}
-	return out
-}
-
-func coverWorkID(rec mb.Recording) string {
-	if w := rec.CoverWork(); w != nil {
-		return w.ID
-	}
-	return ""
-}
-
-// songTrack is the recording as an inbox tracklist entry, which is what the
-// library's ownership rule compares.
-func songTrack(rec mb.Recording) db.InboxTrack {
-	it := db.InboxTrack{
-		Title:         rec.Title,
-		RecordingMBID: rec.ID,
-		LengthMs:      rec.Length,
-		Artists:       tagging.MatchArtists(rec.ArtistCredit),
-	}
-	if len(rec.ISRCs) > 0 {
-		it.ISRC = rec.ISRCs[0]
-	}
-	return it
-}
-
-// ownedSong finds the library's track for t, or its queued placeholder. The
-// release is the one the track is on; "" for both when the library has none.
-func ownedSong(library []*audio.Track, t db.InboxTrack) (trackID, releaseID string, hasFile bool, err error) {
-	if id := db.OwnedTrack(library, t); id != "" {
-		for _, lt := range library {
-			if lt.ID.String() == id && len(lt.Releases) > 0 {
-				releaseID = lt.Releases[0].ID.String()
-			}
-		}
-		return id, releaseID, true, nil
-	}
-	if t.RecordingMBID == "" {
-		return "", "", false, nil
-	}
-	trackID, releaseID, err = db.QueuedSong(t.RecordingMBID)
-	return trackID, releaseID, false, err
 }
 
 // addSongFromMusicBrainz adds a picked recording as a placeholder on its
@@ -304,7 +217,7 @@ func addSongFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	if _, err := queueSong(library, song, it); errors.Is(err, errAlreadyOwned) {
+	if _, err := addsong.Queue(library, song, it); errors.Is(err, addsong.ErrAlreadyOwned) {
 		http.Error(w, "this song is already in your library", http.StatusConflict)
 		return
 	} else if err != nil {
@@ -333,30 +246,21 @@ func songFor(ctx context.Context, recordingID, releaseID string) (db.NewSong, db
 		if err != nil {
 			return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadGateway, "couldn't read MusicBrainz: " + err.Error()}
 		}
-		for _, rs := range releaseSongs(rel) {
+		for _, rs := range addsong.ReleaseSongs(rel) {
 			if rs.Song.RecordingMBID == recordingID {
 				return rs.Song, rs.Track, nil
 			}
 		}
 		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadRequest, "that recording isn't on this release"}
 	}
-	rec, err := c.GetRecording(ctx, recordingID)
+	song, it, err := addsong.Single(ctx, c, recordingID)
 	if errors.Is(err, mb.ErrNotFound) {
 		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadRequest, "that recording isn't on MusicBrainz"}
 	}
 	if err != nil {
 		return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadGateway, "couldn't read MusicBrainz: " + err.Error()}
 	}
-	it := songTrack(*rec)
-	return db.NewSong{
-		RecordingMBID: rec.ID,
-		Title:         rec.Title,
-		ISRC:          it.ISRC,
-		LengthMs:      rec.Length,
-		SpotifyURL:    mb.SpotifyURL(rec.Relations, "track"),
-		Artists:       it.Artists,
-		CoverWorkID:   coverWorkID(*rec),
-	}, it, nil
+	return song, it, nil
 }
 
 // maxAddAll caps how many tracks "Add all" queues at once.
@@ -379,7 +283,7 @@ func addReleaseFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	songs := releaseSongs(rel)
+	songs := addsong.ReleaseSongs(rel)
 	if len(songs) > maxAddAll {
 		http.Error(w, fmt.Sprintf("this release has %d tracks; add at most %d at once", len(songs), maxAddAll), http.StatusBadRequest)
 		return
@@ -390,51 +294,12 @@ func addReleaseFromMusicBrainz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, s := range songs {
-		if _, err := queueSong(library, s.Song, s.Track); err != nil && !errors.Is(err, errAlreadyOwned) {
+		if _, err := addsong.Queue(library, s.Song, s.Track); err != nil && !errors.Is(err, addsong.ErrAlreadyOwned) {
 			serverError(w, err)
 			return
 		}
 	}
 	renderRelease(w, r, rel)
-}
-
-var errAlreadyOwned = errors.New("the library already has this song")
-
-// queueSong adds song (it is the same song as the library's ownership rule
-// sees it) as a placeholder and queues its download, unless the library has
-// it or has it queued. It returns the track's ID, which with errAlreadyOwned
-// is the library's.
-func queueSong(library []*audio.Track, song db.NewSong, it db.InboxTrack) (string, error) {
-	// another tab may have added it since the search
-	if id, _, _, err := ownedSong(library, it); err != nil {
-		return "", err
-	} else if id != "" {
-		return id, errAlreadyOwned
-	}
-	trackID, newReleaseID, newRelease, err := db.AddSong(song)
-	if err != nil {
-		return "", err
-	}
-	if err := downloads.Enqueue(trackID); err != nil {
-		return "", err
-	}
-	if song.CoverWorkID != "" {
-		payload := map[string]string{"TrackID": trackID, "WorkID": song.CoverWorkID, "RecordingID": song.RecordingMBID}
-		if err := jobs.EnqueueAt(tagging.JobCoverOfApply, trackID, payload, time.Time{}); err != nil {
-			return "", err
-		}
-	}
-	if newRelease {
-		return trackID, tagging.EnqueueCover(newReleaseID)
-	}
-	return trackID, nil
-}
-
-func firstPositive(a, b int) int {
-	if a > 0 {
-		return a
-	}
-	return b
 }
 
 // searchSongsYouTube lists the top 5 YouTube results for what was typed,

@@ -20,6 +20,7 @@ const JobImport = "apple_import"
 
 // Register sets up the job handler.
 func Register() {
+	registerSync()
 	jobs.Register(JobImport, func(ctx context.Context, payload json.RawMessage) error {
 		var p struct{ ImportID int64 }
 		if err := json.Unmarshal(payload, &p); err != nil {

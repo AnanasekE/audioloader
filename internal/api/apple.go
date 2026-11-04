@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"audioloader/internal/addsong"
 	"audioloader/internal/appleimport"
 	"audioloader/internal/applemusic"
 	"audioloader/internal/components"
@@ -127,7 +128,7 @@ func shareAppleSong(w http.ResponseWriter, r *http.Request, link string) {
 		serverError(w, err)
 		return
 	}
-	if _, err := queueSong(library, song, it); errors.Is(err, errAlreadyOwned) {
+	if _, err := addsong.Queue(library, song, it); errors.Is(err, addsong.ErrAlreadyOwned) {
 		http.Error(w, "Already in your library: "+song.Title, http.StatusConflict)
 		return
 	} else if err != nil {

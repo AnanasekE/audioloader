@@ -53,6 +53,8 @@ func main() {
 	tracking.Register()
 	appleimport.Register()
 	go tracking.Schedule(ctx)
+	appleimport.SyncEvery = appleSyncEvery()
+	go appleimport.Schedule(ctx)
 	downloads.Register()
 	downloads.Default() // logs the yt-dlp and spotDL versions, or why they're unavailable
 	go downloads.Schedule(ctx)
@@ -120,4 +122,15 @@ func downloadWorkers() int {
 		return 2
 	}
 	return min(n, 4)
+}
+
+// appleSyncEvery is how often followed Apple Music playlists are checked,
+// from AUDIOLOADER_APPLE_SYNC_EVERY (a Go duration, such as 30m): 1 hour by
+// default.
+func appleSyncEvery() time.Duration {
+	d, err := time.ParseDuration(os.Getenv("AUDIOLOADER_APPLE_SYNC_EVERY"))
+	if err != nil || d < time.Minute {
+		return time.Hour
+	}
+	return d
 }

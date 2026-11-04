@@ -22,7 +22,7 @@ func youtubeImportOn(t *testing.T) string {
 		ID: "rel1", Title: "The Album", Date: "2019-05-01",
 		ReleaseGroup: mb.ReleaseGroup{ID: "rg1", PrimaryType: "Album"},
 		ArtistCredit: mb.Credits{{Name: "Artist", Artist: mb.Artist{ID: "art1", Name: "Artist"}}},
-		Media: []mb.Medium{{Position: 1, Tracks: []mb.Track{{Position: 3, Title: "Song", Recording: mb.Recording{ID: "rec1"}}}}},
+		Media:        []mb.Medium{{Position: 1, Tracks: []mb.Track{{Position: 3, Title: "Song", Recording: mb.Recording{ID: "rec1"}}}}},
 	}
 	b, err := json.Marshal(rel)
 	if err != nil {

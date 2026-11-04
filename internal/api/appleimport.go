@@ -287,26 +287,21 @@ func addAppleImport(w http.ResponseWriter, r *http.Request) {
 		if !ticked[strconv.Itoa(t.Position)] || t.RecordingID == "" || (t.State != db.AppleSongMatched && t.State != db.AppleSongUnsure) {
 			continue
 		}
-		song, it, serr := appleTrackSong(r, releases, t)
-		if serr != nil {
-			http.Error(w, serr.msg, serr.status)
-			return
-		}
-		trackID, err := queueSong(library, song, it)
+		err := appleimport.AddTrack(r.Context(), mb.Default(), releases, library, t)
 		switch {
-		case errors.Is(err, errAlreadyOwned):
-			t.State, t.TrackID = db.AppleSongOwned, trackID
-			had++
+		case errors.Is(err, mb.ErrNotFound):
+			http.Error(w, "that recording isn't on MusicBrainz", http.StatusBadRequest)
+			return
+		case errors.Is(err, appleimport.ErrMusicBrainz):
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
 		case err != nil:
 			serverError(w, err)
 			return
+		case t.State == db.AppleSongOwned:
+			had++
 		default:
-			t.State, t.TrackID = db.AppleSongAdded, trackID
 			added++
-		}
-		if err := db.SetAppleTrackMatch(*t); err != nil {
-			serverError(w, err)
-			return
 		}
 	}
 	notice := fmt.Sprintf("Added %d songs.", added)
@@ -317,7 +312,7 @@ func addAppleImport(w http.ResponseWriter, r *http.Request) {
 		notice += fmt.Sprintf(" %d were in your library already.", had)
 	}
 	if r.FormValue("playlist") != "" {
-		if err := syncApplePlaylist(imp, tracks); err != nil {
+		if err := appleimport.SyncPlaylist(imp, tracks); err != nil {
 			serverError(w, err)
 			return
 		}
@@ -328,70 +323,4 @@ func addAppleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	renderAppleImport(w, r, imp, notice)
-}
-
-// appleTrackSong reads what db.AddSong needs for t, on the MusicBrainz
-// release it was matched to. releases caches the releases read so far. A
-// recording that isn't on its release any more is added as a single.
-func appleTrackSong(r *http.Request, releases map[string]*mb.Release, t *db.AppleImportTrack) (db.NewSong, db.InboxTrack, *songError) {
-	if t.ReleaseID != "" {
-		rel, seen := releases[t.ReleaseID]
-		if !seen {
-			var err error
-			rel, err = mb.Default().GetRelease(r.Context(), t.ReleaseID)
-			if errors.Is(err, mb.ErrNotFound) {
-				rel = nil
-			} else if err != nil {
-				return db.NewSong{}, db.InboxTrack{}, &songError{http.StatusBadGateway, "couldn't read MusicBrainz: " + err.Error()}
-			}
-			releases[t.ReleaseID] = rel
-		}
-		if rel != nil {
-			for _, rs := range releaseSongs(rel) {
-				if rs.Song.RecordingMBID == t.RecordingID {
-					return rs.Song, rs.Track, nil
-				}
-			}
-		}
-	}
-	return songFor(r.Context(), t.RecordingID, "")
-}
-
-// syncApplePlaylist makes the import's audioloader playlist if it has none,
-// and fills it with the songs the library has, in Apple's order. Tracks that
-// are in it already stay, and run again it adds only what is missing.
-func syncApplePlaylist(imp *db.AppleImport, tracks []*db.AppleImportTrack) error {
-	playlistID := imp.PlaylistID
-	var existing []string
-	if playlistID == "" {
-		p, err := db.CreatePlaylist(db.Normal, imp.Name)
-		if err != nil {
-			return err
-		}
-		playlistID = p.ID.String()
-		if err := db.SetAppleImportPlaylist(imp.ID, playlistID); err != nil {
-			return err
-		}
-	} else {
-		p, err := db.GetPlaylist(db.Normal, playlistID)
-		if err != nil {
-			return err
-		}
-		for _, t := range p.Tracks {
-			existing = append(existing, t.ID.String())
-		}
-	}
-	var ids []string
-	for _, t := range tracks {
-		if (t.State == db.AppleSongOwned || t.State == db.AppleSongAdded) && t.TrackID != "" && !slices.Contains(ids, t.TrackID) {
-			ids = append(ids, t.TrackID)
-		}
-	}
-	// what a person put there themselves keeps its place after Apple's songs
-	for _, id := range existing {
-		if !slices.Contains(ids, id) {
-			ids = append(ids, id)
-		}
-	}
-	return db.SetPlaylistTracks(db.Normal, playlistID, ids)
 }

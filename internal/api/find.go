@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"audioloader/internal/addsong"
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/mb"
@@ -174,7 +175,7 @@ func addFindSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// a song the library has already is answered like a new one: its release
-	if _, err := queueSong(library, song, it); err != nil && !errors.Is(err, errAlreadyOwned) {
+	if _, err := addsong.Queue(library, song, it); err != nil && !errors.Is(err, addsong.ErrAlreadyOwned) {
 		serverError(w, err)
 		return
 	}
@@ -217,7 +218,7 @@ func addFindRelease(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	songs := releaseSongs(rel)
+	songs := addsong.ReleaseSongs(rel)
 	if len(songs) > maxAddAll {
 		http.Error(w, fmt.Sprintf("this release has %d tracks; add at most %d at once", len(songs), maxAddAll), http.StatusBadRequest)
 		return
@@ -242,7 +243,7 @@ func addFindRelease(w http.ResponseWriter, r *http.Request) {
 		if !all && !picked[s.Song.RecordingMBID] {
 			continue
 		}
-		if _, err := queueSong(library, s.Song, s.Track); errors.Is(err, errAlreadyOwned) {
+		if _, err := addsong.Queue(library, s.Song, s.Track); errors.Is(err, addsong.ErrAlreadyOwned) {
 			continue
 		} else if err != nil {
 			serverError(w, err)
