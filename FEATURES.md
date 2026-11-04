@@ -114,6 +114,7 @@
 - Repeat button next to shuffle: off, all (back to the start, reshuffled when shuffling) or one (the track plays again; Next still moves on); saved with the queue
 - Play next / Add to queue from a track's menu (several Play nexts in a row play in the order added); "Up next" list with remove and clear; queue survives a reload
 - On wide screens the queue is always shown on the right: now playing, up next (click to play, ✕ to remove) and chapters
+- Phone player (under 720px), Apple Music style: a floating mini player above the translucent tab bar (cover, title, play, next, a thin progress line; tap it to open the sheet), and a full-screen Now Playing sheet that slides up over a gradient tinted from the cover (it follows the back gesture; drag the handle down to close). It has big artwork that shrinks while paused, the title (linking to the release) and artists, the ⋯ track menu, a scrubber, previous / play / next, volume, the sleep timer, and for episodes −15 / +30, speed and the chapter. The Queue button swaps the artwork for Playing Next: the current track, Shuffle / Repeat / Autoplay pills, a History list above (scrolled out of view), and the upcoming tracks, which drag by their ≡ handle to reorder and swipe left to remove (a ✕ stays for the keyboard and screen readers); for an episode with chapters, Chapters take its place. The wide-screen queue panel has the same drag handles
 - Volume slider and mute (desktop), remembered across reloads
 
 ### Podcasts and long audio

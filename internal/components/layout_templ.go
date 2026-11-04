@@ -224,7 +224,7 @@ func player() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></button> <input id=\"player-volume\" type=\"range\" min=\"0\" max=\"1\" step=\"0.01\" value=\"1\" class=\"h-6 w-24 accent-accent\" aria-label=\"Volume\"></div><details id=\"player-queue\" class=\"relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden\"><summary class=\"flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9\" aria-label=\"Queue\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></button> <input id=\"player-volume\" type=\"range\" min=\"0\" max=\"1\" step=\"0.01\" value=\"1\" class=\"h-6 w-24 accent-accent\" aria-label=\"Volume\"></div><details id=\"player-queue\" class=\"relative shrink-0 max-[720px]:hidden min-[720px]:order-4 min-[1200px]:hidden\"><summary class=\"flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9\" aria-label=\"Queue\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
