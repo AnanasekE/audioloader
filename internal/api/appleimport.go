@@ -108,6 +108,11 @@ func appleImportView(imp *db.AppleImport, notice string) (components.AppleImport
 		v.Error = "The import failed."
 	}
 	v.Running = active
+	if f, err := db.AppleFollowOfImport(imp.ID); err == nil {
+		v.FollowID = f.ID
+	} else if !errors.Is(err, db.ErrNotFound) {
+		return v, err
+	}
 	for _, t := range tracks {
 		if t.State != db.AppleSongPending {
 			v.Searched++
@@ -323,4 +328,131 @@ func addAppleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	renderAppleImport(w, r, imp, notice)
+}
+
+// followAppleImport keeps a finished import in sync with its playlist.
+func followAppleImport(w http.ResponseWriter, r *http.Request) {
+	imp, ok := appleImportFor(w, r)
+	if !ok {
+		return
+	}
+	if imp.Status != db.ImportDone {
+		http.Error(w, "the import is still running", http.StatusConflict)
+		return
+	}
+	if _, err := db.FollowApplePlaylist(imp.ID); err != nil {
+		serverError(w, err)
+		return
+	}
+	renderAppleImport(w, r, imp, "Now kept in sync: new songs are added when Apple Music has them.")
+}
+
+// appleFollowFor reads the follow named by the request's {id}, answering 404
+// when there is none.
+func appleFollowFor(w http.ResponseWriter, r *http.Request) (*db.AppleFollow, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return nil, false
+	}
+	f, err := db.GetAppleFollow(id)
+	if errors.Is(err, db.ErrNotFound) {
+		http.NotFound(w, r)
+		return nil, false
+	}
+	if err != nil {
+		serverError(w, err)
+		return nil, false
+	}
+	return f, true
+}
+
+// appleFollowRows lists the followed playlists for the Add page.
+func appleFollowRows() ([]components.AppleFollowRow, error) {
+	follows, err := db.ListAppleFollows()
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]components.AppleFollowRow, 0, len(follows))
+	for _, f := range follows {
+		row := components.AppleFollowRow{
+			ID: f.ID, ImportID: f.ImportID, Name: f.Name, Error: f.LastError, ToPick: f.ToPick,
+		}
+		if row.Name == "" {
+			row.Name = f.URL
+		}
+		if t, err := time.Parse("2006-01-02 15:04:05", f.LastCheckedAt); err == nil {
+			row.Checked = timeAgo(time.Since(t))
+		}
+		j, err := jobs.Latest(appleimport.JobSync, appleimport.SyncKey(f.ID))
+		if err != nil {
+			return nil, err
+		}
+		row.Checking = j != nil && (j.Status == "queued" || j.Status == "running")
+		rows = append(rows, row)
+	}
+	return rows, nil
+}
+
+// timeAgo is d as "just now", "5 min ago", "3 h ago" or "2 days ago".
+func timeAgo(d time.Duration) string {
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%d min ago", int(d/time.Minute))
+	case d < 48*time.Hour:
+		return fmt.Sprintf("%d h ago", int(d/time.Hour))
+	}
+	return fmt.Sprintf("%d days ago", int(d/(24*time.Hour)))
+}
+
+func renderAppleFollows(w http.ResponseWriter, r *http.Request) {
+	rows, err := appleFollowRows()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.AppleFollowsList(rows))
+}
+
+// getAppleFollows is what the followed list reloads while a check runs.
+func getAppleFollows(w http.ResponseWriter, r *http.Request) {
+	renderAppleFollows(w, r)
+}
+
+// checkAppleFollow queues a check of a followed playlist right now.
+func checkAppleFollow(w http.ResponseWriter, r *http.Request) {
+	f, ok := appleFollowFor(w, r)
+	if !ok {
+		return
+	}
+	if err := appleimport.EnqueueSync(f.ID); err != nil {
+		serverError(w, err)
+		return
+	}
+	renderAppleFollows(w, r)
+}
+
+// deleteAppleFollow stops syncing a playlist. Its import and what it added
+// stay. Asked from an import page it answers that page, else the list.
+func deleteAppleFollow(w http.ResponseWriter, r *http.Request) {
+	f, ok := appleFollowFor(w, r)
+	if !ok {
+		return
+	}
+	if err := db.DeleteAppleFollow(f.ID); err != nil {
+		serverError(w, err)
+		return
+	}
+	if r.Header.Get("HX-Target") == "apple-import" {
+		imp, err := db.GetAppleImport(f.ImportID)
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		renderAppleImport(w, r, imp, "No longer kept in sync.")
+		return
+	}
+	renderAppleFollows(w, r)
 }

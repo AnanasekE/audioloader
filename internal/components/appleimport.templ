@@ -31,6 +31,7 @@ type AppleImportView struct {
 	Songs      []AppleSongRow
 	PlaylistID string // the audioloader playlist made from it, if any
 	Notice     string // what the last "Add selected" did
+	FollowID   int64  // the follow that keeps it in sync; 0 for none
 }
 
 func (v AppleImportView) title() string {
@@ -192,6 +193,29 @@ templ appleImportResults(v AppleImportView) {
 			</div>
 		}
 	</form>
+	if v.Listed > 0 {
+		<div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
+			if v.FollowID == 0 {
+				<button
+					type="button"
+					class="btn btn-ghost"
+					hx-post={ v.bodyURL() + "/follow" }
+					hx-target="#apple-import"
+					hx-swap="outerHTML"
+				>Keep in sync</button>
+				<span class="text-fg-muted">Checks the playlist for new songs and downloads them.</span>
+			} else {
+				<span class="text-fg-muted">Kept in sync with Apple Music.</span>
+				<button
+					type="button"
+					class="btn btn-ghost"
+					hx-post={ fmt.Sprintf("/ui/add/apple-follows/%d/delete", v.FollowID) }
+					hx-target="#apple-import"
+					hx-swap="outerHTML"
+				>Stop syncing</button>
+			}
+		</div>
+	}
 }
 
 // appleSongRow is a matched or unsure song: a checkbox, the Apple song, and
@@ -285,4 +309,81 @@ templ AppleImportsList(imports []*db.AppleImport) {
 			</a>
 		}
 	}
+}
+
+// AppleFollowRow is a followed playlist in the list under the Add box.
+type AppleFollowRow struct {
+	ID, ImportID int64
+	Name         string
+	Checked      string // "5 min ago"; "" before the first check
+	Error        string // what the last check ran into
+	ToPick       int    // songs waiting for a pick on its import page
+	Checking     bool   // a check is queued or running
+}
+
+// AppleFollowsList is the followed playlists. It reloads itself every 3
+// seconds while a check runs.
+templ AppleFollowsList(follows []AppleFollowRow) {
+	<div
+		id="apple-follows"
+		if appleChecking(follows) {
+			hx-get="/ui/add/apple-follows"
+			hx-trigger="every 3s"
+			hx-swap="outerHTML"
+		}
+	>
+		if len(follows) > 0 {
+			@sectionLabel("Kept in sync with Apple Music")
+			@list() {
+				for _, f := range follows {
+					@row("grid-cols-[minmax(0,1fr)_auto] items-center row-pad text-sm") {
+						<span class="min-w-0">
+							<a class="block truncate" href={ templ.SafeURL(fmt.Sprintf("/add/apple/%d", f.ImportID)) }>{ f.Name }</a>
+							<span class="block truncate text-fg-muted">
+								if f.Checking {
+									Checking…
+								} else if f.Checked == "" {
+									Not checked yet
+								} else {
+									{ "Checked " + f.Checked }
+								}
+								if f.ToPick > 0 {
+									{ fmt.Sprintf(" · %d to pick", f.ToPick) }
+								}
+							</span>
+							if f.Error != "" {
+								<span class="block text-st-failed">{ f.Error }</span>
+							}
+						</span>
+						<span class="flex gap-2">
+							<button
+								type="button"
+								class="btn btn-ghost"
+								hx-post={ fmt.Sprintf("/ui/add/apple-follows/%d/check", f.ID) }
+								hx-target="#apple-follows"
+								hx-swap="outerHTML"
+								disabled?={ f.Checking }
+							>Check now</button>
+							<button
+								type="button"
+								class="btn btn-ghost"
+								hx-post={ fmt.Sprintf("/ui/add/apple-follows/%d/delete", f.ID) }
+								hx-target="#apple-follows"
+								hx-swap="outerHTML"
+							>Stop syncing</button>
+						</span>
+					}
+				}
+			}
+		}
+	</div>
+}
+
+func appleChecking(follows []AppleFollowRow) bool {
+	for _, f := range follows {
+		if f.Checking {
+			return true
+		}
+	}
+	return false
 }

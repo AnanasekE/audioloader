@@ -69,6 +69,7 @@ func getAddPage(w http.ResponseWriter, r *http.Request) {
 	}
 	var recent []jobs.Job
 	var apple []*db.AppleImport
+	var follows []components.AppleFollowRow
 	if !viewer(r).IsSecret() {
 		if recent, err = jobs.Recent(downloads.JobYouTubeImport, 20); err != nil {
 			serverError(w, err)
@@ -78,8 +79,12 @@ func getAddPage(w http.ResponseWriter, r *http.Request) {
 			serverError(w, err)
 			return
 		}
+		if follows, err = appleFollowRows(); err != nil {
+			serverError(w, err)
+			return
+		}
 	}
-	render(w, r, components.AddPage(strings.TrimSpace(r.URL.Query().Get("q")), artists, shows, recent, apple))
+	render(w, r, components.AddPage(strings.TrimSpace(r.URL.Query().Get("q")), artists, shows, recent, apple, follows))
 }
 
 // redirectUpload sends the old pages to /add, with the query string of

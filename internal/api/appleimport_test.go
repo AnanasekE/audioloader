@@ -287,3 +287,71 @@ func TestAppleImportFailures(t *testing.T) {
 		t.Errorf("add before the import is done = %d", rec.Code)
 	}
 }
+
+func TestAppleFollow(t *testing.T) {
+	dbtest.New(t)
+	h := downloadsHandler(t)
+	fakeAppleMusic(t, map[string]string{
+		"/us/playlist/mix/pl.u-abc123": applePlaylistPage("My Mix", 1, appleSongSpec{"Nowhere", "Massive Attack", "Nope", 100000}),
+	})
+	fakeMusicBrainzSearch(t, func(string) string { return `{"recordings":[]}` })
+
+	// a running import can't be followed yet
+	do(h, "POST", "/ui/add/lookup", url.Values{"q": {applePlaylist}})
+	if rec := do(h, "POST", "/ui/add/apple/1/follow", url.Values{}); rec.Code != 409 {
+		t.Fatalf("follow while running = %d", rec.Code)
+	}
+	runAppleImportJob(t)
+
+	rec := do(h, "GET", "/add/apple/1", nil)
+	if !strings.Contains(rec.Body.String(), "Keep in sync") || strings.Contains(rec.Body.String(), "Stop syncing") {
+		t.Fatalf("page before following:\n%s", rec.Body)
+	}
+	rec = do(h, "POST", "/ui/add/apple/1/follow", url.Values{})
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Stop syncing") || strings.Contains(rec.Body.String(), "Keep in sync</button>") {
+		t.Fatalf("follow = %d\n%s", rec.Code, rec.Body)
+	}
+	do(h, "POST", "/ui/add/apple/1/follow", url.Values{}) // a second time reuses the follow
+	if follows, _ := db.ListAppleFollows(); len(follows) != 1 || follows[0].ImportID != 1 {
+		t.Fatalf("follows = %+v", follows)
+	}
+	if rec := do(h, "POST", "/ui/add/apple/9/follow", url.Values{}); rec.Code != 404 {
+		t.Errorf("follow of a missing import = %d", rec.Code)
+	}
+
+	// the Add page lists it, with the song to pick
+	rec = do(h, "GET", "/add", nil)
+	body := rec.Body.String()
+	if !strings.Contains(body, "My Mix") || !strings.Contains(body, "Not checked yet") || !strings.Contains(body, "1 to pick") || !strings.Contains(body, "Check now") {
+		t.Fatalf("Add page:\n%s", body)
+	}
+
+	// Check now queues the job once, and the list says so and keeps polling
+	for range 2 {
+		rec = do(h, "POST", "/ui/add/apple-follows/1/check", url.Values{})
+	}
+	if counts, _ := jobs.Counts(appleimport.JobSync); rec.Code != 200 || counts["queued"] != 1 {
+		t.Fatalf("check = %d, jobs = %v", rec.Code, counts)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "Checking…") || !strings.Contains(body, `hx-trigger="every 3s"`) {
+		t.Fatalf("list while checking:\n%s", body)
+	}
+	if rec := do(h, "POST", "/ui/add/apple-follows/7/check", url.Values{}); rec.Code != 404 {
+		t.Errorf("check of a missing follow = %d", rec.Code)
+	}
+
+	// Stop syncing deletes the follow and keeps the import
+	rec = do(h, "POST", "/ui/add/apple-follows/1/delete", url.Values{})
+	if rec.Code != 200 || strings.Contains(rec.Body.String(), "My Mix") {
+		t.Fatalf("delete = %d\n%s", rec.Code, rec.Body)
+	}
+	if follows, _ := db.ListAppleFollows(); len(follows) != 0 {
+		t.Fatalf("follows after delete = %+v", follows)
+	}
+	if _, err := db.GetAppleImport(1); err != nil {
+		t.Errorf("import after delete: %v", err)
+	}
+	if rec := do(h, "POST", "/ui/add/apple-follows/1/delete", url.Values{}); rec.Code != 404 {
+		t.Errorf("second delete = %d", rec.Code)
+	}
+}

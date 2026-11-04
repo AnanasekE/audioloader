@@ -38,8 +38,8 @@ func (c SongCandidate) Owned() bool { return c.OwnedTrackID != "" }
 // a link and sends it where it belongs (see api.classifyAddInput), and the
 // file upload forms below. A q fills the box and runs the lookup on load.
 // recent lists the latest YouTube imports and apple the latest Apple Music
-// playlist imports (normal mode).
-templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jobs.Job, apple []*db.AppleImport) {
+// playlist imports and follows the followed playlists (normal mode).
+templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jobs.Job, apple []*db.AppleImport, follows []AppleFollowRow) {
 	@layout("Add", PageAdd) {
 		@pageHead("Add", addSubtitle(secretMode(ctx), secretSourceOn(ctx)))
 		if secretMode(ctx) && secretSourceOn(ctx) {
@@ -99,6 +99,11 @@ templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []j
 		if len(apple) > 0 {
 			<div class="mt-8">
 				@AppleImportsList(apple)
+			</div>
+		}
+		if len(follows) > 0 {
+			<div class="mt-8">
+				@AppleFollowsList(follows)
 			</div>
 		}
 		if len(recent) > 0 {
