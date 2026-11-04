@@ -181,7 +181,14 @@ func getSearchPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.SearchPage(q, res))
+	// a single kind shows all its matches (the search already caps each at 50)
+	kind := r.URL.Query().Get("type")
+	switch kind {
+	case components.SearchTracks, components.SearchReleases, components.SearchArtists, components.SearchPodcasts:
+	default:
+		kind = ""
+	}
+	render(w, r, components.SearchPage(q, res, kind))
 }
 
 func getSearchSuggest(w http.ResponseWriter, r *http.Request) {

@@ -8,8 +8,16 @@ import (
 	"audioloader/internal/db"
 )
 
-// SearchPage shows every kind of match for q.
-templ SearchPage(q string, res *db.SearchResults) {
+// Kinds of match the search page can be narrowed to (?type=); "" is all.
+const (
+	SearchTracks   = "tracks"
+	SearchReleases = "releases"
+	SearchArtists  = "artists"
+	SearchPodcasts = "podcasts"
+)
+
+// SearchPage shows every kind of match for q, or only those of one kind.
+templ SearchPage(q string, res *db.SearchResults, kind string) {
 	@layout("Search", "") {
 		@pageHead("Search", searchSubtitle(q)) {
 		}
@@ -18,18 +26,23 @@ templ SearchPage(q string, res *db.SearchResults) {
 				Not in your library? <a href={ templ.SafeURL("/add?q=" + url.QueryEscape(q)) }>Add “{ q }” as a song</a>
 			</p>
 		}
+		if q != "" {
+			<div class="mb-4">
+				@segmented("Kind of result", searchKinds(ctx, q, kind))
+			</div>
+		}
 		if q != "" && res.Empty() {
 			@emptyState() {
 				Nothing matches.
 			}
 		}
-		if len(res.Tracks) > 0 {
+		if len(res.Tracks) > 0 && (kind == "" || kind == SearchTracks) {
 			<section class="mb-6">
 				@sectionLabel("Tracks")
 				@TrackList(res.Tracks)
 			</section>
 		}
-		if len(res.Releases) > 0 {
+		if len(res.Releases) > 0 && (kind == "" || kind == SearchReleases) {
 			<section class="mb-6">
 				@sectionLabel("Releases")
 				@list() {
@@ -39,7 +52,7 @@ templ SearchPage(q string, res *db.SearchResults) {
 				}
 			</section>
 		}
-		if len(res.Artists) > 0 {
+		if len(res.Artists) > 0 && (kind == "" || kind == SearchArtists) {
 			<section class="mb-6">
 				@sectionLabel(artistsWord(ctx))
 				@list() {
@@ -49,7 +62,7 @@ templ SearchPage(q string, res *db.SearchResults) {
 				}
 			</section>
 		}
-		if len(res.Shows) > 0 {
+		if len(res.Shows) > 0 && (kind == "" || kind == SearchPodcasts) {
 			<section class="mb-6">
 				@sectionLabel("Podcasts")
 				@list() {
@@ -59,6 +72,17 @@ templ SearchPage(q string, res *db.SearchResults) {
 				}
 			</section>
 		}
+	}
+}
+
+func searchKinds(ctx context.Context, q, kind string) []SegOption {
+	href := "/search?q=" + url.QueryEscape(q)
+	return []SegOption{
+		{Label: "All", Href: href, On: kind == ""},
+		{Label: "Tracks", Href: href + "&type=" + SearchTracks, On: kind == SearchTracks},
+		{Label: "Releases", Href: href + "&type=" + SearchReleases, On: kind == SearchReleases},
+		{Label: artistsWord(ctx), Href: href + "&type=" + SearchArtists, On: kind == SearchArtists},
+		{Label: "Podcasts", Href: href + "&type=" + SearchPodcasts, On: kind == SearchPodcasts},
 	}
 }
 
