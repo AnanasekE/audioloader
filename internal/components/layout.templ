@@ -385,14 +385,14 @@ templ tabBar(active string) {
 			@tab("/inbox", "Inbox", "inbox", active == PageInbox, "/ui/badges/inbox")
 			<button
 				type="button"
-				class={ tabClass(active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads) }
+				class={ tabClass(active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads || active == PageAdd) }
 				data-sheet-open="more-sheet"
 			>
 				<span class="relative inline-flex [&>span]:top-[-4px] [&>span]:right-[-14px]">
-					@icon("more")
+					@icon("library")
 					<span hx-get="/ui/badges/more" hx-trigger="load" hx-swap="outerHTML"></span>
 				</span>
-				More
+				Library
 			</button>
 		}
 	</nav>
@@ -418,15 +418,18 @@ templ tab(href string, label string, iconName string, current bool, badgeURL str
 	</a>
 }
 
-// moreSheet lists the pages that don't fit in the tab bar. nav.js opens it.
+// moreSheet is the Library tab's sheet: the pages that don't fit in the tab
+// bar, as large rows. nav.js opens it.
 templ moreSheet(active string) {
 	if !secretMode(ctx) {
-		<dialog id="more-sheet" class="fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop:bg-black/50 min-[720px]:hidden" aria-label="More">
+		<dialog id="more-sheet" class="fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop:bg-black/50 min-[720px]:hidden" aria-label="Library">
 			<ul class="flex flex-col">
 				@sheetLink("/playlists", "Playlists", "playlists", active == PagePlaylists, "")
 				@sheetLink("/shows", "Podcasts", "shows", active == PageShows, "")
 				@sheetLink("/tagging", "Tagging", "tagging", active == PageTagging, "/ui/badges/tagging")
 				@sheetLink("/downloads", "Downloads", "downloads", active == PageDownloads, "/ui/badges/downloads")
+				@sheetLink("/inbox", "Inbox", "inbox", active == PageInbox, "/ui/badges/inbox")
+				@sheetLink("/add", "Add", "upload", active == PageAdd, "")
 			</ul>
 		</dialog>
 	}
@@ -460,12 +463,12 @@ templ sheetLink(href string, label string, iconName string, current bool, badgeU
 	<li class="relative flex items-center">
 		<a
 			href={ templ.SafeURL(href) }
-			class={ "flex min-h-11 flex-1 items-center gap-3 rounded-md px-3 hover:no-underline", templ.KV("bg-accent-dim text-accent", current), templ.KV("text-fg", !current) }
+			class={ "flex min-h-14 flex-1 items-center gap-4 rounded-md px-3 text-base hover:no-underline", templ.KV("bg-accent-dim text-accent", current), templ.KV("text-fg", !current) }
 			if current {
 				aria-current="page"
 			}
 		>
-			@icon(iconName)
+			@iconClass(iconName, "size-5")
 			{ label }
 		</a>
 		if badgeURL != "" {
@@ -496,6 +499,9 @@ templ iconClass(name string, class string) {
 			case "inbox":
 				<path d="M22 12h-6l-2 3h-4l-2-3H2"></path>
 				<path d="M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z"></path>
+			case "library":
+				<rect x="4" y="4" width="5" height="16" rx="1"></rect>
+				<path d="M14 5.5l4-1 3 14.5-4 1z"></path>
 			case "more":
 				<circle cx="5" cy="12" r="1"></circle>
 				<circle cx="12" cy="12" r="1"></circle>

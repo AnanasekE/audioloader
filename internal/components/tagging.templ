@@ -194,6 +194,13 @@ templ Badge(n int) {
 	}
 }
 
+// BadgeDot is Badge as a dot, for a tab whose pages carry the counts.
+templ BadgeDot(n int) {
+	if n > 0 {
+		<span class="pointer-events-none absolute size-2 rounded-full bg-accent" aria-label={ fmt.Sprintf("%d waiting", n) } role="img"></span>
+	}
+}
+
 func matchArtistNames(artists []db.MatchArtist) string {
 	names := ""
 	for i, a := range artists {

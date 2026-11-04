@@ -73,8 +73,8 @@ func getTaggingBadge(w http.ResponseWriter, r *http.Request) {
 	render(w, r, components.Badge(counts[db.TagReview]))
 }
 
-// getMoreBadge is the phone tab bar's More count: tagging reviews plus
-// downloads waiting for a pick.
+// getMoreBadge is the dot on the phone tab bar's Library tab: tagging
+// reviews plus downloads waiting for a pick.
 func getMoreBadge(w http.ResponseWriter, r *http.Request) {
 	counts, err := db.TagCounts(viewer(r))
 	if err != nil {
@@ -86,7 +86,7 @@ func getMoreBadge(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.Badge(counts[db.TagReview]+len(list)))
+	render(w, r, components.BadgeDot(counts[db.TagReview]+len(list)))
 }
 
 // runTagging queues every track that was never tagged or had no match.

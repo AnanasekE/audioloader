@@ -29,12 +29,6 @@ A YouTube import (video or playlist) is auto-tagged, but it stays on the release
 
 What is left of the UX audit (`docs/ux-audit.md`) after plan 37: the quick fixes and the context menus are done.
 
-- **Medium**
-  - Sort control on the Tracks page (title, artist, added), like the secret Tracks page.
-  - Filter box on the Releases and Artists card grids.
-  - A type filter on the Search page.
-  - On phones, make Playlists, Podcasts, Tagging and Downloads easier to find than "More".
-  - Link the rows on the Downloads page to their release and artist.
 - **Large**
   - A start page (continue listening, recently added, the inbox count) instead of opening on Tracks.
   - Edit releases, playlists and tracks in place or in a side panel instead of on separate pages.

@@ -76,7 +76,7 @@
 - spotDL: uses the Spotify album or track link from MusicBrainz when there is one (an album link is mapped onto the release's placeholders like a YouTube playlist); otherwise searches by artist and title and accepts the top result only if its title matches and its length is within 5 s
 - YouTube Music (yt-dlp, `music.youtube.com` search with the songs filter, so official audio): searched by "artist title" for tracks with a known length, and downloaded automatically only on a confident match: length within 2 s, title score 0.9 or more (same cleaning as the playlist mapping), and one of the track's artists credited. The closest length wins; no match falls through to "Needs a pick". The flat search result has no lengths, so the top 3 are looked up one by one. A video already downloaded is placed, not fetched again
 - YouTube search for missing tracks: when nothing else has the track, the download waits as "Needs a pick" (also counted in the nav). "Pick from YouTube" shows the top 5 results (thumbnail, channel, length and difference from the expected length, Topic and verified badges) with Use this, Preview and None of these; also on release pages
-- Downloads page: progress, needs a pick, failed (with the tool's error), couldn't find; paste a YouTube URL or upload the file by hand
+- Downloads page: progress, needs a pick, failed (with the tool's error), couldn't find; titles link to the release and artist names to their pages; paste a YouTube URL or upload the file by hand
 - Fill a release's missing tracks from a YouTube playlist: videos matched by title and length, checked before downloading
 - Import from YouTube (paste the link into the Add box): a video or playlist as new tracks, onto a release or as singles; the latest imports are listed on the Add page
 - One Add page (`/add`, both modes; the sidebar "Add" button, the phone header icon and "Add" on the Tracks page; `/upload` redirects here, and `/upload/youtube` and `/upload/secret-source` redirect to `/add?q=<address>`): one box, "Search, or paste a link", sends what you type to the right place, and the result shows right below it. `/add?q=...` fills the box and looks it up on load, so links from the Search page and the uploader pages work. Below a divider, "Or upload a file" holds the upload forms (see below), with links to Batch mode and Import library. Where the box sends things:
@@ -129,7 +129,8 @@
 - Two modes, never mixed: normal mode shows only normal tracks, secret mode only secret ones. Tracks, artists, shows, playlists, search, continue listening, counts, positions, chapters and the stream all follow the mode, and so does the duplicate check (a file on the other side gives a generic "upload failed")
 - A release, artist or show belongs to a mode when it has a track of that mode; an empty one belongs to normal mode, except an artist or show made in secret mode, which waits there for its first track. A playlist belongs to the mode it was created in and takes only that mode's tracks
 - Secret tracks are simpler: on no release, no "Cover of", never auto-tagged or matched as owned in the inbox. They have creators, a description, tags and an optional picture (JPEG, PNG, WebP; a placeholder otherwise)
-- Secret mode's track list sorts by date added (default), creator or tag
+- Secret mode's track list groups by date added (default), creator or tag. The normal Tracks page sorts by added (default), title or artist (`?sort=`)
+- Filter box on the Releases and Artists grids (`assets/js/grid-filter.js`): hides the cards that lack any typed word of the title or artist names
 - Releases, Inbox, Tagging, Downloads, Follow, "From YouTube" and the other background pages don't exist in secret mode: no nav link, and the routes answer 404
 - Another look in secret mode: violet accent, a "Secret" badge in the top strip
 - Tags page at `/tags` (secret mode only, 404 in normal mode): pick tags to include or exclude, match all or any, and see the tracks and the tags that are left with their counts. The state is in the URL (`?in=…&ex=…&match=any&sort=creator`), every control is a plain link that htmx upgrades to a swap of one region, and counting and filtering are SQL. Typing filters the chips (Enter includes the top one, Shift+Enter excludes it, Backspace in an empty box drops the last token); right-click or a long press excludes. On a phone the field shows the top 12 tags and an "All tags" sheet
@@ -146,7 +147,7 @@
 
 ### Discovery
 
-- Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing
+- Search (SQLite FTS5) over tracks, releases and artists: accents ignored, results while typing; chips on the page narrow it to Tracks, Releases, Artists or Podcasts (`?type=`)
 - Playlists: create, add from a track's menu, reorder, remove, rename, delete; a track can be on a playlist more than once
 
 ### Cover songs
@@ -164,7 +165,7 @@
 
 - "Console" look: dark by default with a light theme (toggle in the sidebar, remembered in `localStorage`), all colours as tokens in `styles/input.css`, system fonts only. Secret mode swaps just the accent (violet)
 - Left sidebar with Library (Tracks, Releases, Artists, Playlists, Podcasts) and Queue (Inbox, Tagging, Downloads with counts), a top strip with the search, dense track rows with monospace numbers, status chips on the queue pages
-- Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, More; in secret mode Tracks, Tags, Creators) and a More sheet for Playlists, Podcasts, Tagging and Downloads
+- Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, Library; in secret mode Tracks, Tags, Creators) and a Library sheet of large rows for Playlists, Podcasts, Tagging, Downloads, Inbox and Add, with the sidebar's count badges and a dot on the tab while tagging reviews or downloads wait
 - Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
 - Actions in the search box (`assets/js/commands.js`): matching commands are listed under "Actions" above the results, and `>` first lists only commands. Add / upload, go to each page, check followed artists now, shuffle, repeat, autoplay, sleep timer, dark / light theme, open or lock the vault, keyboard shortcuts. Enter or a click runs one
 - Context menus: right-click (long-press on touch, the Menu key or Shift+F10 on a focused row) on a track, release, artist or playlist opens its ⋯ menu at the pointer, or as a bottom sheet on phones; Shift+right-click keeps the browser's menu. One menu is open at a time; arrow keys move, Esc closes

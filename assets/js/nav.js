@@ -1,4 +1,4 @@
-// Phone "More" sheet: a <dialog> opened by any [data-sheet-open] button.
+// Phone "Library" sheet: a <dialog> opened by any [data-sheet-open] button.
 // Esc closes it natively; a click on the backdrop (the dialog itself) does too.
 // Listeners are delegated on document because hx-boost swaps the body.
 document.addEventListener("click", (e) => {
