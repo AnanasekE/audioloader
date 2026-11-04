@@ -2,7 +2,7 @@
 
 Run the plans in this order. Each one assumes the ones before it are done.
 
-**Status:** plans 0–34, 36 and 37 are implemented; 35 is on hold. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
+**Status:** plans 0–34 and 36–41 are implemented; 35 is on hold. Optional items left out are listed under "Not implemented yet" in `FEATURES.md`.
 
 | # | Plan | Covers (FEATURES.md) |
 |---|------|----------------------|
