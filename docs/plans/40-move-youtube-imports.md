@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. Find tracks whose match is on another release
-- [ ] 2. Move a track to its MusicBrainz release
+- [x] 2. Move a track to its MusicBrainz release
 - [ ] 3. "Move to" on the Tagging page
 
 ## Rules
