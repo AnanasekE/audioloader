@@ -69,6 +69,8 @@ func TestPickFromYouTube(t *testing.T) {
 	// the page lists it under "Needs a pick", and the nav badge counts it
 	if body := do(h, "GET", "/downloads", nil).Body.String(); !strings.Contains(body, "Needs a pick") || !strings.Contains(body, "Pick from YouTube") {
 		t.Fatalf("downloads page:\n%s", body)
+	} else if !strings.Contains(body, `"><b>Teardrop</b></a>`) || !strings.Contains(body, `<a href="/artists/`) {
+		t.Fatalf("no release or artist link:\n%s", body)
 	}
 	if body := do(h, "GET", "/ui/badges/downloads", nil).Body.String(); !strings.Contains(body, ">1<") {
 		t.Fatalf("badge = %q", body)

@@ -167,9 +167,13 @@ templ downloadFix(t *audio.Track) {
 
 templ downloadTrack(d *db.Download) {
 	<span class="stack">
-		<b>{ d.Track.Title }</b>
+		if d.Release != nil {
+			<a href={ releaseURL(d.Release) }><b>{ d.Track.Title }</b></a>
+		} else {
+			<b>{ d.Track.Title }</b>
+		}
 		<span>
-			{ artistNames(d.Track.Artists) }
+			@artistLinks(d.Track.Artists)
 			if d.Release != nil {
 				{ " · " }<a href={ releaseURL(d.Release) }>{ d.Release.Title }</a>{ fmt.Sprintf(" #%d", d.Position) }
 			}
