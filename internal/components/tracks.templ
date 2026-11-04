@@ -12,16 +12,18 @@ import (
 	"audioloader/internal/trim"
 )
 
-// Sort orders of the track list in secret mode.
+// Sort orders of the track list. Title and artist (creator) sort a flat
+// list; in secret mode creator and tag group it.
 const (
 	SortAdded   = "added"
+	SortTitle   = "title"
 	SortCreator = "creator"
 	SortTag     = "tag"
 )
 
-// TracksPage lists the library. Secret mode has no releases to browse by,
-// so its list can be sorted by date added (newest first, as the tracks
-// come), creator or tag.
+// TracksPage lists the library. It can be sorted by title or artist; the
+// default is the order the tracks come in. Secret mode has no releases to
+// browse by, so its list is grouped by creator or tag instead.
 templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy string) {
 	@layout("Tracks", PageTracks) {
 		@pageHead("Tracks", fmt.Sprintf("%d in library", len(tracks))) {
@@ -32,6 +34,11 @@ templ TracksPage(tracks []*audio.Track, continueListening []*audio.Track, sortBy
 					{Label: "Tag", Href: "/tracks?sort=" + SortTag, On: sortBy == SortTag},
 				})
 			} else {
+				@segmented("Sort tracks", []SegOption{
+					{Label: "Added", Href: "/tracks?sort=" + SortAdded, On: sortBy == SortAdded || sortBy == SortTag},
+					{Label: "Title", Href: "/tracks?sort=" + SortTitle, On: sortBy == SortTitle},
+					{Label: "Artist", Href: "/tracks?sort=" + SortCreator, On: sortBy == SortCreator},
+				})
 				<a class="btn btn-ghost" href="/add">Add</a>
 			}
 			@filterInput("Filter tracks")

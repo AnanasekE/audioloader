@@ -1,6 +1,11 @@
 package api
 
 import (
+	"bytes"
+	"time"
+
+	"audioloader/internal/audio"
+	"audioloader/internal/db"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -45,5 +50,45 @@ func TestHiddenWhileLocked(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/tracks/"+ids["public track"]+"/edit", nil))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "ZZPUBLIC Song 1") {
 		t.Fatalf("public edit page = %d", rec.Code)
+	}
+}
+
+func TestTracksPageSort(t *testing.T) {
+	dbtest.New(t)
+	mux := http.NewServeMux()
+	Register(mux, nil)
+	h := WithViewer(mux)
+	for _, s := range []struct{ title, artist, body string }{
+		{"Charlie", "Xan", "c"}, {"Alpha", "Zed", "a"}, {"Bravo", "Yan", "b"},
+	} {
+		a, err := db.AddArtist(db.Normal, s.artist)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.AddTrack(db.Normal, []string{a.ID.String()}, &audio.Track{Title: s.title, Duration: time.Minute},
+			bytes.NewReader([]byte(s.body)), ".mp3", nil, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for sort, want := range map[string][]string{
+		"":        {"Charlie", "Alpha", "Bravo"},
+		"added":   {"Charlie", "Alpha", "Bravo"},
+		"title":   {"Alpha", "Bravo", "Charlie"},
+		"creator": {"Charlie", "Bravo", "Alpha"},
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/tracks?sort="+sort, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("sort %q = %d", sort, rec.Code)
+		}
+		body := rec.Body.String()
+		last := -1
+		for _, title := range want {
+			i := strings.Index(body, ">"+title+"<")
+			if i < 0 || i < last {
+				t.Errorf("sort %q: %s out of order", sort, title)
+			}
+			last = i
+		}
 	}
 }

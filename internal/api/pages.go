@@ -27,14 +27,29 @@ func getTracksPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.TracksPage(tracks, cont, trackSort(r)))
+	sortBy := trackSort(r)
+	if !viewer(r).IsSecret() {
+		// secret mode groups its list in the page; here the list is flat
+		switch sortBy {
+		case components.SortTitle:
+			sortTracksBy(tracks, func(t *audio.Track) string { return t.Title })
+		case components.SortCreator:
+			sortTracksBy(tracks, func(t *audio.Track) string {
+				if len(t.Artists) == 0 {
+					return ""
+				}
+				return t.Artists[0].Name
+			})
+		}
+	}
+	render(w, r, components.TracksPage(tracks, cont, sortBy))
 }
 
-// trackSort is the sort order the track list asks for; secret mode only,
-// where "date added" is the default.
+// trackSort is the sort order the track list asks for. "Added" is the
+// default: the order the library lists the tracks in.
 func trackSort(r *http.Request) string {
 	switch s := r.URL.Query().Get("sort"); s {
-	case components.SortCreator, components.SortTag:
+	case components.SortCreator, components.SortTag, components.SortTitle:
 		return s
 	}
 	return components.SortAdded
