@@ -351,6 +351,28 @@ var migrations = []func(tx *sql.Tx) error{
 		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN move_dismissed_release TEXT;`)
 		return err
 	},
+	// 22: followed Apple Music playlists, and the songs of each already seen,
+	// so a check finds new songs by Apple's song ID; import songs keep that
+	// ID from now on
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`
+			ALTER TABLE apple_import_tracks ADD COLUMN apple_song_id TEXT NOT NULL DEFAULT '';
+			CREATE TABLE apple_follows (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				url TEXT NOT NULL UNIQUE,
+				name TEXT NOT NULL DEFAULT '',
+				import_id INTEGER NOT NULL REFERENCES apple_imports(id) ON DELETE CASCADE, -- new songs are added to it
+				last_checked_at TEXT, -- NULL until the first check
+				last_error TEXT NOT NULL DEFAULT '',
+				created_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			CREATE TABLE apple_follow_songs (
+				follow_id INTEGER NOT NULL REFERENCES apple_follows(id) ON DELETE CASCADE,
+				apple_song_id TEXT NOT NULL,
+				PRIMARY KEY (follow_id, apple_song_id)
+			);`)
+		return err
+	},
 }
 
 // destructive lists the migrations (by number) that delete data. Init

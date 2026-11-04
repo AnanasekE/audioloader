@@ -114,7 +114,7 @@ func readPlaylist(ctx context.Context, am *applemusic.Client, imp *db.AppleImpor
 	}
 	tracks := make([]db.AppleImportTrack, len(pl.Songs))
 	for i, s := range pl.Songs {
-		tracks[i] = db.AppleImportTrack{Title: s.Title, Artist: s.Artist, Album: s.Album, DurationMs: int(s.Duration / time.Millisecond)}
+		tracks[i] = db.AppleImportTrack{AppleID: s.ID, Title: s.Title, Artist: s.Artist, Album: s.Album, DurationMs: int(s.Duration / time.Millisecond)}
 	}
 	return db.StartAppleImport(imp.ID, pl.Name, pl.TrackCount, tracks)
 }

@@ -43,6 +43,7 @@ type AppleImportTrack struct {
 	Artist     string
 	Album      string
 	DurationMs int
+	AppleID    string // Apple's song ID; "" for imports made before it was stored
 
 	// the MusicBrainz recording and release it was matched to (the best
 	// candidate when unsure), with their names; "" when not_found
@@ -132,8 +133,8 @@ func StartAppleImport(id int64, name string, trackCount int, tracks []AppleImpor
 	}
 	for i, t := range tracks {
 		_, err := tx.Exec(`
-			INSERT INTO apple_import_tracks(import_id, position, title, artist, album, duration_ms)
-			VALUES(?, ?, ?, ?, ?, ?);`, id, i+1, t.Title, t.Artist, t.Album, t.DurationMs)
+			INSERT INTO apple_import_tracks(import_id, position, title, artist, album, duration_ms, apple_song_id)
+			VALUES(?, ?, ?, ?, ?, ?, ?);`, id, i+1, t.Title, t.Artist, t.Album, t.DurationMs, t.AppleID)
 		if err != nil {
 			return err
 		}
@@ -144,7 +145,7 @@ func StartAppleImport(id int64, name string, trackCount int, tracks []AppleImpor
 // AppleImportTracks returns the songs of an import in Apple's order.
 func AppleImportTracks(id int64) ([]*AppleImportTrack, error) {
 	rows, err := DB.Query(`
-		SELECT import_id, position, title, artist, album, duration_ms, recording_id, release_id,
+		SELECT import_id, position, title, artist, album, duration_ms, apple_song_id, recording_id, release_id,
 			match_title, match_artist, release_title, track_id, score, state
 		FROM apple_import_tracks WHERE import_id = ? ORDER BY position;`, id)
 	if err != nil {
@@ -154,7 +155,7 @@ func AppleImportTracks(id int64) ([]*AppleImportTrack, error) {
 	var out []*AppleImportTrack
 	for rows.Next() {
 		var t AppleImportTrack
-		if err := rows.Scan(&t.ImportID, &t.Position, &t.Title, &t.Artist, &t.Album, &t.DurationMs, &t.RecordingID, &t.ReleaseID,
+		if err := rows.Scan(&t.ImportID, &t.Position, &t.Title, &t.Artist, &t.Album, &t.DurationMs, &t.AppleID, &t.RecordingID, &t.ReleaseID,
 			&t.MatchTitle, &t.MatchArtist, &t.ReleaseTitle, &t.TrackID, &t.Score, &t.State); err != nil {
 			return nil, err
 		}
