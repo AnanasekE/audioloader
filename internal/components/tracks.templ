@@ -360,6 +360,9 @@ templ trackMenu(t *audio.Track) {
 					hx-swap="outerHTML"
 				>Add to playlist…</button>
 				<a class="menu-item" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit") }>Edit</a>
+				if t.MoveTo != "" {
+					<button type="button" class="menu-item" hx-post={ "/ui/tagging/" + t.ID.String() + "/move" } hx-confirm={ "Move " + t.Title + " to " + t.MoveTo + "?" }>Move to { t.MoveTo }</button>
+				}
 				if !t.IsEpisode() && !t.Secret {
 					<a class="menu-item" href={ templ.SafeURL("/tracks/" + t.ID.String() + "/edit#cover-of") }>Set cover of…</a>
 				}

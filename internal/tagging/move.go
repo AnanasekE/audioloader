@@ -20,15 +20,9 @@ var ErrNotOnRelease = errors.New("MusicBrainz doesn't list this recording on tha
 // created in the library if it isn't there. Tags are not written into the
 // file, so there is nothing to rewrite there: the library's records change.
 func Move(ctx context.Context, mbc *mb.Client, trackID string) error {
-	list, err := db.MoveSuggestions(db.Normal)
+	s, err := db.MoveSuggestionFor(db.Normal, trackID)
 	if err != nil {
 		return err
-	}
-	var s *db.MoveSuggestion
-	for i := range list {
-		if list[i].TrackID == trackID {
-			s = &list[i]
-		}
 	}
 	if s == nil {
 		return ErrNoMove

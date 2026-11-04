@@ -377,17 +377,37 @@ const youtubeSource = `(t.source_url LIKE 'https://www.youtube.com/%' OR t.sourc
 // MoveSuggestions lists the YouTube imports whose latest applied match is on
 // a release the track isn't on. A track whose suggestion was dismissed is
 // left out for the same target.
-func MoveSuggestions(v Viewer) ([]MoveSuggestion, error) {
+func MoveSuggestions(v Viewer) ([]MoveSuggestion, error) { return moveSuggestions(v, nil) }
+
+// MoveSuggestionFor is the suggestion for one track, nil if it has none.
+func MoveSuggestionFor(v Viewer, trackID string) (*MoveSuggestion, error) {
+	list, err := moveSuggestions(v, []string{trackID})
+	if err != nil || len(list) == 0 {
+		return nil, err
+	}
+	return &list[0], nil
+}
+
+// moveSuggestions is MoveSuggestions limited to the tracks with these IDs,
+// or all of them when ids is nil.
+func moveSuggestions(v Viewer, ids []string) ([]MoveSuggestion, error) {
+	cond, args := "1", []any(nil)
+	if ids != nil {
+		cond = "t.uuid IN (" + placeholders(len(ids)) + ")"
+		for _, id := range ids {
+			args = append(args, id)
+		}
+	}
 	rows, err := DB.Query(`
 		SELECT t.uuid, t.title, m.data FROM tag_matches m
 		JOIN tracks t ON t.uuid = m.track_id
-		WHERE m.status = 'applied' AND m.release_mbid IS NOT NULL
-			AND ` + libraryTracks + ` AND ` + youtubeSource + ` AND ` + v.trackCond("t") + `
+		WHERE m.status = 'applied' AND m.release_mbid IS NOT NULL AND `+cond+`
+			AND `+libraryTracks+` AND `+youtubeSource+` AND `+v.trackCond("t")+`
 			AND COALESCE(t.move_dismissed_release, '') <> m.release_mbid
 			AND NOT EXISTS (
 				SELECT 1 FROM release_tracks rt JOIN releases r ON r.uuid = rt.release_id
 				WHERE rt.track_id = t.uuid AND r.mbid = m.release_mbid)
-		ORDER BY t.title COLLATE NOCASE, t.uuid, m.rowid DESC;`)
+		ORDER BY t.title COLLATE NOCASE, t.uuid, m.rowid DESC;`, args...)
 	if err != nil {
 		return nil, err
 	}

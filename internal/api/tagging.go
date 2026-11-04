@@ -9,6 +9,7 @@ import (
 	"audioloader/internal/components"
 	"audioloader/internal/db"
 	"audioloader/internal/jobs"
+	"audioloader/internal/mb"
 	"audioloader/internal/tagging"
 )
 
@@ -55,13 +56,19 @@ func getTaggingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	moves, err := db.MoveSuggestions(viewer(r))
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+
 	tg := tagging.Default()
 	status := components.TaggingStatus{
 		Tracks:   trackCounts,
 		Jobs:     jobCounts,
 		AcoustID: tg.FPCalc != "" && tg.MB.AcoustIDKey != "",
 	}
-	render(w, r, components.TaggingPage(status, reviews, suggestions, covers))
+	render(w, r, components.TaggingPage(status, reviews, suggestions, covers, moves))
 }
 
 func getTaggingBadge(w http.ResponseWriter, r *http.Request) {
@@ -215,6 +222,49 @@ func rejectCoverSuggestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tagging")
+}
+
+// moveTrack moves a YouTube import onto the release its match is on.
+func moveTrack(w http.ResponseWriter, r *http.Request) {
+	trackID, ok := pathUUID(w, r, "track_id")
+	if !ok || !visibleTrack(w, r, trackID.String()) {
+		return
+	}
+	err := tagging.Move(r.Context(), mb.Default(), trackID.String())
+	switch {
+	case errors.Is(err, tagging.ErrNoMove), errors.Is(err, db.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case errors.Is(err, tagging.ErrNotOnRelease), errors.Is(err, mb.ErrNotFound):
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	case err != nil:
+		serverError(w, err)
+		return
+	}
+	hxLocation(w, "/tagging")
+}
+
+// dismissMove keeps a track where it is and stops offering that release.
+func dismissMove(w http.ResponseWriter, r *http.Request) {
+	trackID, ok := pathUUID(w, r, "track_id")
+	if !ok || !visibleTrack(w, r, trackID.String()) {
+		return
+	}
+	s, err := db.MoveSuggestionFor(viewer(r), trackID.String())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if s == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := db.DismissMove(s.TrackID, s.TargetID); err != nil {
 		serverError(w, err)
 		return
 	}

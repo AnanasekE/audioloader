@@ -23,7 +23,7 @@ type TaggingStatus struct {
 	AcoustID bool           // fingerprint lookups available
 }
 
-templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion, covers []db.CoverSuggestion) {
+templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []db.ArtistSuggestion, covers []db.CoverSuggestion, moves []db.MoveSuggestion) {
 	@layout("Tagging", PageTagging) {
 		@pageHead("Tagging", fmt.Sprintf("%d matched · %d to review · %d without a match · %d not tagged yet",
 			status.Tracks[db.TagMatched], status.Tracks[db.TagReview], status.Tracks[db.TagNone], status.Tracks[""])) {
@@ -46,6 +46,9 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 				</p>
 			}
 		</section>
+		if len(moves) > 0 {
+			@moveSuggestions(moves)
+		}
 		if len(suggestions) > 0 {
 			@artistSuggestions(suggestions)
 		}
@@ -74,6 +77,59 @@ templ TaggingPage(status TaggingStatus, reviews []TaggingReview, suggestions []d
 			</div>
 		}
 	}
+}
+
+// moveSuggestions offers to move YouTube imports onto the release their
+// match is on. Nothing moves unless the user accepts.
+templ moveSuggestions(moves []db.MoveSuggestion) {
+	<section class="mb-6">
+		@sectionLabel("On another release")
+		<p class="mb-2 text-sm text-fg-muted">
+			These YouTube imports match a recording on another release. Moving takes the track off its current release
+			and puts it on the new one; an import-made single that is left empty is removed.
+		</p>
+		@list() {
+			for _, m := range moves {
+				@row("row-2 row-pad") {
+					<p class="min-w-0 text-sm">
+						<strong><a class="text-fg" href={ templ.SafeURL("/tracks/" + m.TrackID + "/edit") }>{ m.TrackTitle }</a></strong>
+						<span class="block text-fg-muted">
+							{ moveFrom(m) } → { moveTo(m) }
+						</span>
+					</p>
+					<div class="flex items-center gap-2">
+						<button class="btn" hx-post={ "/ui/tagging/" + m.TrackID + "/move" }>Move</button>
+						<button class="btn btn-ghost" hx-post={ "/ui/tagging/" + m.TrackID + "/move/dismiss" }>Keep here</button>
+					</div>
+				}
+			}
+		}
+	</section>
+}
+
+// moveFrom names the release the track is on, e.g. "Single – Song".
+func moveFrom(m db.MoveSuggestion) string {
+	return releaseLabel(m.FromType, m.FromTitle, "")
+}
+
+// moveTo names the release it would move to, e.g. "Album – Title (2019)".
+func moveTo(m db.MoveSuggestion) string {
+	year := m.TargetDate
+	if len(year) > 4 {
+		year = year[:4]
+	}
+	return releaseLabel(m.TargetType, m.TargetTitle, year)
+}
+
+func releaseLabel(typ, title, year string) string {
+	s := title
+	if typ != "" {
+		s = audio.ReleaseType(typ).Label() + " – " + title
+	}
+	if year != "" {
+		s += " (" + year + ")"
+	}
+	return s
 }
 
 // artistSuggestions asks about artists that matches credit under a similar

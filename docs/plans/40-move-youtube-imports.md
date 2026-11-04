@@ -8,7 +8,7 @@
 
 - [x] 1. Find tracks whose match is on another release
 - [x] 2. Move a track to its MusicBrainz release
-- [ ] 3. "Move to" on the Tagging page
+- [x] 3. "Move to" on the Tagging page
 
 ## Rules
 

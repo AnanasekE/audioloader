@@ -62,6 +62,7 @@
 - Fills in MBIDs on tracks, artists and releases, ISRCs and missing release dates; never overwrites what you set, never writes into files
 - Release covers from the Cover Art Archive
 - Placeholder tracks are skipped
+- YouTube imports whose applied match is on another release (e.g. the album rather than the single made at import) get "On another release" on the Tagging page and "Move to <release>" in the track menu; Move creates the release from MusicBrainz (or reuses the library's), takes the placeholder's place if there is one, and removes the import-made single when it is left empty; Keep here hides the offer for that release. Nothing moves without a click, whatever the score
 
 ### Artist release tracking
 

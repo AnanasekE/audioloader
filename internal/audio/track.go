@@ -32,6 +32,9 @@ type Track struct {
 	// CoverOf is the original song this track covers, nil if none or if it
 	// is a secret track the viewer can't see
 	CoverOf *CoverRef
+	// MoveTo is the title of the release a YouTube import's match is on, when
+	// the track could move there; "" if it has nothing to move to
+	MoveTo string
 	// false for a placeholder: the track is known (e.g. from a release's
 	// tracklist) but its file hasn't been added yet
 	HasFile bool

@@ -55,7 +55,31 @@ func attachCovers(v Viewer, tracks []*audio.Track) error {
 			t.CoverOf = &c
 		}
 	}
-	return rows.Err()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return attachMoves(v, tracks)
+}
+
+// attachMoves fills in MoveTo, so a track's menu can offer the move. It
+// shares attachCovers' callers: every list that shows tracks.
+func attachMoves(v Viewer, tracks []*audio.Track) error {
+	byID := make(map[string]*audio.Track, len(tracks))
+	ids := make([]string, 0, len(tracks))
+	for _, t := range tracks {
+		byID[t.ID.String()] = t
+		ids = append(ids, t.ID.String())
+	}
+	list, err := moveSuggestions(v, ids)
+	if err != nil {
+		return err
+	}
+	for _, s := range list {
+		if t := byID[s.TrackID]; t != nil {
+			t.MoveTo = s.TargetTitle
+		}
+	}
+	return nil
 }
 
 // CoverEdit sets which song a track covers, as part of a TrackEdit. Give
