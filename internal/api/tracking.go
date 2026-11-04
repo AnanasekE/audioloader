@@ -217,7 +217,20 @@ func getInboxPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.InboxPage(filter, releases, newCount, ignored, follows))
+	var apple []components.AppleFollowRow
+	if tab == "new" {
+		rows, err := appleFollowRows()
+		if err != nil {
+			serverError(w, err)
+			return
+		}
+		for _, f := range rows {
+			if f.ToPick > 0 {
+				apple = append(apple, f)
+			}
+		}
+	}
+	render(w, r, components.InboxPage(filter, releases, newCount, ignored, follows, apple))
 }
 
 func getInboxDetails(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +256,13 @@ func getInboxBadge(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	render(w, r, components.Badge(n))
+	// a followed Apple Music playlist with songs to pick counts as one
+	picks, err := db.AppleFollowsToPick()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.Badge(n+picks))
 }
 
 func confirmInboxRelease(w http.ResponseWriter, r *http.Request) {

@@ -104,7 +104,7 @@ templ followFilters(follow *db.Follow) {
 	</fieldset>
 }
 
-templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow) {
+templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ignoredCount int, follows []*db.Follow, apple []AppleFollowRow) {
 	{{ tab := filter.Status }}
 	@layout("Inbox", PageInbox) {
 		@pageHead("Inbox", fmt.Sprintf("%s from %s", plural(newCount, "new release"), plural(len(follows), "followed artist"))) {
@@ -151,17 +151,28 @@ templ InboxPage(filter db.InboxFilter, releases []*db.InboxRelease, newCount, ig
 				Nothing owned yet
 			</label>
 		</form>
+		for _, f := range apple {
+			<div class="mb-6">
+				@sectionLabel("Apple Music: " + plural(f.ToPick, "song") + " to pick")
+				@list() {
+					@row("row-2 row-pad text-sm") {
+						<span class="truncate">{ f.Name }</span>
+						<a class="btn" href={ templ.SafeURL(fmt.Sprintf("/add/apple/%d", f.ImportID)) }>Pick songs</a>
+					}
+				}
+			</div>
+		}
 		<div id="inbox-list">
 			if tab == "new" && len(releases) > 1 {
 				<div class="mb-3 flex justify-end">
 					<button class="btn" hx-post={ "/ui/inbox/confirm-all?" + filter.Query() } hx-confirm={ fmt.Sprintf("Add all %d releases and download their missing tracks?", len(releases)) }>{ fmt.Sprintf("Confirm all %d", len(releases)) }</button>
 				</div>
 			}
-			if len(follows) == 0 {
+			if len(follows) == 0 && len(apple) == 0 {
 				@emptyState() {
 					Follow artists on the Artists page to get their new releases here.
 				}
-			} else if len(releases) == 0 {
+			} else if len(releases) == 0 && len(apple) == 0 {
 				@emptyState() {
 					if filter.Active() {
 						Nothing matches.

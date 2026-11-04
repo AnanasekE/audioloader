@@ -202,3 +202,13 @@ func AddAppleFollowSongs(id int64, songs []AppleImportTrack) ([]int, error) {
 	}
 	return positions, tx.Commit()
 }
+
+// AppleFollowsToPick returns how many followed playlists have songs waiting
+// for a pick, which the Inbox badge counts.
+func AppleFollowsToPick() (int, error) {
+	var n int
+	err := DB.QueryRow(`
+		SELECT COUNT(*) FROM apple_follows f WHERE EXISTS (
+			SELECT 1 FROM apple_import_tracks t WHERE t.import_id = f.import_id AND t.state IN ('unsure', 'not_found'));`).Scan(&n)
+	return n, err
+}

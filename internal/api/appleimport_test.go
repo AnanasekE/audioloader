@@ -355,3 +355,44 @@ func TestAppleFollow(t *testing.T) {
 		t.Errorf("second delete = %d", rec.Code)
 	}
 }
+
+func TestAppleFollowInbox(t *testing.T) {
+	dbtest.New(t)
+	h := downloadsHandler(t)
+	fakeAppleMusic(t, map[string]string{
+		"/us/playlist/mix/pl.u-abc123": applePlaylistPage("My Mix", 2,
+			appleSongSpec{"Nowhere", "Massive Attack", "Nope", 100000},
+			appleSongSpec{"Elsewhere", "Massive Attack", "Nope", 100000}),
+	})
+	fakeMusicBrainzSearch(t, func(string) string { return `{"recordings":[]}` })
+	do(h, "POST", "/ui/add/lookup", url.Values{"q": {applePlaylist}})
+	runAppleImportJob(t)
+
+	// an import that isn't followed adds nothing to the Inbox
+	if body := do(h, "GET", "/inbox", nil).Body.String(); strings.Contains(body, "Apple Music:") {
+		t.Fatalf("inbox before following:\n%s", body)
+	}
+	do(h, "POST", "/ui/add/apple/1/follow", url.Values{})
+
+	body := do(h, "GET", "/inbox", nil).Body.String()
+	if !strings.Contains(body, "Apple Music: 2 songs to pick") || !strings.Contains(body, `href="/add/apple/1"`) {
+		t.Fatalf("inbox:\n%s", body)
+	}
+	if badge := do(h, "GET", "/ui/badges/inbox", nil).Body.String(); !strings.Contains(badge, "1") {
+		t.Errorf("badge = %q, want it to count the playlist", badge)
+	}
+	// the Ignored tab is about releases
+	if body := do(h, "GET", "/inbox?tab=ignored", nil).Body.String(); strings.Contains(body, "Apple Music:") {
+		t.Errorf("ignored tab shows the Apple Music section")
+	}
+
+	// nothing left to pick, nothing in the Inbox
+	db.SetAppleTrackState(1, 1, db.AppleSongOwned)
+	db.SetAppleTrackState(1, 2, db.AppleSongAdded)
+	if body := do(h, "GET", "/inbox", nil).Body.String(); strings.Contains(body, "Apple Music:") {
+		t.Errorf("inbox after picking:\n%s", body)
+	}
+	if badge := do(h, "GET", "/ui/badges/inbox", nil).Body.String(); strings.Contains(badge, "1") {
+		t.Errorf("badge = %q, want none", badge)
+	}
+}

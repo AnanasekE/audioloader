@@ -157,7 +157,15 @@ func TestAppleFollow(t *testing.T) {
 	if len(list) != 1 || list[0].ToPick != 2 {
 		t.Fatalf("list = %+v", list)
 	}
+	if n, err := AppleFollowsToPick(); err != nil || n != 1 {
+		t.Fatalf("follows to pick = %d, %v", n, err)
+	}
 
+	SetAppleTrackState(id, 4, AppleSongAdded)
+	SetAppleTrackState(id, 3, AppleSongOwned)
+	if n, _ := AppleFollowsToPick(); n != 0 {
+		t.Fatalf("follows to pick with everything picked = %d", n)
+	}
 	if err := DeleteAppleFollow(f.ID); err != nil {
 		t.Fatal(err)
 	}
