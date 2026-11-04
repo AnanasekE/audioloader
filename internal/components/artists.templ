@@ -14,6 +14,7 @@ import (
 templ ArtistsPage(artists []*audio.Artist) {
 	@layout("Artists", PageArtists) {
 		@pageHead("Artists", fmt.Sprintf("%d in library", len(artists))) {
+			@gridFilterInput("Filter artists")
 			@popover("Add artist") {
 				@AddArtistForm()
 			}
@@ -184,7 +185,7 @@ templ artistPickerNew(artists []*audio.Artist, selected []string, newCreator str
 }
 
 templ Artist(a *audio.Artist) {
-	@tileWithMenu() {
+	@tileWithMenu(a.Name) {
 		if secretMode(ctx) {
 			// creators have no releases to count
 			@avatarCard(a.ImgURL, a.Name, "", string(artistURL(a)))

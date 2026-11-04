@@ -1,6 +1,9 @@
 package components
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // The component kit: the parts every page is built from, ported from
 // docs/design/console-mockup.html. Their CSS is in styles/input.css.
@@ -19,6 +22,12 @@ templ pageHead(title string, meta string) {
 			{ children... }
 		</div>
 	</div>
+}
+
+// gridFilterInput narrows the cards of the page's grids by title and artist
+// (assets/js/grid-filter.js).
+templ gridFilterInput(placeholder string) {
+	<input class="input filter" type="search" placeholder={ placeholder } aria-label={ placeholder } autocomplete="off" data-grid-filter/>
 }
 
 // filterInput narrows the rows of a list marked data-filter-rows by their
@@ -178,8 +187,15 @@ templ card(coverSrc string, title string, sub string, href string) {
 
 // tileWithMenu is a card with its ⋯ menu (children: the card, then the menu
 // built with menuLook "card") over the corner. Right-click on it opens the menu.
-templ tileWithMenu() {
-	<div class="group/tile relative grid min-w-0" data-menu-host>
+// A filter text makes it a card of a grid-filter box (gridFilterInput).
+templ tileWithMenu(filterText string) {
+	<div
+		class="group/tile relative grid min-w-0"
+		data-menu-host
+		if filterText != "" {
+			data-filter-text={ strings.ToLower(filterText) }
+		}
+	>
 		{ children... }
 	</div>
 }

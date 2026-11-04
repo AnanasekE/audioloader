@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. Sort control on the Tracks page
-- [ ] 2. Filter box on the Releases and Artists grids
+- [x] 2. Filter box on the Releases and Artists grids
 - [ ] 3. Type filter on the Search page
 - [ ] 4. Downloads rows link to their release and artist
 - [ ] 5. Phone navigation: "More" becomes "Library"

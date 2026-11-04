@@ -32,7 +32,7 @@ templ PlaylistsPage(playlists []*audio.Playlist) {
 		} else {
 			@cardGrid() {
 				for _, p := range playlists {
-					@tileWithMenu() {
+					@tileWithMenu("") {
 						@card(p.ImgURL, p.Name, plural(p.Count, "track")+" · "+formatLongDuration(p.Duration), string(playlistURL(p)))
 						@playlistMenu(p, "card")
 					}
