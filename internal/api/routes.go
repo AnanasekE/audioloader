@@ -122,6 +122,8 @@ func Register(mux *http.ServeMux, v *vault.Vault) {
 	handleNormal(mux, "GET /add/find/artist/{mbid}", getFindArtist)
 	handleNormal(mux, "GET /ui/add/find/artist/{mbid}/groups", getFindArtistGroups)
 	handleNormal(mux, "GET /add/find/release-group/{mbid}", getFindReleaseGroup)
+	handleNormal(mux, "POST /ui/add/find/song", addFindSong)
+	handleNormal(mux, "POST /ui/add/find/release", addFindRelease)
 	handleNormal(mux, "GET /ui/add/musicbrainz", searchSongsMusicBrainz)
 	handleNormal(mux, "POST /ui/add/musicbrainz", addSongFromMusicBrainz)
 	handleNormal(mux, "POST /ui/add/musicbrainz/release", addReleaseFromMusicBrainz)

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -144,4 +146,124 @@ func findSearch(r *http.Request, f components.FindForm) (*components.FindResults
 		}
 	}
 	return res, nil
+}
+
+// addFindSong adds one found song as a placeholder (on its release when it
+// has one) and queues its download, then answers the button's replacement.
+func addFindSong(w http.ResponseWriter, r *http.Request) {
+	recordingID := validMBID(r.FormValue("recording_id"))
+	if recordingID == "" {
+		http.Error(w, "invalid recording id", http.StatusBadRequest)
+		return
+	}
+	releaseID := ""
+	if r.FormValue("release_id") != "" {
+		if releaseID = validMBID(r.FormValue("release_id")); releaseID == "" {
+			http.Error(w, "invalid release id", http.StatusBadRequest)
+			return
+		}
+	}
+	song, it, serr := songFor(r.Context(), recordingID, releaseID)
+	if serr != nil {
+		http.Error(w, serr.msg, serr.status)
+		return
+	}
+	library, err := db.ListTracks(db.Normal)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	// a song the library has already is answered like a new one: its release
+	if _, err := queueSong(library, song, it); err != nil && !errors.Is(err, errAlreadyOwned) {
+		serverError(w, err)
+		return
+	}
+	owned, err := db.OwnedRecordings([]string{recordingID})
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.FindSongAdded(owned[recordingID].ReleaseID))
+}
+
+// addFindRelease adds the ticked tracks of a release, or with all every
+// track the library lacks, as placeholders on that release with their
+// downloads queued. It answers the refreshed tracklist.
+func addFindRelease(w http.ResponseWriter, r *http.Request) {
+	releaseID := validMBID(r.FormValue("release_id"))
+	if releaseID == "" {
+		http.Error(w, "invalid release id", http.StatusBadRequest)
+		return
+	}
+	picked := map[string]bool{}
+	for _, id := range r.Form["recording_id"] {
+		if id = validMBID(id); id == "" {
+			http.Error(w, "invalid recording id", http.StatusBadRequest)
+			return
+		}
+		picked[id] = true
+	}
+	all := r.FormValue("all") != ""
+	if !all && len(picked) == 0 {
+		http.Error(w, "tick the tracks to add", http.StatusBadRequest)
+		return
+	}
+	rel, err := mb.Default().GetRelease(r.Context(), releaseID)
+	if errors.Is(err, mb.ErrNotFound) {
+		http.Error(w, "that release isn't on MusicBrainz", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "couldn't read MusicBrainz: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	songs := releaseSongs(rel)
+	if len(songs) > maxAddAll {
+		http.Error(w, fmt.Sprintf("this release has %d tracks; add at most %d at once", len(songs), maxAddAll), http.StatusBadRequest)
+		return
+	}
+	onRelease := map[string]bool{}
+	for _, s := range songs {
+		onRelease[s.Song.RecordingMBID] = true
+	}
+	for id := range picked {
+		if !onRelease[id] {
+			http.Error(w, "a ticked recording isn't on this release", http.StatusBadRequest)
+			return
+		}
+	}
+	library, err := db.ListTracks(db.Normal)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	added := 0
+	for _, s := range songs {
+		if !all && !picked[s.Song.RecordingMBID] {
+			continue
+		}
+		if _, err := queueSong(library, s.Song, s.Track); errors.Is(err, errAlreadyOwned) {
+			continue
+		} else if err != nil {
+			serverError(w, err)
+			return
+		}
+		added++
+	}
+	p, err := findReleasePage(mb.Default(), rel, rel.ReleaseGroup.ID)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	p.Notice = "Everything picked is already in your library."
+	if added > 0 {
+		p.Notice = fmt.Sprintf("Added %d — queued.", added)
+	}
+	for _, c := range p.Tracks {
+		if c.OwnedReleaseID != "" {
+			p.LibraryReleaseID = c.OwnedReleaseID
+			break
+		}
+	}
+	render(w, r, components.FindTracklist(*p))
 }

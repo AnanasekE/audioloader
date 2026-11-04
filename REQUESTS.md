@@ -35,15 +35,6 @@ What is left of the UX audit (`docs/ux-audit.md`) after plan 37: the quick fixes
   - Drag and drop to reorder playlists and tracklists.
   - Plan 35 (the React web app) stays on hold; revisit it only if these need more than templ and htmx can do.
 
-## Search for new music to download
-
-Find music that isn't in the library yet and queue it, by more than a single text box.
-
-- **Search by field:** song title, artist, release (album, EP, single) name, with type and year filters, against MusicBrainz.
-- **Browse results:** an artist shows its releases, a release shows its tracklist, with what's already owned marked.
-- **Download from the results:** add one song, a whole release, or pick tracks, as placeholders with queued downloads in the usual source order.
-- **Today:** the Add box searches MusicBrainz recordings by free text ("Artist - Title") and takes MusicBrainz links; this extends it.
-
 ## Sync Apple Music playlists
 
 Follow an Apple Music playlist, for example Favorite Songs, and download what gets added to it without pasting the link again.

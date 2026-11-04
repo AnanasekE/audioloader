@@ -71,7 +71,7 @@ func TestFindReleasesAndArtists(t *testing.T) {
 
 	body := do(h, "GET", "/ui/add/find/results?mode=release&q=Heligoland", nil).Body.String()
 	if !strings.Contains(body, "Heligoland (Live)") || !strings.Contains(body, "Album + Live · 2011") ||
-		!strings.Contains(body, "/release-group/29a4c71c-2e7a-40e3-81d7-7960e8ec1bb1/front-250") || strings.Contains(body, "in library") {
+		!strings.Contains(body, "/release-group/29a4c71c-2e7a-40e3-81d7-7960e8ec1bb1/front-250") || strings.Contains(body, " owned") {
 		t.Fatalf("release groups:\n%s", body)
 	}
 
@@ -94,7 +94,7 @@ func TestFindReleasesAndArtists(t *testing.T) {
 		t.Fatal(err)
 	}
 	body = do(h, "GET", "/ui/add/find/results?mode=release&q=Heligoland", nil).Body.String()
-	if !strings.Contains(body, "1/2 in library") {
+	if !strings.Contains(body, "1/2 owned") {
 		t.Fatalf("owned count:\n%s", body)
 	}
 

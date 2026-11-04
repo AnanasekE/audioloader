@@ -172,11 +172,21 @@ templ findSongRow(c SongCandidate) {
 			<button
 				type="button"
 				class="btn"
-				hx-post="/ui/add/musicbrainz"
+				hx-post="/ui/add/find/song"
 				hx-vals={ fmt.Sprintf(`{"recording_id": %q, "release_id": %q}`, c.RecordingID, c.ReleaseID) }
+				hx-swap="outerHTML"
 			>Add</button>
 		}
 	</li>
+}
+
+// FindSongAdded replaces a song's Add button once it is queued. releaseID is
+// the library release it went onto.
+templ FindSongAdded(releaseID string) {
+	<span class="flex items-center gap-2 text-fg-muted">
+		Added — queued
+		<a href={ templ.SafeURL("/releases/" + releaseID) }>Open release</a>
+	</span>
 }
 
 templ findGroupCard(g FindGroup) {
@@ -210,7 +220,7 @@ func findGroupMeta(g FindGroup) string {
 		parts = append(parts, y)
 	}
 	if g.Total > 0 {
-		parts = append(parts, fmt.Sprintf("%d/%d in library", g.Have, g.Total))
+		parts = append(parts, fmt.Sprintf("%d/%d owned", g.Have, g.Total))
 	}
 	return strings.Join(parts, " · ")
 }
@@ -334,6 +344,8 @@ type FindReleasePage struct {
 	Following                                                bool
 	Tracks                                                   []SongCandidate
 	Missing                                                  int
+	// Notice is what the last add did; LibraryReleaseID is where it went
+	Notice, LibraryReleaseID string
 }
 
 // FindReleaseBrowse shows the tracklist of a release group's release.
@@ -368,6 +380,14 @@ templ FindReleaseBrowse(p FindReleasePage) {
 templ FindTracklist(p FindReleasePage) {
 	<form id="find-tracks" hx-target="#find-release">
 		<input type="hidden" name="release_id" value={ p.ReleaseID }/>
+		if p.Notice != "" {
+			<p class="mb-3 flex flex-wrap items-center gap-2 text-fg-muted" role="status">
+				{ p.Notice }
+				if p.LibraryReleaseID != "" {
+					<a href={ templ.SafeURL("/releases/" + p.LibraryReleaseID) }>Open release</a>
+				}
+			</p>
+		}
 		<ul class="divide-y divide-line">
 			for _, c := range p.Tracks {
 				<li class="flex items-center gap-3 py-2">
@@ -398,5 +418,13 @@ templ FindTracklist(p FindReleasePage) {
 				</li>
 			}
 		</ul>
+		if p.Missing > 0 {
+			<div class="mt-4 flex flex-wrap gap-2">
+				<button type="button" class="btn" hx-post="/ui/add/find/release">Add selected</button>
+				<button type="button" class="btn btn-ghost" hx-post="/ui/add/find/release" hx-vals='{"all": "1"}'>
+					{ fmt.Sprintf("Add whole release (%d)", p.Missing) }
+				</button>
+			</div>
+		}
 	</form>
 }

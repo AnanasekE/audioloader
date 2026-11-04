@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -137,5 +138,83 @@ func TestFindBrowseReleaseGroup(t *testing.T) {
 	}
 	if rec := do(h, "GET", "/add/find/release-group/nope", nil); rec.Code != 404 {
 		t.Fatalf("bad id = %d", rec.Code)
+	}
+}
+
+func TestFindAddSong(t *testing.T) {
+	dbtest.New(t)
+	fakeBrowseMusicBrainz(t)
+	h := downloadsHandler(t)
+
+	if rec := do(h, "POST", "/ui/add/find/song", url.Values{"recording_id": {"nope"}}); rec.Code != 400 {
+		t.Fatalf("bad id = %d", rec.Code)
+	}
+	form := url.Values{"recording_id": {teardropRecording}, "release_id": {mezzanine}}
+	rec := do(h, "POST", "/ui/add/find/song", form)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Added — queued") || !strings.Contains(rec.Body.String(), `href="/releases/`) {
+		t.Fatalf("add = %d\n%s", rec.Code, rec.Body)
+	}
+	queued, err := db.ListDownloads(db.All, db.DownloadQueued)
+	if err != nil || len(queued) != 1 {
+		t.Fatalf("queued = %v, %v", queued, err)
+	}
+	// again: nothing new is written
+	if rec := do(h, "POST", "/ui/add/find/song", form); rec.Code != 200 || !strings.Contains(rec.Body.String(), "Added — queued") {
+		t.Fatalf("again = %d", rec.Code)
+	}
+	if queued, _ := db.ListDownloads(db.All, db.DownloadQueued); len(queued) != 1 {
+		t.Fatalf("queued twice: %v", queued)
+	}
+	if rec := do(h, "POST", "/ui/add/find/song", url.Values{"recording_id": {searchedRecording}, "release_id": {mezzanine}}); rec.Code != 400 {
+		t.Fatalf("wrong release = %d", rec.Code)
+	}
+}
+
+func TestFindAddRelease(t *testing.T) {
+	dbtest.New(t)
+	fakeBrowseMusicBrainz(t)
+	h := downloadsHandler(t)
+	const (
+		angel     = "8e74dd9d-e5a3-4acd-918a-c36a0f8cda84"
+		risingson = "02011500-814c-461c-b3a6-f24fe68ee5a1"
+	)
+	count := func() int {
+		var n int
+		if err := db.DB.QueryRow(`SELECT COUNT(*) FROM tracks WHERE has_file = 0;`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+
+	for name, form := range map[string]url.Values{
+		"bad release":    {"release_id": {"nope"}, "all": {"1"}},
+		"nothing ticked": {"release_id": {mezzanine}},
+		"stray":          {"release_id": {mezzanine}, "recording_id": {angel, searchedRecording}},
+	} {
+		if rec := do(h, "POST", "/ui/add/find/release", form); rec.Code != 400 || count() != 0 {
+			t.Fatalf("%s = %d, %d tracks", name, rec.Code, count())
+		}
+	}
+
+	rec := do(h, "POST", "/ui/add/find/release", url.Values{"release_id": {mezzanine}, "recording_id": {angel, risingson}})
+	body := rec.Body.String()
+	if rec.Code != 200 || !strings.Contains(body, "Added 2 — queued") || count() != 2 || strings.Count(body, "Already queued") != 2 ||
+		strings.Contains(body, `value="`+angel+`"`) {
+		t.Fatalf("selected = %d, %d tracks\n%s", rec.Code, count(), body)
+	}
+	if queued, _ := db.ListDownloads(db.All, db.DownloadQueued); len(queued) != 2 {
+		t.Fatalf("queued = %v", queued)
+	}
+
+	// owned tracks are skipped, so ticking only those writes nothing
+	rec = do(h, "POST", "/ui/add/find/release", url.Values{"release_id": {mezzanine}, "recording_id": {angel}})
+	if !strings.Contains(rec.Body.String(), "already in your library") || count() != 2 {
+		t.Fatalf("owned = %d tracks\n%s", count(), rec.Body)
+	}
+
+	// the whole release adds the rest: 11 tracks in the fixture or more
+	rec = do(h, "POST", "/ui/add/find/release", url.Values{"release_id": {mezzanine}, "all": {"1"}})
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "— queued") || count() <= 3 || strings.Contains(rec.Body.String(), "Add whole release") {
+		t.Fatalf("all = %d, %d tracks\n%s", rec.Code, count(), rec.Body)
 	}
 }
