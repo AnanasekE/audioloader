@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Floating mini player and translucent tab bar
+- [x] 1. Floating mini player and translucent tab bar
 - [ ] 2. Now Playing sheet
 - [ ] 3. Playing Next in the sheet: reorder and swipe to remove
 - [ ] 4. Remove the ☰ popover, polish, docs

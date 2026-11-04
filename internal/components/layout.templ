@@ -49,7 +49,7 @@ templ layout(title string, active string) {
 				@sidebar(active)
 				<div class="min-w-0">
 					@topStrip()
-					<main class="max-w-[1072px] px-4 pt-4 pb-40 min-[720px]:pb-28">
+					<main class="max-w-[1072px] px-4 pt-4 pb-44 min-[720px]:pb-28">
 						{ children... }
 					</main>
 				</div>
@@ -58,26 +58,29 @@ templ layout(title string, active string) {
 			@tabBar(active)
 			@moreSheet(active)
 			@shortcutsDialog()
+			@nowPlaying()
 			@player()
 		</body>
 	</html>
 }
 
 templ player() {
-	<div id="player" hx-preserve class="fixed inset-x-0 bottom-14 z-20 border-t border-line bg-panel/95 backdrop-blur min-[720px]:bottom-0 min-[720px]:left-[232px]" hidden>
-		<div class="flex flex-wrap items-center gap-x-3 gap-y-0 px-3 pt-2 min-[720px]:h-16 min-[720px]:flex-nowrap min-[720px]:gap-3 min-[720px]:px-4 min-[720px]:py-0">
-			<img id="player-cover" class="pixelated size-10 shrink-0 rounded-sm bg-panel-2 object-cover" alt=""/>
+	// phone: a floating card above the tab bar (cover, title, play, next; a tap
+	// opens the Now Playing sheet); 720px up: the bar along the bottom
+	<div id="player" hx-preserve class="fixed inset-x-2 bottom-[calc(3.5rem+6px)] z-20 rounded-xl border border-line bg-panel/80 shadow-(--shadow-pop) backdrop-blur-xl min-[720px]:inset-x-auto min-[720px]:right-0 min-[720px]:bottom-0 min-[720px]:left-[232px] min-[720px]:rounded-none min-[720px]:border-0 min-[720px]:border-t min-[720px]:bg-panel/95 min-[720px]:shadow-none min-[720px]:backdrop-blur" hidden>
+		<div class="relative flex items-center gap-2 p-2 max-[720px]:cursor-pointer min-[720px]:h-16 min-[720px]:gap-3 min-[720px]:px-4 min-[720px]:py-0">
+			<img id="player-cover" class="pixelated size-10 shrink-0 rounded-md bg-panel-2 object-cover min-[720px]:rounded-sm" alt=""/>
 			<div class="min-w-0 flex-1 min-[720px]:w-56 min-[720px]:flex-none">
 				<strong id="player-title" class="block truncate text-sm font-semibold"></strong>
 				<span id="player-artists" class="block truncate text-xs text-fg-muted"></span>
-				<span id="player-chapter" class="block truncate text-xs text-fg-subtle" hidden></span>
+				<span id="player-chapter" class="block truncate text-xs text-fg-subtle max-[720px]:hidden" hidden></span>
 			</div>
 			<div class="flex shrink-0 items-center gap-1 min-[720px]:order-1">
 				<button id="player-shuffle" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg aria-pressed:bg-accent-dim aria-pressed:text-accent max-[720px]:hidden" aria-label="Shuffle" aria-pressed="false">@icon("shuffle")</button>
 				// repeat, desktop spot: next to shuffle
 				@repeatButton("max-[720px]:hidden")
 				<button id="player-prev" type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:text-fg disabled:opacity-40 max-[720px]:hidden" aria-label="Previous track">@iconClass("skip-back", "size-4")</button>
-				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 min-[720px]:size-10" aria-label="Play">
+				<button id="player-play" type="button" class="flex size-11 items-center justify-center rounded-full bg-accent text-accent-ink hover:brightness-110 max-[720px]:bg-transparent max-[720px]:text-fg min-[720px]:size-10" aria-label="Play">
 					<span data-icon-play>@iconClass("play", "size-5")</span>
 					<span data-icon-pause hidden>@iconClass("pause", "size-5")</span>
 				</button>
@@ -91,10 +94,6 @@ templ player() {
 				</button>
 				<input id="player-volume" type="range" min="0" max="1" step="0.01" value="1" class="h-6 w-24 accent-accent" aria-label="Volume"/>
 			</div>
-			// sleep timer, phone spot: in the top row, between next and the queue
-			@sleepTimer("min-[720px]:hidden", "right-0")
-			// repeat, phone spot: after the sleep timer
-			@repeatButton("min-[720px]:hidden")
 			<details id="player-queue" class="relative shrink-0 min-[720px]:order-4 min-[1200px]:hidden">
 				<summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-fg-muted hover:text-fg min-[720px]:size-9" aria-label="Queue">@iconClass("list", "size-5")</summary>
 				<div class="absolute right-0 bottom-full mb-2 w-72 rounded-lg border border-line bg-panel p-2 text-sm shadow-(--shadow-pop)">
@@ -113,9 +112,9 @@ templ player() {
 					</div>
 				</div>
 			</details>
-			<div class="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-0 min-[720px]:order-2 min-[720px]:w-auto min-[720px]:flex-1 min-[720px]:flex-nowrap">
-				// sleep timer, desktop spot: next to the episode controls
-				@sleepTimer("hidden min-[720px]:block", "left-0")
+			<div class="flex min-w-0 items-center gap-x-2 max-[720px]:hidden min-[720px]:order-2 min-[720px]:flex-1">
+				// sleep timer: next to the episode controls
+				@sleepTimer("", "left-0")
 				<span id="player-episode-controls" class="flex shrink-0 items-center gap-1" hidden>
 					<button id="player-back" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Back 15 seconds">−15</button>
 					<button id="player-forward" type="button" class="btn btn-ghost min-h-9 px-2 text-xs" aria-label="Forward 30 seconds">+30</button>
@@ -125,12 +124,14 @@ templ player() {
 						}
 					</select>
 				</span>
-				<div class="flex w-full min-w-0 items-center gap-2 min-[720px]:w-auto min-[720px]:flex-1">
+				<div class="flex min-w-0 flex-1 items-center gap-2">
 				<span id="player-time" class="w-10 shrink-0 text-right font-mono text-xs text-fg-muted tabular-nums">0:00</span>
-				<input id="player-seek" type="range" min="0" max="0" step="any" value="0" class="-my-4 h-11 min-w-0 flex-1 accent-accent min-[720px]:my-0 min-[720px]:h-6" aria-label="Seek"/>
+				<input id="player-seek" type="range" min="0" max="0" step="any" value="0" class="h-6 min-w-0 flex-1 accent-accent" aria-label="Seek"/>
 				<span id="player-remaining" class="w-12 shrink-0 font-mono text-xs text-fg-muted tabular-nums">-0:00</span>
 				</div>
 			</div>
+			// the playback position along the card's bottom edge (phone)
+			<div class="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-fg/10 min-[720px]:hidden"><div data-mini-progress class="h-full w-0 rounded-full bg-fg/60"></div></div>
 			// player.js builds the queue remove buttons from this
 			<template id="player-x-icon">@iconClass("x", "size-3.5")</template>
 			// short feedback when tracks are queued (player.js); hidden when empty
@@ -138,6 +139,15 @@ templ player() {
 			<audio id="player-audio" preload="metadata"></audio>
 		</div>
 	</div>
+}
+
+// nowPlaying is the full-screen sheet a tap on the phone mini player opens.
+templ nowPlaying() {
+	<dialog id="now-playing" hx-preserve class="fixed inset-0 m-0 size-full max-h-none max-w-none bg-panel p-4 text-fg min-[720px]:hidden" aria-label="Now playing">
+		<form method="dialog" class="text-center">
+			<button class="mx-auto block h-1.5 w-10 rounded-full bg-fg-subtle" aria-label="Close"></button>
+		</form>
+	</dialog>
 }
 
 // autoplaySwitch turns autoplay on and off in a queue header. It is drawn in
@@ -372,7 +382,7 @@ templ emptyState() {
 // tabBar is the phone navigation under the player; the sidebar replaces it
 // from 720px up.
 templ tabBar(active string) {
-	<nav class="fixed inset-x-0 bottom-0 z-30 flex h-14 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] min-[720px]:hidden" aria-label="Main">
+	<nav class="fixed inset-x-0 bottom-0 z-30 flex h-14 border-t border-line bg-panel/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl min-[720px]:hidden" aria-label="Main">
 		@tab("/tracks", "Tracks", "tracks", active == PageTracks, "")
 		if secretMode(ctx) {
 			if tagsPage {

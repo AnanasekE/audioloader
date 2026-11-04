@@ -712,8 +712,10 @@
 		const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
 		seek.max = String(dur);
 		if (!seeking) seek.value = String(audio.currentTime);
-		timeEl.textContent = clock(seeking ? Number(seek.value) : audio.currentTime);
-		remainingEl.textContent = "-" + clock(dur - (seeking ? Number(seek.value) : audio.currentTime));
+		const shown = seeking ? Number(seek.value) : audio.currentTime;
+		all("data-mini-progress").forEach((el) => (el.style.width = dur ? `${Math.min(100, (shown / dur) * 100)}%` : "0"));
+		timeEl.textContent = clock(shown);
+		remainingEl.textContent = "-" + clock(dur - shown);
 	}
 
 	function syncPlay() {
@@ -729,6 +731,11 @@
 	}
 
 	playBtn.addEventListener("click", togglePlay);
+	// on phones a tap on the mini player, but not on its buttons, opens the Now Playing sheet
+	root.addEventListener("click", (e) => {
+		if (e.target.closest("button, summary, details, a, input, select") || !matchMedia("(max-width: 720px)").matches) return;
+		document.getElementById("now-playing")?.showModal();
+	});
 	seek.addEventListener("input", () => {
 		seeking = true;
 		audio.currentTime = Number(seek.value);
