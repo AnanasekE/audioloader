@@ -49,3 +49,14 @@ Find music that isn't in the library yet and queue it, by more than a single tex
 - **Browse results:** an artist shows its releases, a release shows its tracklist, with what's already owned marked.
 - **Download from the results:** add one song, a whole release, or pick tracks, as placeholders with queued downloads in the usual source order.
 - **Today:** the Add box searches MusicBrainz recordings by free text ("Artist - Title") and takes MusicBrainz links; this extends it.
+
+## Sync Apple Music playlists
+
+Follow an Apple Music playlist, for example Favorite Songs, and download what gets added to it without pasting the link again.
+
+- **Follow:** from a finished Apple Music import (`/add/apple/<id>`), "Keep in sync" saves the playlist link. A list of followed playlists, with the last check and "Stop syncing".
+- **Check:** a background job reads each followed playlist on a timer (setting, default every hour) and finds songs not seen before.
+- **New songs:** a sure match (the import's "Best match" rule) is added as a placeholder with a queued download, and to the audioloader playlist if the import made one. Unsure and not-found songs go to the Inbox to pick, as on the import page.
+- **Removals:** a song removed from the Apple playlist is not deleted from the library.
+- **Open:** Favorite Songs is a library playlist with no public page. Find out whether it can be shared as a public link; if not, it needs the Apple Music API with a MusicKit user token (an Apple Developer account), which the import avoids today.
+- **Open:** a public page lists only the first N songs, so new songs past N are not seen. Check where Apple puts new songs (top or bottom) and what N is.
