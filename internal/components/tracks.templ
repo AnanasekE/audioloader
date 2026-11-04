@@ -179,7 +179,7 @@ templ AddTrackForm(artists []*audio.Artist) {
 				</span>
 				@artistPicker(artists, nil)
 				if len(artists) == 0 {
-					<small class="mt-1 block text-fg-muted">No artists yet. <a href="/artists">Add one first</a>.</small>
+					<small class="mt-1 block text-fg-muted">No artists yet. <a hx-target="body" hx-swap="innerHTML" href="/artists">Add one first</a>.</small>
 				}
 			</div>
 			if secretMode(ctx) {

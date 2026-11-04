@@ -358,7 +358,7 @@ func AddTrackForm(artists []*audio.Artist) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(artists) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<small class=\"mt-1 block text-fg-muted\">No artists yet. <a href=\"/artists\">Add one first</a>.</small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<small class=\"mt-1 block text-fg-muted\">No artists yet. <a hx-target=\"body\" hx-swap=\"innerHTML\" href=\"/artists\">Add one first</a>.</small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -222,14 +222,14 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 				ctx = templ.InitializeContext(ctx)
 				switch c.Match {
 				case db.MBArtistLinked:
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a class=\"btn shrink-0\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"btn shrink-0\" href=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var9 templ.SafeURL
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(artistURL(c.Library))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 76, Col: 57}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 76, Col: 94}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -246,14 +246,14 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 							return templ_7745c5c3_Err
 						}
 					} else {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"shrink-0 text-fg-muted\">Name taken by <a class=\"underline\" href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"shrink-0 text-fg-muted\">Name taken by <a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"underline\" href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var10 templ.SafeURL
 						templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(artistURL(c.Library))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 82, Col: 70}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 82, Col: 107}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 						if templ_7745c5c3_Err != nil {
@@ -266,7 +266,7 @@ func MBArtistCandidates(found []MBArtistCandidate, searchErr string) templ.Compo
 						var templ_7745c5c3_Var11 string
 						templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(c.Library.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 82, Col: 89}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/artists.templ`, Line: 82, Col: 126}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 						if templ_7745c5c3_Err != nil {

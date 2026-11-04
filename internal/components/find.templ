@@ -384,7 +384,7 @@ templ FindTracklist(p FindReleasePage) {
 			<p class="mb-3 flex flex-wrap items-center gap-2 text-fg-muted" role="status">
 				{ p.Notice }
 				if p.LibraryReleaseID != "" {
-					<a href={ templ.SafeURL("/releases/" + p.LibraryReleaseID) }>Open release</a>
+					<a hx-target="body" hx-swap="innerHTML" href={ templ.SafeURL("/releases/" + p.LibraryReleaseID) }>Open release</a>
 				}
 			</p>
 		}
@@ -409,11 +409,11 @@ templ FindTracklist(p FindReleasePage) {
 						</span>
 					</span>
 					if c.Owned() && c.OwnedHasFile && c.OwnedReleaseID != "" {
-						<a href={ templ.SafeURL("/releases/" + c.OwnedReleaseID) }>In your library</a>
+						<a hx-target="body" hx-swap="innerHTML" href={ templ.SafeURL("/releases/" + c.OwnedReleaseID) }>In your library</a>
 					} else if c.Owned() && c.OwnedHasFile {
 						<span class="text-fg-muted">In your library</span>
 					} else if c.Owned() {
-						<a href="/downloads">Already queued</a>
+						<a hx-target="body" hx-swap="innerHTML" href="/downloads">Already queued</a>
 					}
 				</li>
 			}

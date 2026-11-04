@@ -458,14 +458,14 @@ func appleImportResults(v AppleImportView) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span></span> <a class=\"btn btn-ghost\" href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span></span> <a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"btn btn-ghost\" href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var18 templ.SafeURL
 						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/add?q=" + url.QueryEscape(s.Artist+" - "+s.Title)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 140, Col: 105}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 140, Col: 142}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 						if templ_7745c5c3_Err != nil {
@@ -553,7 +553,7 @@ func appleImportResults(v AppleImportView) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</span></span> <a href=\"/downloads\">Queued</a>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</span></span> <a hx-target=\"body\" hx-swap=\"innerHTML\" href=\"/downloads\">Queued</a>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -688,14 +688,14 @@ func appleImportResults(v AppleImportView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if v.PlaylistID != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<a class=\"text-sm\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"text-sm\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var29 templ.SafeURL
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/playlists/" + v.PlaylistID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 190, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 190, Col: 111}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -1309,14 +1309,14 @@ func AppleFollowsList(follows []AppleFollowRow) templ.Component {
 							}()
 						}
 						ctx = templ.InitializeContext(ctx)
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<span class=\"min-w-0\"><a class=\"block truncate\" href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<span class=\"min-w-0\"><a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"block truncate\" href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var60 templ.SafeURL
 						templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/add/apple/%d", f.ImportID)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 341, Col: 95}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 341, Col: 132}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 						if templ_7745c5c3_Err != nil {
@@ -1329,7 +1329,7 @@ func AppleFollowsList(follows []AppleFollowRow) templ.Component {
 						var templ_7745c5c3_Var61 string
 						templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(f.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 341, Col: 106}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/appleimport.templ`, Line: 341, Col: 143}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 						if templ_7745c5c3_Err != nil {

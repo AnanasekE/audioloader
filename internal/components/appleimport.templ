@@ -137,7 +137,7 @@ templ appleImportResults(v AppleImportView) {
 								<span class="block truncate">{ s.Title }</span>
 								<span class="block truncate text-fg-muted">{ s.Artist }</span>
 							</span>
-							<a class="btn btn-ghost" href={ templ.SafeURL("/add?q=" + url.QueryEscape(s.Artist+" - "+s.Title)) }>Search</a>
+							<a hx-target="body" hx-swap="innerHTML" class="btn btn-ghost" href={ templ.SafeURL("/add?q=" + url.QueryEscape(s.Artist+" - "+s.Title)) }>Search</a>
 						}
 					}
 				}
@@ -153,7 +153,7 @@ templ appleImportResults(v AppleImportView) {
 								<span class="block truncate">{ s.Title }</span>
 								<span class="block truncate text-fg-muted">{ s.Artist }</span>
 							</span>
-							<a href="/downloads">Queued</a>
+							<a hx-target="body" hx-swap="innerHTML" href="/downloads">Queued</a>
 						}
 					}
 				}
@@ -187,7 +187,7 @@ templ appleImportResults(v AppleImportView) {
 					}
 				</label>
 				if v.PlaylistID != "" {
-					<a class="text-sm" href={ templ.SafeURL("/playlists/" + v.PlaylistID) }>Open playlist</a>
+					<a hx-target="body" hx-swap="innerHTML" class="text-sm" href={ templ.SafeURL("/playlists/" + v.PlaylistID) }>Open playlist</a>
 				}
 				<span id="apple-status" class="text-sm text-st-failed" role="alert"></span>
 			</div>
@@ -338,7 +338,7 @@ templ AppleFollowsList(follows []AppleFollowRow) {
 				for _, f := range follows {
 					@row("grid-cols-[minmax(0,1fr)_auto] items-center row-pad text-sm") {
 						<span class="min-w-0">
-							<a class="block truncate" href={ templ.SafeURL(fmt.Sprintf("/add/apple/%d", f.ImportID)) }>{ f.Name }</a>
+							<a hx-target="body" hx-swap="innerHTML" class="block truncate" href={ templ.SafeURL(fmt.Sprintf("/add/apple/%d", f.ImportID)) }>{ f.Name }</a>
 							<span class="block truncate text-fg-muted">
 								if f.Checking {
 									Checking…

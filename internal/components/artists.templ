@@ -73,13 +73,13 @@ templ MBArtistCandidates(found []MBArtistCandidate, searchErr string) {
 			@artistCandidate(c.Artist) {
 				switch c.Match {
 					case db.MBArtistLinked:
-						<a class="btn shrink-0" href={ artistURL(c.Library) }>In your library</a>
+						<a hx-target="body" hx-swap="innerHTML" class="btn shrink-0" href={ artistURL(c.Library) }>In your library</a>
 					case db.MBArtistNameTaken:
 						if c.AddName != "" {
 							@addMBArtistButton(c, "Add as "+c.AddName)
 						} else {
 							<span class="shrink-0 text-fg-muted">
-								Name taken by <a class="underline" href={ artistURL(c.Library) }>{ c.Library.Name }</a>
+								Name taken by <a hx-target="body" hx-swap="innerHTML" class="underline" href={ artistURL(c.Library) }>{ c.Library.Name }</a>
 							</span>
 						}
 					case db.MBArtistSameName:

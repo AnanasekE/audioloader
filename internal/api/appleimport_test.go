@@ -158,6 +158,10 @@ func TestAppleImport(t *testing.T) {
 		!strings.Contains(body, "/add?q=Massive+Attack+-+Nowhere") || !strings.Contains(body, "Also create playlist “My Mix”") {
 		t.Fatalf("done page:\n%s", body)
 	}
+	// the Search link sits inside the form that targets #apple-import: it must not inherit that
+	if !strings.Contains(body, `<a hx-target="body" hx-swap="innerHTML" class="btn btn-ghost" href="/add?q=Massive+Attack+-+Nowhere"`) {
+		t.Errorf("the Search link of a not-found song inherits the form's target:\n%s", body)
+	}
 	if strings.Contains(body, "Apple Music shows the first") == false {
 		t.Errorf("no note about the 6 songs of which 4 are listed:\n%s", body)
 	}

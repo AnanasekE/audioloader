@@ -1270,14 +1270,14 @@ func FindTracklist(p FindReleasePage) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if p.LibraryReleaseID != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<a hx-target=\"body\" hx-swap=\"innerHTML\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var53 templ.SafeURL
 				templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/releases/" + p.LibraryReleaseID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/find.templ`, Line: 387, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/find.templ`, Line: 387, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 				if templ_7745c5c3_Err != nil {
@@ -1398,14 +1398,14 @@ func FindTracklist(p FindReleasePage) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if c.Owned() && c.OwnedHasFile && c.OwnedReleaseID != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<a hx-target=\"body\" hx-swap=\"innerHTML\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var60 templ.SafeURL
 				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/releases/" + c.OwnedReleaseID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/find.templ`, Line: 412, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/find.templ`, Line: 412, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 				if templ_7745c5c3_Err != nil {
@@ -1421,7 +1421,7 @@ func FindTracklist(p FindReleasePage) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else if c.Owned() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<a href=\"/downloads\">Already queued</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<a hx-target=\"body\" hx-swap=\"innerHTML\" href=\"/downloads\">Already queued</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

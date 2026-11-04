@@ -161,7 +161,7 @@ func AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []jo
 					return templ_7745c5c3_Err
 				}
 				if !secretMode(ctx) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a class=\"btn btn-ghost\" href=\"/add/find\">Search MusicBrainz…</a> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a hx-target=\"body\" hx-swap=\"innerHTML\" class=\"btn btn-ghost\" href=\"/add/find\">Search MusicBrainz…</a> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
