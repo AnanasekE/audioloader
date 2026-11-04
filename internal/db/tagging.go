@@ -348,3 +348,109 @@ func TagCounts(v Viewer) (map[string]int, error) {
 	}
 	return counts, rows.Err()
 }
+
+// MoveSuggestion is a YouTube import whose applied match puts its recording
+// on a release other than the one it sits on, e.g. the album rather than the
+// single made at import.
+type MoveSuggestion struct {
+	TrackID     string
+	TrackTitle  string
+	RecordingID string
+
+	// the release the track is on now (the first one if it is on several)
+	FromID          string
+	FromTitle       string
+	FromType        string
+	FromTracks      int
+	FromByImport    bool   // no MusicBrainz ID and only this track: made at import
+	TargetID        string // MusicBrainz release ID
+	TargetTitle     string
+	TargetType      string
+	TargetDate      string
+	TargetInLibrary bool
+}
+
+// youtubeSource matches tracks downloaded from a YouTube video, on a tracks
+// table aliased t.
+const youtubeSource = `(t.source_url LIKE 'https://www.youtube.com/%' OR t.source_url LIKE 'https://music.youtube.com/%' OR t.source_url LIKE 'https://youtu.be/%')`
+
+// MoveSuggestions lists the YouTube imports whose latest applied match is on
+// a release the track isn't on. A track whose suggestion was dismissed is
+// left out for the same target.
+func MoveSuggestions(v Viewer) ([]MoveSuggestion, error) {
+	rows, err := DB.Query(`
+		SELECT t.uuid, t.title, m.data FROM tag_matches m
+		JOIN tracks t ON t.uuid = m.track_id
+		WHERE m.status = 'applied' AND m.release_mbid IS NOT NULL
+			AND ` + libraryTracks + ` AND ` + youtubeSource + ` AND ` + v.trackCond("t") + `
+			AND COALESCE(t.move_dismissed_release, '') <> m.release_mbid
+			AND NOT EXISTS (
+				SELECT 1 FROM release_tracks rt JOIN releases r ON r.uuid = rt.release_id
+				WHERE rt.track_id = t.uuid AND r.mbid = m.release_mbid)
+		ORDER BY t.title COLLATE NOCASE, t.uuid, m.rowid DESC;`)
+	if err != nil {
+		return nil, err
+	}
+	var out []MoveSuggestion
+	seen := map[string]bool{}
+	for rows.Next() {
+		var s MoveSuggestion
+		var data string
+		if err := rows.Scan(&s.TrackID, &s.TrackTitle, &data); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		if seen[s.TrackID] { // only the latest applied match counts
+			continue
+		}
+		seen[s.TrackID] = true
+		var m Match
+		if err := json.Unmarshal([]byte(data), &m); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		s.RecordingID, s.TargetID, s.TargetTitle, s.TargetType, s.TargetDate = m.RecordingID, m.ReleaseID, m.ReleaseTitle, m.ReleaseType, m.ReleaseDate
+		out = append(out, s)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	kept := out[:0]
+	for _, s := range out {
+		err := DB.QueryRow(`
+			SELECT r.uuid, r.title, r.type, r.mbid IS NULL AND
+				(SELECT COUNT(*) FROM release_tracks WHERE release_id = r.uuid) = 1,
+				(SELECT COUNT(*) FROM release_tracks WHERE release_id = r.uuid)
+			FROM release_tracks rt JOIN releases r ON r.uuid = rt.release_id
+			WHERE rt.track_id = ?
+			ORDER BY r.release_date IS NULL, r.release_date, r.title LIMIT 1;`, s.TrackID).
+			Scan(&s.FromID, &s.FromTitle, &s.FromType, &s.FromByImport, &s.FromTracks)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue // on no release; nothing to move from
+		}
+		if err != nil {
+			return nil, err
+		}
+		if err := DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM releases WHERE mbid = ?);`, s.TargetID).Scan(&s.TargetInLibrary); err != nil {
+			return nil, err
+		}
+		kept = append(kept, s)
+	}
+	return kept, nil
+}
+
+// DismissMove remembers that the person wants the track to stay where it is
+// instead of moving to the release with MusicBrainz ID releaseMBID.
+func DismissMove(trackID, releaseMBID string) error {
+	res, err := DB.Exec(`UPDATE tracks SET move_dismissed_release = ? WHERE uuid = ?;`, releaseMBID, trackID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

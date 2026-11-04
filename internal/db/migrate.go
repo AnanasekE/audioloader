@@ -345,6 +345,12 @@ var migrations = []func(tx *sql.Tx) error{
 			);`)
 		return err
 	},
+	// 21: the release a person said "keep here" to, so the Tagging page stops
+	// offering to move the track onto it
+	func(tx *sql.Tx) error {
+		_, err := tx.Exec(`ALTER TABLE tracks ADD COLUMN move_dismissed_release TEXT;`)
+		return err
+	},
 }
 
 // destructive lists the migrations (by number) that delete data. Init
