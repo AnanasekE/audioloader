@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -191,4 +192,66 @@ func (c *Client) FrontCover(ctx context.Context, kind, id string) (io.ReadCloser
 		return nil, "", err
 	}
 	return resp.Body, resp.Header.Get("Content-Type"), nil
+}
+
+// SearchReleaseGroups runs a Lucene query against release groups, best first.
+func (c *Client) SearchReleaseGroups(ctx context.Context, query string, limit int) ([]ReleaseGroup, error) {
+	var res struct {
+		ReleaseGroups []ReleaseGroup `json:"release-groups"`
+	}
+	q := url.Values{"query": {query}, "limit": {strconv.Itoa(limit)}}
+	return res.ReleaseGroups, c.getJSON(ctx, "musicbrainz", c.mbURL("release-group", q), &res)
+}
+
+// Find modes: what the Find page searches for.
+const (
+	FindSong    = "song"
+	FindRelease = "release"
+	FindArtist  = "artist"
+)
+
+// FindFields are the inputs of the Find form. Type and Year are optional
+// filters for songs and releases.
+type FindFields struct {
+	Text   string // title, or the name in artist mode
+	Artist string
+	Type   string // Album, EP or Single; anything else means any
+	Year   string // "1994" or a range "1990-1999"; anything else is ignored
+}
+
+var (
+	findYear  = regexp.MustCompile(`^(\d{4})(?:\s*-\s*(\d{4}))?$`)
+	findTypes = map[string]string{"album": "Album", "ep": "EP", "single": "Single"}
+)
+
+// FindQuery builds the Lucene query for the Find form. It returns "" when
+// there is nothing to search for. For the artist mode that is just the text;
+// SearchArtists builds its own query from it.
+func FindQuery(mode string, f FindFields) string {
+	text := strings.Join(strings.Fields(f.Text), " ")
+	if text == "" {
+		return ""
+	}
+	if mode == FindArtist {
+		return text
+	}
+	field, dateField := "recording", "date"
+	if mode == FindRelease {
+		field, dateField = "releasegroup", "firstreleasedate"
+	}
+	parts := []string{field + ":" + Phrase(text)}
+	if a := strings.Join(strings.Fields(f.Artist), " "); a != "" {
+		parts = append(parts, "artist:"+Phrase(a))
+	}
+	if t, ok := findTypes[strings.ToLower(strings.TrimSpace(f.Type))]; ok {
+		parts = append(parts, "primarytype:"+t)
+	}
+	if m := findYear.FindStringSubmatch(strings.TrimSpace(f.Year)); m != nil {
+		to := m[2]
+		if to == "" {
+			to = m[1]
+		}
+		parts = append(parts, dateField+":["+m[1]+" TO "+to+"]")
+	}
+	return strings.Join(parts, " AND ")
 }

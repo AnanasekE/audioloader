@@ -324,3 +324,41 @@ func TestGetReleaseCoverWork(t *testing.T) {
 		t.Fatalf("cover work = %+v", w)
 	}
 }
+
+func TestSearchReleaseGroups(t *testing.T) {
+	c, reqs := fixtureServer(t, map[string]string{"/ws/2/release-group": "release_group_search.json"})
+	groups, err := c.SearchReleaseGroups(context.Background(), `releasegroup:"Heligoland"`, 25)
+	if err != nil || len(groups) != 2 {
+		t.Fatalf("groups = %v, err = %v", groups, err)
+	}
+	if g := groups[0]; g.Title != "Heligoland" || g.PrimaryType != "Album" || g.FirstReleaseDate != "2010-02-03" || g.ArtistCredit.String() != "Massive Attack" {
+		t.Fatalf("group = %+v", g)
+	}
+	q := (*reqs)[0].URL.Query()
+	if q.Get("query") != `releasegroup:"Heligoland"` || q.Get("limit") != "25" {
+		t.Fatalf("query = %v", q)
+	}
+}
+
+func TestFindQuery(t *testing.T) {
+	for _, tc := range []struct {
+		mode string
+		f    FindFields
+		want string
+	}{
+		{FindSong, FindFields{}, ""},
+		{FindSong, FindFields{Artist: "Muse"}, ""},
+		{FindSong, FindFields{Text: "Uprising"}, `recording:"Uprising"`},
+		{FindSong, FindFields{Text: " Uprising ", Artist: "Muse"}, `recording:"Uprising" AND artist:"Muse"`},
+		{FindSong, FindFields{Text: "Say \"hi\"", Type: "single", Year: "2009"}, `recording:"Say \"hi\"" AND primarytype:Single AND date:[2009 TO 2009]`},
+		{FindSong, FindFields{Text: "x", Type: "Any", Year: "soon"}, `recording:"x"`},
+		{FindRelease, FindFields{Text: "Heligoland", Artist: "Massive Attack", Type: "Album", Year: "1990-1999"},
+			`releasegroup:"Heligoland" AND artist:"Massive Attack" AND primarytype:Album AND firstreleasedate:[1990 TO 1999]`},
+		{FindRelease, FindFields{Text: "x", Type: "EP"}, `releasegroup:"x" AND primarytype:EP`},
+		{FindArtist, FindFields{Text: "  Massive   Attack ", Artist: "ignored"}, "Massive Attack"},
+	} {
+		if got := FindQuery(tc.mode, tc.f); got != tc.want {
+			t.Errorf("FindQuery(%s, %+v) = %q, want %q", tc.mode, tc.f, got, tc.want)
+		}
+	}
+}
