@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"audioloader/internal/mb"
@@ -179,7 +180,7 @@ templ findSongRow(c SongCandidate) {
 }
 
 templ findGroupCard(g FindGroup) {
-	<div class="tile">
+	<a class="tile" href={ templ.SafeURL("/add/find/release-group/" + g.Group.ID) }>
 		<img
 			class="cover"
 			src={ g.CoverURL }
@@ -192,7 +193,7 @@ templ findGroupCard(g FindGroup) {
 			<span class="truncate text-xs text-fg-muted">{ g.Group.ArtistCredit.String() }</span>
 			<span class="mono truncate text-xs text-fg-muted">{ findGroupMeta(g) }</span>
 		</span>
-	</div>
+	</a>
 }
 
 // findGroupMeta is the card's mono line: type, year and what the library has.
@@ -224,7 +225,7 @@ func releaseYearOf(date string) string {
 templ findArtistRow(a FindArtist) {
 	<li class="flex flex-wrap items-center gap-3 py-2">
 		<span class="min-w-0 flex-1">
-			<span class="block truncate">{ a.Artist.Name }</span>
+			<a class="block truncate" href={ templ.SafeURL(findArtistURL(a.Artist.ID, a.Artist.Name)) }>{ a.Artist.Name }</a>
 			<span class="block truncate text-sm text-fg-muted">{ findArtistMeta(a.Artist) }</span>
 		</span>
 		if a.Following {
@@ -246,4 +247,156 @@ func findArtistMeta(a mb.Artist) string {
 		}
 	}
 	return strings.Join(parts, " · ")
+}
+
+// findArtistURL is the browse page of a MusicBrainz artist; the name is for
+// its heading, since browsing release groups doesn't return one.
+func findArtistURL(mbid, name string) string {
+	return "/add/find/artist/" + mbid + "?name=" + url.QueryEscape(name)
+}
+
+// FindSection is the release groups of one type on an artist's page.
+type FindSection struct {
+	Title  string
+	Groups []FindGroup
+}
+
+// FindArtistPage lists an artist's release groups, a page of them at a time.
+// More is the offset of the next page, 0 when this was the last.
+type FindArtistPage struct {
+	MBID, Name string
+	Following  bool
+	Total      int
+	Sections   []FindSection
+	More       int
+}
+
+// FindArtistBrowse is an artist's release groups by type, newest first.
+templ FindArtistBrowse(p FindArtistPage) {
+	@layout("Find music", PageAdd) {
+		@pageHead(p.Name, fmt.Sprintf("%d release groups on MusicBrainz", p.Total)) {
+			<a class="btn btn-ghost" href="/add/find?mode=artist">Back to Find</a>
+			@findFollowButton(p.MBID, p.Name, p.Following)
+		}
+		if len(p.Sections) == 0 {
+			@emptyState() {
+				MusicBrainz lists no releases for this artist.
+			}
+		}
+		@FindGroups(p)
+	}
+}
+
+// FindGroups is a page of release group sections, then the button for the
+// next page, which replaces itself with it.
+templ FindGroups(p FindArtistPage) {
+	for _, sec := range p.Sections {
+		<section class="mb-6">
+			@sectionLabel(sec.Title)
+			@cardGrid() {
+				for _, g := range sec.Groups {
+					@findGroupCard(g)
+				}
+			}
+		</section>
+	}
+	if p.More > 0 {
+		<button
+			type="button"
+			class="btn"
+			hx-get={ fmt.Sprintf("/ui/add/find/artist/%s/groups?offset=%d", p.MBID, p.More) }
+			hx-swap="outerHTML"
+		>More</button>
+	}
+}
+
+// findFollowButton adds the MusicBrainz artist to the library (plan 16's
+// endpoint) and offers to follow its releases.
+templ findFollowButton(mbid, name string, following bool) {
+	if following {
+		<span class="text-fg-muted">Following</span>
+	} else {
+		<button
+			type="button"
+			class="btn"
+			hx-post="/ui/artists/musicbrainz"
+			hx-vals={ templ.JSONString(map[string]string{"mbid": mbid, "name": name}) }
+			hx-swap="outerHTML"
+		>Follow artist</button>
+	}
+}
+
+// FindReleasePage is one release of a release group with its tracklist.
+// Each track is ticked for adding unless the library has it.
+type FindReleasePage struct {
+	GroupID, ReleaseID, Title, Artists, Year, Type, CoverURL string
+	ArtistMBID, ArtistName                                   string // the first credited artist
+	Following                                                bool
+	Tracks                                                   []SongCandidate
+	Missing                                                  int
+}
+
+// FindReleaseBrowse shows the tracklist of a release group's release.
+templ FindReleaseBrowse(p FindReleasePage) {
+	@layout("Find music", PageAdd) {
+		@pageHead(p.Title, p.Artists) {
+			<a class="btn btn-ghost" href="/add/find?mode=release">Back to Find</a>
+			if p.ArtistMBID != "" {
+				<a class="btn btn-ghost" href={ templ.SafeURL(findArtistURL(p.ArtistMBID, p.ArtistName)) }>More by { p.ArtistName }</a>
+				@findFollowButton(p.ArtistMBID, p.ArtistName, p.Following)
+			}
+		}
+		<div class="mb-4 flex items-center gap-3">
+			<img
+				class="size-20 shrink-0 rounded bg-panel-2 object-cover"
+				src={ p.CoverURL }
+				alt=""
+				onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+			/>
+			<span class="text-fg-muted">
+				{ strings.TrimPrefix(p.Type+" · "+p.Year+" · "+fmt.Sprintf("%d tracks", len(p.Tracks)), " · ") }
+			</span>
+		</div>
+		<div id="find-release" aria-live="polite">
+			@FindTracklist(p)
+		</div>
+	}
+}
+
+// FindTracklist is the tracks with a tick box each; the tracks the library
+// has are marked instead.
+templ FindTracklist(p FindReleasePage) {
+	<form id="find-tracks" hx-target="#find-release">
+		<input type="hidden" name="release_id" value={ p.ReleaseID }/>
+		<ul class="divide-y divide-line">
+			for _, c := range p.Tracks {
+				<li class="flex items-center gap-3 py-2">
+					if c.Owned() {
+						<span class="size-4 shrink-0"></span>
+					} else {
+						<input type="checkbox" name="recording_id" value={ c.RecordingID } checked aria-label={ "Add " + c.Title } class="size-4 shrink-0"/>
+					}
+					<span class="min-w-0 flex-1">
+						<span class="block truncate">
+							<span class="text-fg-muted">{ fmt.Sprintf("%d.%d ", c.Disc, c.Position) }</span>
+							{ c.Title }
+						</span>
+						<span class="block truncate text-sm text-fg-muted">
+							{ c.Artists }
+							if c.Length > 0 {
+								{ " · " + formatDuration(c.Length) }
+							}
+						</span>
+					</span>
+					if c.Owned() && c.OwnedHasFile && c.OwnedReleaseID != "" {
+						<a href={ templ.SafeURL("/releases/" + c.OwnedReleaseID) }>In your library</a>
+					} else if c.Owned() && c.OwnedHasFile {
+						<span class="text-fg-muted">In your library</span>
+					} else if c.Owned() {
+						<a href="/downloads">Already queued</a>
+					}
+				</li>
+			}
+		</ul>
+	</form>
 }
