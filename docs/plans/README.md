@@ -44,6 +44,10 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 35 | [React web app](35-react-web.md) | The web UI rebuilt in React with context menus and an action palette (REQUESTS.md) |
 | 36 | [Apple Music links](36-apple-music.md) | Import public Apple Music playlists and song links onto MusicBrainz releases (REQUESTS.md) |
 | 37 | [Context menus and actions](37-context-menus.md) | Right-click / long-press menus, menus for releases, artists and playlists, ⌘K actions, UX audit (REQUESTS.md) |
+| 38 | [UX audit, medium fixes](38-ui-medium.md) | Tracks sort, grid filters, Search type filter, Downloads links, phone Library tab (REQUESTS.md) |
+| 39 | [Search for new music](39-search-new-music.md) | Find songs, releases and artists on MusicBrainz, browse, add picks (REQUESTS.md) |
+| 40 | [Move YouTube imports](40-move-youtube-imports.md) | "Move to <release>" on Tagging when the match is on another release (REQUESTS.md) |
+| 41 | [Sync Apple Music playlists](41-apple-music-sync.md) | Follow a public Apple Music playlist and download new songs (REQUESTS.md) |
 
 ## Rules for every plan
 
