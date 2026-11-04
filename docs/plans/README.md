@@ -48,6 +48,7 @@ Run the plans in this order. Each one assumes the ones before it are done.
 | 39 | [Search for new music](39-search-new-music.md) | Find songs, releases and artists on MusicBrainz, browse, add picks (REQUESTS.md) |
 | 40 | [Move YouTube imports](40-move-youtube-imports.md) | "Move to <release>" on Tagging when the match is on another release (REQUESTS.md) |
 | 41 | [Sync Apple Music playlists](41-apple-music-sync.md) | Follow a public Apple Music playlist and download new songs (REQUESTS.md) |
+| 42 | [Phone player and queue](42-phone-player.md) | Apple Music style mini player, full-screen Now Playing and Playing Next with reorder on phones (REQUESTS.md) |
 
 ## Rules for every plan
 
