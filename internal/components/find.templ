@@ -1,0 +1,249 @@
+package components
+
+import (
+	"fmt"
+	"strings"
+
+	"audioloader/internal/mb"
+)
+
+// FindForm is what the Find form holds. Mode is mb.FindSong, FindRelease or
+// FindArtist.
+type FindForm struct {
+	Mode, Q, Artist, Type, Year string
+}
+
+// FindGroup is a release group found by title, with how much of it the
+// library has (Total 0: none).
+type FindGroup struct {
+	Group       mb.ReleaseGroup
+	CoverURL    string
+	Have, Total int
+}
+
+// FindArtist is an artist found by name.
+type FindArtist struct {
+	Artist    mb.Artist
+	Following bool
+}
+
+// FindResults are the hits of one search: Songs, Groups or Artists by mode.
+// Err is shown instead of them when MusicBrainz couldn't be searched.
+type FindResults struct {
+	Songs   []SongCandidate
+	Groups  []FindGroup
+	Artists []FindArtist
+	Err     string
+}
+
+// Empty reports whether the search found nothing.
+func (r *FindResults) Empty() bool {
+	return len(r.Songs) == 0 && len(r.Groups) == 0 && len(r.Artists) == 0
+}
+
+// FindPage searches MusicBrainz for music that isn't in the library yet.
+// res is nil until something was searched; the form is a plain GET so a
+// result page can be reloaded.
+templ FindPage(f FindForm, res *FindResults) {
+	@layout("Find music", PageAdd) {
+		@pageHead("Find music", "Search MusicBrainz for a song, a release or an artist to download") {
+			<a class="btn btn-ghost" href="/add">Back to Add</a>
+		}
+		<form
+			id="find-form"
+			class="form-panel max-w-none!"
+			action="/add/find"
+			method="get"
+			hx-get="/ui/add/find/results"
+			hx-target="#find-results"
+			hx-indicator="#find-loading"
+		>
+			<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Search for">
+				@choice("mode", mb.FindSong, "Song", f.Mode == mb.FindSong, false)
+				@choice("mode", mb.FindRelease, "Release", f.Mode == mb.FindRelease, false)
+				@choice("mode", mb.FindArtist, "Artist", f.Mode == mb.FindArtist, false)
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<label for="find-q" class="sr-only">Title or name</label>
+				<input id="find-q" class="input flex-1" type="text" name="q" value={ f.Q } placeholder={ findPlaceholder(f.Mode) } autocomplete="off" required/>
+				<button class="btn" type="submit">Search</button>
+				<span id="find-loading" class="htmx-indicator text-sm text-fg-muted">Searching…</span>
+			</div>
+			<div class="flex flex-wrap gap-3" data-find-extra hidden?={ f.Mode == mb.FindArtist }>
+				<label class="field min-w-40 flex-1">
+					<span class="label">Artist</span>
+					<input class="input" type="text" name="artist" value={ f.Artist } autocomplete="off"/>
+				</label>
+				<label class="field">
+					<span class="label">Type</span>
+					<select class="select" name="type">
+						<option value="">Any</option>
+						for _, t := range []string{"Album", "EP", "Single"} {
+							<option value={ t } selected?={ strings.EqualFold(f.Type, t) }>{ t }</option>
+						}
+					</select>
+				</label>
+				<label class="field w-40">
+					<span class="label">Year</span>
+					<input class="input" type="text" name="year" value={ f.Year } placeholder="1994 or 1990-1999" autocomplete="off" inputmode="numeric"/>
+				</label>
+			</div>
+		</form>
+		<div id="find-results" class="mt-6" aria-live="polite">
+			if res != nil {
+				@FindResultList(f, res)
+			}
+		</div>
+		<script src="/assets/js/find.js" defer></script>
+	}
+}
+
+func findPlaceholder(mode string) string {
+	switch mode {
+	case mb.FindRelease:
+		return "Release title"
+	case mb.FindArtist:
+		return "Artist name"
+	}
+	return "Song title"
+}
+
+// FindResultList is the answer to a search.
+templ FindResultList(f FindForm, res *FindResults) {
+	if res.Err != "" {
+		<p class="text-st-failed" role="alert">{ res.Err }</p>
+	} else if res.Empty() {
+		<p class="text-fg-muted">MusicBrainz found nothing for that.</p>
+	} else if len(res.Songs) > 0 {
+		<ul class="divide-y divide-line">
+			for _, c := range res.Songs {
+				@findSongRow(c)
+			}
+		</ul>
+	} else if len(res.Groups) > 0 {
+		@cardGrid() {
+			for _, g := range res.Groups {
+				@findGroupCard(g)
+			}
+		}
+	} else {
+		<ul class="divide-y divide-line">
+			for _, a := range res.Artists {
+				@findArtistRow(a)
+			}
+		</ul>
+	}
+}
+
+templ findSongRow(c SongCandidate) {
+	<li class="flex flex-wrap items-center gap-3 py-2">
+		<img
+			class="size-14 shrink-0 rounded bg-panel-2 object-cover"
+			src={ c.CoverURL }
+			alt=""
+			loading="lazy"
+			onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+		/>
+		<span class="min-w-0 flex-1">
+			<span class="block truncate">{ c.Title }</span>
+			<span class="block truncate text-fg-muted">
+				{ c.Artists }
+				if c.Length > 0 {
+					{ " · " + formatDuration(c.Length) }
+				}
+			</span>
+			if c.ReleaseTitle != "" {
+				<span class="block truncate text-sm text-fg-muted">
+					{ c.ReleaseTitle }
+					if c.Year != "" {
+						{ " · " + c.Year }
+					}
+				</span>
+			}
+		</span>
+		if c.Owned() && c.OwnedHasFile && c.OwnedReleaseID != "" {
+			<a href={ templ.SafeURL("/releases/" + c.OwnedReleaseID) }>In your library</a>
+		} else if c.Owned() && c.OwnedHasFile {
+			<span class="text-fg-muted">In your library</span>
+		} else if c.Owned() {
+			<a href="/downloads">Already queued</a>
+		} else {
+			<button
+				type="button"
+				class="btn"
+				hx-post="/ui/add/musicbrainz"
+				hx-vals={ fmt.Sprintf(`{"recording_id": %q, "release_id": %q}`, c.RecordingID, c.ReleaseID) }
+			>Add</button>
+		}
+	</li>
+}
+
+templ findGroupCard(g FindGroup) {
+	<div class="tile">
+		<img
+			class="cover"
+			src={ g.CoverURL }
+			alt=""
+			loading="lazy"
+			onerror="this.onerror = null; this.src = '/assets/img/default_track.png'"
+		/>
+		<span class="stack">
+			<b class="truncate font-medium">{ g.Group.Title }</b>
+			<span class="truncate text-xs text-fg-muted">{ g.Group.ArtistCredit.String() }</span>
+			<span class="mono truncate text-xs text-fg-muted">{ findGroupMeta(g) }</span>
+		</span>
+	</div>
+}
+
+// findGroupMeta is the card's mono line: type, year and what the library has.
+func findGroupMeta(g FindGroup) string {
+	parts := []string{}
+	types := append([]string{g.Group.PrimaryType}, g.Group.SecondaryTypes...)
+	if types[0] == "" {
+		types = types[1:]
+	}
+	if len(types) > 0 {
+		parts = append(parts, strings.Join(types, " + "))
+	}
+	if y := releaseYearOf(g.Group.FirstReleaseDate); y != "" {
+		parts = append(parts, y)
+	}
+	if g.Total > 0 {
+		parts = append(parts, fmt.Sprintf("%d/%d in library", g.Have, g.Total))
+	}
+	return strings.Join(parts, " · ")
+}
+
+func releaseYearOf(date string) string {
+	if len(date) > 4 {
+		return date[:4]
+	}
+	return date
+}
+
+templ findArtistRow(a FindArtist) {
+	<li class="flex flex-wrap items-center gap-3 py-2">
+		<span class="min-w-0 flex-1">
+			<span class="block truncate">{ a.Artist.Name }</span>
+			<span class="block truncate text-sm text-fg-muted">{ findArtistMeta(a.Artist) }</span>
+		</span>
+		if a.Following {
+			<span class="text-fg-muted">Following</span>
+		}
+	</li>
+}
+
+// findArtistMeta is the muted line of an artist: the alias the search hit,
+// what tells it from namesakes, and where it is from.
+func findArtistMeta(a mb.Artist) string {
+	parts := []string{}
+	if a.MatchedAlias != "" {
+		parts = append(parts, "also "+a.MatchedAlias)
+	}
+	for _, s := range []string{a.Disambiguation, a.Type, a.Country} {
+		if s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, " · ")
+}

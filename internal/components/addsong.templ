@@ -87,6 +87,9 @@ templ AddPage(q string, artists []*audio.Artist, shows []*audio.Show, recent []j
 							Go
 						}
 					</button>
+					if !secretMode(ctx) {
+						<a class="btn btn-ghost" href="/add/find">Search MusicBrainz…</a>
+					}
 					<span id="add-loading" class="htmx-indicator text-sm text-fg-muted">Looking…</span>
 				</form>
 				<p id="add-status" class="mt-4 text-sm text-st-failed empty:hidden" role="alert"></p>

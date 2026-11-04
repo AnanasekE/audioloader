@@ -76,6 +76,15 @@ func recordingCandidate(c *mb.Client, library []*audio.Track, rec mb.Recording) 
 
 // candidateOn is rec as one search result, on rel (nil: no release).
 func candidateOn(c *mb.Client, library []*audio.Track, rec mb.Recording, rel *mb.Release) (components.SongCandidate, error) {
+	cand := candidateBase(c, rec, rel)
+	var err error
+	cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, songTrack(rec))
+	return cand, err
+}
+
+// candidateBase is rec as one search result, on rel (nil: no release), not
+// yet checked against the library.
+func candidateBase(c *mb.Client, rec mb.Recording, rel *mb.Release) components.SongCandidate {
 	cand := components.SongCandidate{
 		RecordingID: rec.ID,
 		Title:       rec.Title,
@@ -88,9 +97,7 @@ func candidateOn(c *mb.Client, library []*audio.Track, rec mb.Recording, rel *mb
 		cand.Year = releaseYear(rel.Date)
 		cand.CoverURL = c.CoverArtURL + "/release/" + rel.ID + "/front-250"
 	}
-	var err error
-	cand.OwnedTrackID, cand.OwnedReleaseID, cand.OwnedHasFile, err = ownedSong(library, songTrack(rec))
-	return cand, err
+	return cand
 }
 
 func releaseYear(date string) string {

@@ -42,6 +42,7 @@
 
 	const list = [
 		{ id: "add", label: "Add / upload", keywords: "upload song import new", run: go("/add") },
+		{ id: "find-music", label: "Find music to download", keywords: "search musicbrainz new songs releases artists add", when: () => !secret(), run: go("/add/find") },
 		page("go-tracks", "Tracks", "/tracks", "songs library"),
 		page("go-releases", "Releases", "/releases", "albums eps singles"),
 		{ id: "go-artists", label: "Go to Artists", keywords: "open page", when: () => !secret(), run: go("/artists") },

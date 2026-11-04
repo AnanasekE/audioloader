@@ -7,7 +7,7 @@
 ## Status
 
 - [x] 1. MusicBrainz search by field (`internal/mb`)
-- [ ] 2. The Find page: search form and results
+- [x] 2. The Find page: search form and results
 - [ ] 3. Browse an artist and a release
 - [ ] 4. Add a song, a release or picked tracks
 
