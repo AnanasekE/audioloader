@@ -68,7 +68,7 @@ alias_path() {
 	esac
 }
 
-DEFAULT=(/tracks "/search?q=low" @release @release-single /releases /artists @artist /playlists @playlist @playlist-edit
+DEFAULT=(/ /tracks "/search?q=low" @release @release-single /releases /artists @artist /playlists @playlist @playlist-edit
 	/shows @show /inbox /downloads /tagging /upload /upload/batch /upload/import @release-edit @track-edit
 	secret:/tracks secret:/tags secret:/artists)
 [ $# -eq 0 ] && set -- "${DEFAULT[@]}"

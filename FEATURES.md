@@ -168,8 +168,9 @@
 ### UI
 
 - "Console" look: dark by default with a light theme (toggle in the sidebar, remembered in `localStorage`), all colours as tokens in `styles/input.css`, system fonts only. Secret mode swaps just the accent (violet)
-- Left sidebar with Library (Tracks, Releases, Artists, Playlists, Podcasts) and Queue (Inbox, Tagging, Downloads with counts), a top strip with the search, dense track rows with monospace numbers, status chips on the queue pages
-- Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, Library; in secret mode Tracks, Tags, Creators) and a Library sheet of large rows for Playlists, Podcasts, Tagging, Downloads, Inbox and Add, with the sidebar's count badges and a dot on the tab while tagging reviews or downloads wait
+- Home page at `/`: the inbox count with a link in, the episodes to continue, and the releases added last (the tracks added last in a library with no releases, else the "add a song" empty state). Secret mode has neither an inbox nor releases, so its `/` goes to the track list
+- Left sidebar with Library (Home, Tracks, Releases, Artists, Playlists, Podcasts) and Queue (Inbox, Tagging, Downloads with counts), a top strip with the search, dense track rows with monospace numbers, status chips on the queue pages
+- Phone (under 720px): bottom tab bar (Tracks, Releases, Artists, Inbox, Library; in secret mode Tracks, Tags, Creators) and a Library sheet of large rows for Home, Playlists, Podcasts, Tagging, Downloads, Inbox and Add, with the sidebar's count badges and a dot on the tab while tagging reviews or downloads wait
 - Search: `Ctrl K` / `⌘K` or `/` focuses it, arrow keys move through the suggestions, Esc closes them
 - Actions in the search box (`assets/js/commands.js`): matching commands are listed under "Actions" above the results, and `>` first lists only commands. Add / upload, go to each page, check followed artists now, shuffle, repeat, autoplay, sleep timer, dark / light theme, open or lock the vault, keyboard shortcuts. Enter or a click runs one
 - Context menus: right-click (long-press on touch, the Menu key or Shift+F10 on a focused row) on a track, release, artist or playlist opens its ⋯ menu at the pointer, or as a bottom sheet on phones; Shift+right-click keeps the browser's menu. One menu is open at a time; arrow keys move, Esc closes
@@ -177,7 +178,7 @@
 - `?` opens a dialog with the keyboard shortcuts
 - Vault button in the sidebar and the phone top strip (when a vault is configured); in secret mode the same place has Lock
 - Icons next to every sidebar link, the Add button, the phone tab bar and the More sheet, one icon per page
-- Home-screen icon and web app manifest (Safari "Add to Home Screen", standalone, start page `/tracks`)
+- Home-screen icon and web app manifest (Safari "Add to Home Screen", standalone, start page `/`)
 - Player with a play button, seek bar and elapsed/remaining time
 
 ### Tooling

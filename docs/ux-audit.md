@@ -40,6 +40,6 @@ The context menus (right-click, long-press, ⋯ on every card, row and header) a
 ## Across pages
 
 - **Phone: Playlists, Podcasts, Tagging and Downloads are behind "More".** A user who has never opened it does not know they exist, and `Ctrl K` is not there. A search-box action is the same one tap away, but the box itself is small. Show them on the home screen, or let the box hint "Go to…". Medium.
-- **No start page.** `/` opens Tracks. A home with continue listening, recently added and the inbox count would answer "where do I go". Large.
+- ~~**No start page.** `/` opens Tracks.~~ Done: `/` is a home with the inbox count, the episodes to continue and the releases added last. Secret mode still opens on Tracks, which is its own date-added view.
 - **Edit is always a page.** Releases, playlists and tracks open a separate edit page and a way back is "Cancel". Editing in place, or in a side panel, would keep the user in context. Large.
 - **The ⋯ button is small and, on cards, shown only on hover on wide screens.** The right-click menu and the shortcuts dialog (`?`) help, but nothing tells a new user to right-click. A one-time hint in the shortcuts dialog is there; a visible "Actions" hint is not. Quick if wanted, left out.

@@ -14,10 +14,9 @@ The Expo app in `mobile/` browses and plays the library (see `FEATURES.md`). Sti
 
 ## UI
 
-What is left of the UX audit (`docs/ux-audit.md`) after plan 37: the quick fixes and the context menus are done.
+What is left of the UX audit (`docs/ux-audit.md`) after plan 37: the quick fixes, the context menus and the start page are done.
 
 - **Large**
-  - A start page (continue listening, recently added, the inbox count) instead of opening on Tracks.
   - Edit releases, playlists and tracks in place or in a side panel instead of on separate pages.
   - Drag and drop to reorder playlists and tracklists.
   - Plan 35 (the React web app) stays on hold; revisit it only if these need more than templ and htmx can do.

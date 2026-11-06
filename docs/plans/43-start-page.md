@@ -9,7 +9,7 @@
 - [x] 1. Recently added queries
 - [x] 2. The home page at `/`
 - [x] 3. The action palette and the web app start page
-- [ ] 4. Screenshots and docs
+- [x] 4. Screenshots and docs
 
 Written after the change, from the finished diff; the four commits that follow it are the steps.
 
