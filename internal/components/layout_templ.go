@@ -863,6 +863,12 @@ func sidebar(active string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		if !secretMode(ctx) {
+			templ_7745c5c3_Err = navLink("/", "Home", "home", active == PageHome).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
 		templ_7745c5c3_Err = navLink("/tracks", "Tracks", "tracks", active == PageTracks).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -999,7 +1005,7 @@ func navLabel(label string) templ.Component {
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 404, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 408, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -1147,7 +1153,7 @@ func navAnchor(href string, label string, iconName string, current bool) templ.C
 			var templ_7745c5c3_Var34 templ.SafeURL
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 451, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 455, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -1168,7 +1174,7 @@ func navAnchor(href string, label string, iconName string, current bool) templ.C
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 453, Col: 10}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 457, Col: 10}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -1186,7 +1192,7 @@ func navAnchor(href string, label string, iconName string, current bool) templ.C
 			var templ_7745c5c3_Var36 templ.SafeURL
 			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 456, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 460, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
@@ -1207,7 +1213,7 @@ func navAnchor(href string, label string, iconName string, current bool) templ.C
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 458, Col: 10}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 462, Col: 10}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -1260,7 +1266,7 @@ func navLinkBadge(href string, label string, iconName string, current bool, badg
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 468, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 472, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 		if templ_7745c5c3_Err != nil {
@@ -1303,7 +1309,7 @@ func Notice(msg string) templ.Component {
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 474, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 478, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -1413,7 +1419,7 @@ func tabBar(active string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var44 = []any{tabClass(active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads || active == PageAdd)}
+			var templ_7745c5c3_Var44 = []any{tabClass(active == PageHome || active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads || active == PageAdd)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var44...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1493,7 +1499,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 		var templ_7745c5c3_Var48 templ.SafeURL
 		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 521, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 525, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 		if templ_7745c5c3_Err != nil {
@@ -1528,7 +1534,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 525, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 529, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
@@ -1546,7 +1552,7 @@ func tab(href string, label string, iconName string, current bool, badgeURL stri
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 528, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 532, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
@@ -1585,6 +1591,10 @@ func moreSheet(active string) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 		if !secretMode(ctx) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<dialog id=\"more-sheet\" class=\"fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop:bg-black/50 min-[720px]:hidden\" aria-label=\"Library\"><ul class=\"flex flex-col\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = sheetLink("/", "Home", "home", active == PageHome, "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1707,7 +1717,7 @@ func shortcut(keys string, what string) templ.Component {
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(keys)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 569, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 574, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 		if templ_7745c5c3_Err != nil {
@@ -1720,7 +1730,7 @@ func shortcut(keys string, what string) templ.Component {
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(what)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 570, Col: 11}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 575, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
@@ -1771,7 +1781,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 		var templ_7745c5c3_Var59 templ.SafeURL
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 576, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 581, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1815,7 +1825,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 583, Col: 10}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 588, Col: 10}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1833,7 +1843,7 @@ func sheetLink(href string, label string, iconName string, current bool, badgeUR
 			var templ_7745c5c3_Var62 string
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(badgeURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 586, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/components/layout.templ`, Line: 591, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 			if templ_7745c5c3_Err != nil {
@@ -1927,158 +1937,163 @@ func iconClass(name string, class string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		switch name {
+		case "home":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<path d=\"M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z\"></path> <path d=\"M9 21v-7h6v7\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		case "tracks":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<path d=\"M9 18V5l12-2v13\"></path> <circle cx=\"6\" cy=\"18\" r=\"3\"></circle> <circle cx=\"18\" cy=\"16\" r=\"3\"></circle>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<path d=\"M9 18V5l12-2v13\"></path> <circle cx=\"6\" cy=\"18\" r=\"3\"></circle> <circle cx=\"18\" cy=\"16\" r=\"3\"></circle>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "releases":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<circle cx=\"12\" cy=\"12\" r=\"10\"></circle> <circle cx=\"12\" cy=\"12\" r=\"3\"></circle>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<circle cx=\"12\" cy=\"12\" r=\"10\"></circle> <circle cx=\"12\" cy=\"12\" r=\"3\"></circle>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "artists":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<circle cx=\"12\" cy=\"8\" r=\"4\"></circle> <path d=\"M4 21c0-4 4-7 8-7s8 3 8 7\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<circle cx=\"12\" cy=\"8\" r=\"4\"></circle> <path d=\"M4 21c0-4 4-7 8-7s8 3 8 7\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "inbox":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"></path> <path d=\"M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"></path> <path d=\"M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "library":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<rect x=\"4\" y=\"4\" width=\"5\" height=\"16\" rx=\"1\"></rect> <path d=\"M14 5.5l4-1 3 14.5-4 1z\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<rect x=\"4\" y=\"4\" width=\"5\" height=\"16\" rx=\"1\"></rect> <path d=\"M14 5.5l4-1 3 14.5-4 1z\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "more":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<circle cx=\"5\" cy=\"12\" r=\"1\"></circle> <circle cx=\"12\" cy=\"12\" r=\"1\"></circle> <circle cx=\"19\" cy=\"12\" r=\"1\"></circle>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "<circle cx=\"5\" cy=\"12\" r=\"1\"></circle> <circle cx=\"12\" cy=\"12\" r=\"1\"></circle> <circle cx=\"19\" cy=\"12\" r=\"1\"></circle>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "upload":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "<path d=\"M12 16V4\"></path> <path d=\"M7 9l5-5 5 5\"></path> <path d=\"M4 20h16\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<path d=\"M12 16V4\"></path> <path d=\"M7 9l5-5 5 5\"></path> <path d=\"M4 20h16\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "tags":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<path d=\"M20 12l-8 8-9-9V3h8z\"></path> <circle cx=\"7.5\" cy=\"7.5\" r=\"1\"></circle>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "<path d=\"M20 12l-8 8-9-9V3h8z\"></path> <circle cx=\"7.5\" cy=\"7.5\" r=\"1\"></circle>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "playlists":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "<path d=\"M3 6h13M3 12h13M3 18h8\"></path> <path d=\"M19 9v9\"></path> <circle cx=\"17\" cy=\"18\" r=\"2\"></circle>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<path d=\"M3 6h13M3 12h13M3 18h8\"></path> <path d=\"M19 9v9\"></path> <circle cx=\"17\" cy=\"18\" r=\"2\"></circle>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "shows":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"></rect> <path d=\"M5 11a7 7 0 0 0 14 0M12 18v4\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"></rect> <path d=\"M5 11a7 7 0 0 0 14 0M12 18v4\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "tagging":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<path d=\"M20 6L9 17l-5-5\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<path d=\"M20 6L9 17l-5-5\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "downloads":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<path d=\"M12 4v12\"></path> <path d=\"M7 11l5 5 5-5\"></path> <path d=\"M4 20h16\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "<path d=\"M12 4v12\"></path> <path d=\"M7 11l5 5 5-5\"></path> <path d=\"M4 20h16\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "moon":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "<path d=\"M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "<path d=\"M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "volume-x":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M22 9l-6 6M16 9l6 6\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M22 9l-6 6M16 9l6 6\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "volume-1":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M15.5 8.5a5 5 0 0 1 0 7\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M15.5 8.5a5 5 0 0 1 0 7\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "volume-2":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "<path d=\"M11 5L6 9H2v6h4l5 4V5z\"></path> <path d=\"M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "play":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "<path d=\"M7 4.5v15l12-7.5z\" fill=\"currentColor\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "<path d=\"M7 4.5v15l12-7.5z\" fill=\"currentColor\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "pause":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "<rect x=\"6\" y=\"4.5\" width=\"4\" height=\"15\" rx=\"1\" fill=\"currentColor\"></rect> <rect x=\"14\" y=\"4.5\" width=\"4\" height=\"15\" rx=\"1\" fill=\"currentColor\"></rect>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<rect x=\"6\" y=\"4.5\" width=\"4\" height=\"15\" rx=\"1\" fill=\"currentColor\"></rect> <rect x=\"14\" y=\"4.5\" width=\"4\" height=\"15\" rx=\"1\" fill=\"currentColor\"></rect>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "skip-back":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<path d=\"M19 5v14L8 12z\" fill=\"currentColor\"></path> <path d=\"M5 5v14\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "<path d=\"M19 5v14L8 12z\" fill=\"currentColor\"></path> <path d=\"M5 5v14\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "skip-forward":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "<path d=\"M5 5v14l11-7z\" fill=\"currentColor\"></path> <path d=\"M19 5v14\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<path d=\"M5 5v14l11-7z\" fill=\"currentColor\"></path> <path d=\"M19 5v14\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "shuffle":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<path d=\"M16 3h5v5\"></path> <path d=\"M4 20L21 3\"></path> <path d=\"M21 16v5h-5\"></path> <path d=\"M15 15l6 6\"></path> <path d=\"M4 4l5 5\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<path d=\"M16 3h5v5\"></path> <path d=\"M4 20L21 3\"></path> <path d=\"M21 16v5h-5\"></path> <path d=\"M15 15l6 6\"></path> <path d=\"M4 4l5 5\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "repeat":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<path d=\"M17 2l4 4-4 4\"></path> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\"></path> <path d=\"M7 22l-4-4 4-4\"></path> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "<path d=\"M17 2l4 4-4 4\"></path> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\"></path> <path d=\"M7 22l-4-4 4-4\"></path> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "repeat-1":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "<path d=\"M17 2l4 4-4 4\"></path> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\"></path> <path d=\"M7 22l-4-4 4-4\"></path> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\"></path> <path d=\"M11 10h1v4\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "<path d=\"M17 2l4 4-4 4\"></path> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\"></path> <path d=\"M7 22l-4-4 4-4\"></path> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\"></path> <path d=\"M11 10h1v4\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "list":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "<path d=\"M4 6h16M4 12h16M4 18h16\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "<path d=\"M4 6h16M4 12h16M4 18h16\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "x":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "<path d=\"M18 6L6 18M6 6l12 12\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "<path d=\"M18 6L6 18M6 6l12 12\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "arrow-up":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "<path d=\"M12 19V5\"></path> <path d=\"M5 12l7-7 7 7\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<path d=\"M12 19V5\"></path> <path d=\"M5 12l7-7 7 7\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "arrow-down":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<path d=\"M12 5v14\"></path> <path d=\"M19 12l-7 7-7-7\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "<path d=\"M12 5v14\"></path> <path d=\"M19 12l-7 7-7-7\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "arrow-right":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "<path d=\"M5 12h14\"></path> <path d=\"M12 5l7 7-7 7\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "<path d=\"M5 12h14\"></path> <path d=\"M12 5l7 7-7 7\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "check":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "<path d=\"M20 6L9 17l-5-5\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "<path d=\"M20 6L9 17l-5-5\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "lock":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "<rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"></rect> <path d=\"M8 11V7a4 4 0 0 1 8 0v4\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "<rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"></rect> <path d=\"M8 11V7a4 4 0 0 1 8 0v4\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "</svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "</svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

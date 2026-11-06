@@ -1,0 +1,38 @@
+package components
+
+import "audioloader/internal/audio"
+
+const PageHome = "home"
+
+// HomePage is what / opens: what waits in the inbox, the episodes to carry
+// on with, and what reached the library last. Secret mode has no home, no
+// inbox and no releases; its / goes straight to the track list.
+templ HomePage(inbox int, continueListening []*audio.Track, releases []*audio.Release, tracks []*audio.Track) {
+	@layout("Home", PageHome) {
+		@pageHead("Home", "") {
+			<a class="btn btn-ghost" href="/add">Add</a>
+		}
+		if inbox > 0 {
+			<section class="mb-8">
+				@sectionLabel("Inbox")
+				// a card, not a list row: .row dictates a link's colour, which
+				// a filled button needs to set itself
+				<div class="card flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+					<span>{ plural(inbox, "new release") } waiting.</span>
+					<a class="btn" href="/inbox">Open the inbox</a>
+				</div>
+			</section>
+		}
+		@ContinueListening(continueListening)
+		<section class="mb-8">
+			@sectionLabel("Recently added")
+			if len(releases) > 0 {
+				@releaseGrid(releases)
+			} else {
+				// a library of loose tracks has no releases to show; an
+				// empty one gets the track list's empty state
+				@TrackList(tracks)
+			}
+		</section>
+	}
+}

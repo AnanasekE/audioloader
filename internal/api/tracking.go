@@ -251,18 +251,27 @@ func getInboxDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func getInboxBadge(w http.ResponseWriter, r *http.Request) {
+	n, err := inboxWaiting()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	render(w, r, components.Badge(n))
+}
+
+// inboxWaiting is the number the inbox badge and the home page show: the
+// new releases, plus the followed Apple Music playlists with songs to pick,
+// one each.
+func inboxWaiting() (int, error) {
 	n, err := db.InboxCount()
 	if err != nil {
-		serverError(w, err)
-		return
+		return 0, err
 	}
-	// a followed Apple Music playlist with songs to pick counts as one
 	picks, err := db.AppleFollowsToPick()
 	if err != nil {
-		serverError(w, err)
-		return
+		return 0, err
 	}
-	render(w, r, components.Badge(n+picks))
+	return n + picks, nil
 }
 
 func confirmInboxRelease(w http.ResponseWriter, r *http.Request) {

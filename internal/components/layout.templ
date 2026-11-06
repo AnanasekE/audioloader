@@ -349,6 +349,10 @@ templ sidebar(active string) {
 		<nav aria-label="Library">
 			@navLabel("Library")
 			<ul class="flex flex-col gap-0.5">
+				// secret mode has no home: its / goes to the track list
+				if !secretMode(ctx) {
+					@navLink("/", "Home", "home", active == PageHome)
+				}
 				@navLink("/tracks", "Tracks", "tracks", active == PageTracks)
 				if secretMode(ctx) && tagsPage {
 					@navLink("/tags", "Tags", "tags", active == PageTags)
@@ -496,7 +500,7 @@ templ tabBar(active string) {
 			@tab("/inbox", "Inbox", "inbox", active == PageInbox, "/ui/badges/inbox")
 			<button
 				type="button"
-				class={ tabClass(active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads || active == PageAdd) }
+				class={ tabClass(active == PageHome || active == PagePlaylists || active == PageShows || active == PageTagging || active == PageDownloads || active == PageAdd) }
 				data-sheet-open="more-sheet"
 			>
 				<span class="relative inline-flex [&>span]:top-[-4px] [&>span]:right-[-14px]">
@@ -535,6 +539,7 @@ templ moreSheet(active string) {
 	if !secretMode(ctx) {
 		<dialog id="more-sheet" class="fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-lg border border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-fg shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop:bg-black/50 min-[720px]:hidden" aria-label="Library">
 			<ul class="flex flex-col">
+				@sheetLink("/", "Home", "home", active == PageHome, "")
 				@sheetLink("/playlists", "Playlists", "playlists", active == PagePlaylists, "")
 				@sheetLink("/shows", "Podcasts", "shows", active == PageShows, "")
 				@sheetLink("/tagging", "Tagging", "tagging", active == PageTagging, "/ui/badges/tagging")
@@ -597,6 +602,9 @@ templ icon(name string) {
 templ iconClass(name string, class string) {
 	<svg class={ "shrink-0", class } viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		switch name {
+			case "home":
+				<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path>
+				<path d="M9 21v-7h6v7"></path>
 			case "tracks":
 				<path d="M9 18V5l12-2v13"></path>
 				<circle cx="6" cy="18" r="3"></circle>

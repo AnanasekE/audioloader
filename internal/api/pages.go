@@ -12,8 +12,42 @@ import (
 	"audioloader/internal/jobs"
 )
 
+// recentOnHome is how many recently added releases, or tracks, the home
+// page shows.
+const recentOnHome = 12
+
+// getIndex is the home page: the inbox count, what to continue, what was
+// added last. Secret mode has neither an inbox nor releases, so it keeps
+// going to the track list, which is its own "date added" view.
 func getIndex(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/tracks", http.StatusSeeOther)
+	if viewer(r).IsSecret() {
+		http.Redirect(w, r, "/tracks", http.StatusSeeOther)
+		return
+	}
+	inbox, err := inboxWaiting()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	cont, err := db.ContinueListening(viewer(r), 5)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	releases, err := db.RecentReleases(viewer(r), recentOnHome)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	// only a library without releases falls back to loose tracks
+	var tracks []*audio.Track
+	if len(releases) == 0 {
+		if tracks, err = db.RecentTracks(viewer(r), recentOnHome); err != nil {
+			serverError(w, err)
+			return
+		}
+	}
+	render(w, r, components.HomePage(inbox, cont, releases, tracks))
 }
 
 func getTracksPage(w http.ResponseWriter, r *http.Request) {
