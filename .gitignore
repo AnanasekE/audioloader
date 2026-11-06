@@ -12,3 +12,5 @@ mobile/node_modules/
 mobile/.expo/
 mobile/dist/
 mobile/expo-env.d.ts
+
+.direnv/
