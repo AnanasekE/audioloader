@@ -27,6 +27,16 @@
             # mobile/ (Expo) and tests/js/*.test.mjs
             nodejs_22
           ];
+
+          # The shell's own tools must win over whatever launched it. An
+          # inherited LD_LIBRARY_PATH from another nixpkgs generation puts a
+          # foreign libasound ahead of ffmpeg's, and ffmpeg then fails to
+          # start at all ("version `GLIBC_2.43' not found"), which breaks the
+          # trim tests. Nothing in this shell needs the variable: every
+          # package here finds its libraries through its own RPATH.
+          shellHook = ''
+            unset LD_LIBRARY_PATH
+          '';
         };
       });
     };
