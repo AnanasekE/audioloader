@@ -6,7 +6,7 @@
 
 ## Status
 
-- [ ] 1. Recently added queries
+- [x] 1. Recently added queries
 - [ ] 2. The home page at `/`
 - [ ] 3. The action palette and the web app start page
 - [ ] 4. Screenshots and docs

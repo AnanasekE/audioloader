@@ -78,6 +78,44 @@ func ListTracks(v Viewer) ([]*audio.Track, error) {
 	return tracks, nil
 }
 
+// RecentTracks returns the library's tracks added last, newest first. Like
+// the track list's "Added" order it goes by rowid: tracks carry no
+// timestamp.
+func RecentTracks(v Viewer, limit int) ([]*audio.Track, error) {
+	rows, err := DB.Query(selectTrack+` WHERE `+libraryTracks+` AND `+v.trackCond("t")+` ORDER BY t.rowid DESC LIMIT ?;`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tracks := make([]*audio.Track, 0, limit)
+	for rows.Next() {
+		t, err := scanTrack(rows)
+		if err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	if err := attachArtists(tracks); err != nil {
+		return nil, err
+	}
+	if err := attachReleases(tracks); err != nil {
+		return nil, err
+	}
+	if err := attachCovers(v, tracks); err != nil {
+		return nil, err
+	}
+	if err := attachTags(tracks); err != nil {
+		return nil, err
+	}
+	return tracks, nil
+}
+
 func GetTrack(v Viewer, id string) (*audio.Track, error) {
 	t, err := scanTrack(DB.QueryRow(selectTrack+` WHERE t.uuid = ? AND `+v.trackCond("t")+`;`, id))
 	if errors.Is(err, sql.ErrNoRows) {

@@ -80,6 +80,31 @@ func ListReleases(v Viewer) ([]*audio.Release, error) {
 	return releases, attachReleaseArtists(releases)
 }
 
+// RecentReleases returns the releases added last, newest first. The rowid
+// order is the order they were added in: releases carry no timestamp, and
+// release_date is when the music came out, not when it reached the library.
+func RecentReleases(v Viewer, limit int) ([]*audio.Release, error) {
+	rows, err := DB.Query(selectRelease+` r WHERE `+v.releaseCond("r")+` ORDER BY r.rowid DESC LIMIT ?;`, limit)
+	if err != nil {
+		return nil, err
+	}
+	releases := make([]*audio.Release, 0, limit)
+	for rows.Next() {
+		r, err := scanRelease(rows)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		releases = append(releases, r)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+	return releases, attachReleaseArtists(releases)
+}
+
 // GetRelease returns a release with its artists and tracklist. Secret
 // tracks are on no release, but if one is still there, a normal mode viewer
 // gets the rest numbered without gaps, so positions don't give it away.
