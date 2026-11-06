@@ -1,4 +1,4 @@
-TAILWIND := bin/tailwindcss
+TAILWIND := tailwindcss
 CSS_IN   := styles/input.css
 CSS_OUT  := assets/css/app.css
 
