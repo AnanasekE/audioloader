@@ -1,7 +1,7 @@
 {
   "name": "audioloader",
   "short_name": "audioloader",
-  "start_url": "/tracks",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0e0f11",
   "theme_color": "#0e0f11",
